@@ -1,0 +1,69 @@
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+
+import {
+  AUTH_SESSION_COOKIE,
+  AUTH_SESSION_MAX_AGE_SEC,
+} from "@/lib/auth-session";
+import { getBackendBaseUrl } from "@/lib/server-api";
+
+export async function POST(request: Request) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ detail: "Invalid JSON body." }, { status: 400 });
+  }
+
+  const email =
+    typeof body === "object" &&
+    body !== null &&
+    "email" in body &&
+    typeof (body as { email: unknown }).email === "string"
+      ? (body as { email: string }).email.trim()
+      : "";
+  const password =
+    typeof body === "object" &&
+    body !== null &&
+    "password" in body &&
+    typeof (body as { password: unknown }).password === "string"
+      ? (body as { password: string }).password
+      : "";
+
+  if (!email || !password) {
+    return NextResponse.json(
+      { detail: "Email and password are required." },
+      { status: 400 },
+    );
+  }
+
+  const basic = Buffer.from(`${email}:${password}`).toString("base64");
+  const res = await fetch(`${getBackendBaseUrl()}/api/auth/session`, {
+    headers: { Authorization: `Basic ${basic}` },
+    cache: "no-store",
+  });
+
+  if (res.status === 401) {
+    return NextResponse.json({ detail: "Invalid email or password." }, { status: 401 });
+  }
+  if (res.status === 403) {
+    return NextResponse.json({ detail: "This account is disabled." }, { status: 403 });
+  }
+  if (!res.ok) {
+    return NextResponse.json(
+      { detail: "Sign-in failed. Try again later." },
+      { status: 502 },
+    );
+  }
+
+  const cookieStore = await cookies();
+  cookieStore.set(AUTH_SESSION_COOKIE, "1", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: AUTH_SESSION_MAX_AGE_SEC,
+  });
+
+  return NextResponse.json({ ok: true });
+}
