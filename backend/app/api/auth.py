@@ -13,4 +13,10 @@ async def auth_session(
     user: User = Depends(get_current_user),
     _: TenantContext = Depends(get_tenant_context),
 ) -> AuthSessionRead:
-    return AuthSessionRead(email=user.email, tenant_id=user.tenant_id)
+    return AuthSessionRead(
+        id=user.id,
+        email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        is_active=user.is_active,
+    )

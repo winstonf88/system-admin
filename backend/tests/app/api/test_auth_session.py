@@ -37,4 +37,10 @@ async def test_auth_session_ok(
     response = await client.get("/api/auth/session", auth=("u1@test.com", "secret"))
     assert response.status_code == 200
     data = response.json()
-    assert data == {"email": "u1@test.com", "tenant_id": 1}
+    assert data == {
+        "id": 1,
+        "email": "u1@test.com",
+        "first_name": "User",
+        "last_name": "One",
+        "is_active": True,
+    }

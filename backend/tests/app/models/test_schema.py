@@ -14,6 +14,10 @@ def test_schema_has_tenant_columns_and_constraints() -> None:
 
     assert "email" in user_cols
     assert user_cols["email"].unique
+    assert "first_name" in user_cols
+    assert user_cols["first_name"].nullable
+    assert "last_name" in user_cols
+    assert user_cols["last_name"].nullable
     assert "password_hash" in user_cols
     assert "is_active" in user_cols
     assert not user_cols["tenant_id"].nullable

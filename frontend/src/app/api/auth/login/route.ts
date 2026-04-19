@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import {
+  AUTH_BASIC_COOKIE,
   AUTH_SESSION_COOKIE,
   AUTH_SESSION_MAX_AGE_SEC,
 } from "@/lib/auth-session";
@@ -57,13 +58,15 @@ export async function POST(request: Request) {
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(AUTH_SESSION_COOKIE, "1", {
+  const cookieOpts = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "lax" as const,
     path: "/",
     maxAge: AUTH_SESSION_MAX_AGE_SEC,
-  });
+  };
+  cookieStore.set(AUTH_SESSION_COOKIE, "1", cookieOpts);
+  cookieStore.set(AUTH_BASIC_COOKIE, basic, cookieOpts);
 
   return NextResponse.json({ ok: true });
 }

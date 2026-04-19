@@ -19,6 +19,8 @@ class UserFactory(factory.Factory):
         model = User
 
     email = factory.Sequence(lambda n: f"user{n}@test.com")
+    first_name = None
+    last_name = None
     password_hash = factory.LazyFunction(lambda: hash_password(DEFAULT_TEST_PASSWORD))
     tenant_id = factory.Sequence(lambda n: n + 1)
     is_active = True
@@ -39,6 +41,8 @@ async def seed_two_tenant_users(session_maker: async_sessionmaker[AsyncSession])
                     email="u1@test.com",
                     tenant_id=1,
                     is_active=True,
+                    first_name="User",
+                    last_name="One",
                 ),
                 UserFactory.build(
                     email="u2@test.com",

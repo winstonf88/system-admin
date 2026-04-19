@@ -24,6 +24,8 @@ async def _run(
     tenant_slug: str,
     tenant_name: str | None,
     new_tenant: bool,
+    first_name: str | None,
+    last_name: str | None,
 ) -> None:
     email_norm = email.strip().lower()
     async with SessionLocal() as session:
@@ -46,6 +48,8 @@ async def _run(
 
         user = User(
             email=email_norm,
+            first_name=first_name,
+            last_name=last_name,
             password_hash=hash_password(password),
             tenant_id=tenant.id,
             is_active=True,
@@ -66,7 +70,11 @@ def main() -> None:
         action="store_true",
         help="Create tenant with --tenant-slug if missing (uses --tenant-name or slug as name).",
     )
+    parser.add_argument("--first-name", default=None, help="Optional given name.")
+    parser.add_argument("--last-name", default=None, help="Optional family name.")
     args = parser.parse_args()
+    fn = args.first_name.strip() if args.first_name else None
+    ln = args.last_name.strip() if args.last_name else None
     asyncio.run(
         _run(
             email=args.email,
@@ -74,6 +82,8 @@ def main() -> None:
             tenant_slug=args.tenant_slug,
             tenant_name=args.tenant_name,
             new_tenant=args.create_tenant,
+            first_name=fn or None,
+            last_name=ln or None,
         )
     )
 
