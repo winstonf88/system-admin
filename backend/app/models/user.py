@@ -1,6 +1,7 @@
 from sqlalchemy import Boolean, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.security import hash_password
 from app.models.base import Base
 
 
@@ -14,3 +15,6 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     tenant = relationship("Tenant", back_populates="users")
+
+    def set_password(self, plain_password: str) -> None:
+        self.password_hash = hash_password(plain_password)

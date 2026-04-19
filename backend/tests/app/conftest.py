@@ -6,7 +6,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from app.api import categories_router, products_router
+from app.api import auth_router, categories_router, products_router
 from app.core.database import get_db
 from app.models import Base
 
@@ -35,6 +35,7 @@ async def app(session_maker: async_sessionmaker[AsyncSession]) -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    app.include_router(auth_router)
     app.include_router(categories_router)
     app.include_router(products_router)
 

@@ -19,9 +19,13 @@ dependencies = [
     "uvicorn[standard]>=0.32.0",
 ]
 
+[project.scripts]
+api-shell = "app.scripts.shell:main"
+
 [project.optional-dependencies]
 dev = [
     "aiosqlite",
+    "ipython>=8.18",
     "factory-boy>=3.3",
     "httpx",
     "pytest",

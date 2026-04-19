@@ -1,7 +1,8 @@
+import json
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import AliasChoices, Field, field_validator
+from pydantic import AliasChoices, Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,9 +22,12 @@ class Settings(BaseSettings):
     app_host: str = Field(default="0.0.0.0", validation_alias=AliasChoices("APP_HOST"))
     app_port: int = Field(default=8000, validation_alias=AliasChoices("APP_PORT"))
     app_log_level: str = Field(default="INFO", validation_alias=AliasChoices("APP_LOG_LEVEL"))
-    app_cors_origins: list[str] = Field(
-        default_factory=lambda: ["http://localhost:3000"],
+    # Env must be read as str: pydantic-settings JSON-decodes list fields before validators run,
+    # which breaks comma-separated URLs, JSON arrays without quotes, and empty values.
+    cors_origins_env: str = Field(
+        default="http://localhost:3000",
         validation_alias=AliasChoices("APP_CORS_ORIGINS"),
+        exclude=True,
     )
     app_expose_docs: bool = Field(default=True, validation_alias=AliasChoices("APP_EXPOSE_DOCS"))
     database_url: str = Field(
@@ -34,13 +38,19 @@ class Settings(BaseSettings):
     db_max_overflow: int = Field(default=20, validation_alias=AliasChoices("DB_MAX_OVERFLOW"))
     db_pool_timeout: int = Field(default=30, validation_alias=AliasChoices("DB_POOL_TIMEOUT"))
     db_pool_recycle: int = Field(default=1800, validation_alias=AliasChoices("DB_POOL_RECYCLE"))
-    
-    @field_validator("app_cors_origins", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, value: str | list[str]) -> list[str]:
-        if isinstance(value, str):
-            return [origin.strip() for origin in value.split(",") if origin.strip()]
-        return value
+
+    @computed_field
+    @property
+    def app_cors_origins(self) -> list[str]:
+        raw = self.cors_origins_env.strip()
+        if not raw:
+            return ["http://localhost:3000"]
+        if raw.startswith("["):
+            parsed = json.loads(raw)
+            if not isinstance(parsed, list):
+                raise ValueError("APP_CORS_ORIGINS must be a JSON array when it starts with '['")
+            return [str(x).strip() for x in parsed if str(x).strip()]
+        return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
     @property
     def is_production(self) -> bool:

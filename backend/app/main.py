@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api import categories_router, products_router
+from app.api import auth_router, categories_router, products_router
 from app.core.config import get_settings
 from app.core.database import check_db_connection, engine
 from app.core.logging import configure_logging
@@ -48,6 +48,7 @@ def create_app() -> FastAPI:
         return {"status": "ok", "environment": settings.app_env}
 
     app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+    app.include_router(auth_router)
     app.include_router(categories_router)
     app.include_router(products_router)
 

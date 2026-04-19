@@ -83,4 +83,9 @@ class UploadResponse(BaseModel):
     file_url: str
 
 
+class AuthSessionRead(BaseModel):
+    email: str
+    tenant_id: int
+
+
 CategoryTreeRead.model_rebuild()

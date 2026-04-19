@@ -10,7 +10,23 @@ uv sync --extra dev
 cp .env.example .env
 ```
 
-Run Python tools through the project environment with `uv run`, for example `uv run pytest` and `uv run uvicorn app.main:app --reload`.
+Run Python tools through the project environment with `uv run`, for example `uv run pytest`, `uv run uvicorn app.main:app --reload`, and `uv run api-shell` (see **Interactive shell** below).
+
+## Interactive shell (Django shell_plus–style)
+
+With dev extras, opens IPython with async session factory and models from `app.models` pre-imported.
+
+**Commands** (from `backend/` after `uv sync --extra dev`):
+
+```bash
+uv run python -m app.scripts.shell
+```
+
+```bash
+uv run api-shell
+```
+
+Requires `DATABASE_URL` (or defaults in Settings) and a reachable database. A **sync** ORM `session` is opened for queries without `await`, e.g. `session.execute(select(User).limit(5)).scalars().all()`. For the same patterns as the app, use top-level `await` with `SessionLocal` (e.g. `async with SessionLocal() as s: ...`).
 
 ## Configuration
 
