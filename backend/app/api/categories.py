@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.tenant import TenantContext, get_tenant_context
 from app.models import Category, Product
 from app.schemas import CategoryCreate, CategoryRead, CategoryTreeRead, CategoryUpdate
 
@@ -12,6 +13,16 @@ router = APIRouter(prefix="/api/categories", tags=["categories"])
 @cbv(router)
 class CategoryView:
     db: AsyncSession = Depends(get_db)
+    tenant_context: TenantContext = Depends(get_tenant_context)
+
+    async def _get_category(self, category_id: int) -> Category | None:
+        result = await self.db.execute(
+            select(Category).where(
+                Category.id == category_id,
+                Category.tenant_id == self.tenant_context.tenant_id,
+            )
+        )
+        return result.scalar_one_or_none()
 
     async def _validate_parent(
         self,        
@@ -24,7 +35,7 @@ class CategoryView:
         if category_id is not None and parent_id == category_id:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Category cannot be its own parent.")
 
-        parent = await self.db.get(Category, parent_id)
+        parent = await self._get_category(parent_id)
         if parent is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parent category not found.")
 
@@ -37,12 +48,12 @@ class CategoryView:
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail="Invalid parent category; this would create a cycle.",
                     )
-                cursor = await self.db.get(Category, cursor.parent_id)
+                cursor = await self._get_category(cursor.parent_id)
                 if cursor is None:
                     break
 
     async def _get_category_or_404(self, category_id: int) -> Category:
-        category = await self.db.get(Category, category_id)
+        category = await self._get_category(category_id)
         if category is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found.")
         return category
@@ -50,7 +61,11 @@ class CategoryView:
     @router.post("/", response_model=CategoryRead, status_code=status.HTTP_201_CREATED)
     async def create_category(self, payload: CategoryCreate) -> Category:
         await self._validate_parent(payload.parent_id)
-        category = Category(name=payload.name, parent_id=payload.parent_id)
+        category = Category(
+            tenant_id=self.tenant_context.tenant_id,
+            name=payload.name,
+            parent_id=payload.parent_id,
+        )
         self.db.add(category)
         await self.db.commit()
         await self.db.refresh(category)
@@ -58,12 +73,20 @@ class CategoryView:
 
     @router.get("/", response_model=list[CategoryRead])
     async def list_categories(self) -> list[Category]:
-        result = await self.db.execute(select(Category).order_by(Category.name.asc()))
+        result = await self.db.execute(
+            select(Category)
+            .where(Category.tenant_id == self.tenant_context.tenant_id)
+            .order_by(Category.name.asc())
+        )
         return list(result.scalars().all())
 
     @router.get("/tree", response_model=list[CategoryTreeRead])
     async def category_tree(self) -> list[CategoryTreeRead]:
-        result = await self.db.execute(select(Category).order_by(Category.name.asc()))
+        result = await self.db.execute(
+            select(Category)
+            .where(Category.tenant_id == self.tenant_context.tenant_id)
+            .order_by(Category.name.asc())
+        )
         categories = list(result.scalars().all())
 
         node_map: dict[int, CategoryTreeRead] = {
@@ -108,14 +131,28 @@ class CategoryView:
     async def delete_category(self, category_id: int) -> None:
         category = await self._get_category_or_404(category_id)
 
-        has_child = await self.db.scalar(select(Category.id).where(Category.parent_id == category_id).limit(1))
+        has_child = await self.db.scalar(
+            select(Category.id)
+            .where(
+                Category.parent_id == category_id,
+                Category.tenant_id == self.tenant_context.tenant_id,
+            )
+            .limit(1)
+        )
         if has_child:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Delete or move subcategories before deleting this category.",
             )
 
-        has_products = await self.db.scalar(select(Product.id).where(Product.category_id == category_id).limit(1))
+        has_products = await self.db.scalar(
+            select(Product.id)
+            .where(
+                Product.category_id == category_id,
+                Product.tenant_id == self.tenant_context.tenant_id,
+            )
+            .limit(1)
+        )
         if has_products:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

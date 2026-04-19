@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
+from app.core.tenant import TenantContext, get_tenant_context
 from app.models import Category, Product, ProductVariation
 from app.schemas import ProductCreate, ProductRead, ProductUpdate, UploadResponse
 
@@ -19,10 +20,16 @@ router = APIRouter(prefix="/api/products", tags=["products"])
 @cbv(router)
 class ProductView:
     db: AsyncSession = Depends(get_db)
+    tenant_context: TenantContext = Depends(get_tenant_context)
 
     async def _get_product_or_404(self, product_id: int) -> Product:
         result = await self.db.execute(
-            select(Product).options(selectinload(Product.variations)).where(Product.id == product_id)
+            select(Product)
+            .options(selectinload(Product.variations))
+            .where(
+                Product.id == product_id,
+                Product.tenant_id == self.tenant_context.tenant_id,
+            )
         )
         product = result.scalar_one_or_none()
         if product is None:
@@ -30,7 +37,14 @@ class ProductView:
         return product
 
     async def _validate_category(self, category_id: int) -> None:
-        category = await self.db.get(Category, category_id)
+        category = await self.db.scalar(
+            select(Category.id)
+            .where(
+                Category.id == category_id,
+                Category.tenant_id == self.tenant_context.tenant_id,
+            )
+            .limit(1)
+        )
         if category is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found.")
 
@@ -46,6 +60,7 @@ class ProductView:
         await self._validate_category(payload.category_id)
 
         product = Product(
+            tenant_id=self.tenant_context.tenant_id,
             name=payload.name,
             description=payload.description,
             category_id=payload.category_id,
@@ -64,7 +79,10 @@ class ProductView:
     @router.get("/", response_model=list[ProductRead])
     async def list_products(self) -> list[Product]:
         result = await self.db.execute(
-            select(Product).options(selectinload(Product.variations)).order_by(Product.name.asc())
+            select(Product)
+            .options(selectinload(Product.variations))
+            .where(Product.tenant_id == self.tenant_context.tenant_id)
+            .order_by(Product.name.asc())
         )
         return list(result.scalars().all())
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import ForeignKey, ForeignKeyConstraint, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -8,11 +8,21 @@ from app.models.base import Base
 
 class Product(Base):
     __tablename__ = "products"
+    __table_args__ = (
+        UniqueConstraint("id", "tenant_id", name="uq_products_id_tenant"),
+        ForeignKeyConstraint(["tenant_id"], ["tenants.id"], name="fk_products_tenant_id"),
+        ForeignKeyConstraint(
+            ["category_id", "tenant_id"],
+            ["categories.id", "categories.tenant_id"],
+            name="fk_products_category_same_tenant",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    tenant_id: Mapped[int] = mapped_column(nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(180), nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"), nullable=False, index=True)
+    category_id: Mapped[int] = mapped_column(nullable=False, index=True)
     image_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     category: Mapped["Category"] = relationship("Category", back_populates="products")
