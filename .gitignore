@@ -21,6 +21,9 @@ out/
 .turbo/
 *.tsbuildinfo
 
+# Backend runtime uploads (product images, etc.)
+backend/uploads/
+
 # Environment
 .env
 .env.local

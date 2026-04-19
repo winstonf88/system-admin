@@ -2,13 +2,15 @@
 
 ## Setup
 
+Use [uv](https://docs.astral.sh/uv/) (recommended):
+
 ```bash
 cd backend
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -e .
+uv sync --extra dev
 cp .env.example .env
 ```
+
+Run Python tools through the project environment with `uv run`, for example `uv run pytest` and `uv run uvicorn app.main:app --reload`.
 
 ## Configuration
 
@@ -21,12 +23,22 @@ Key variables:
 - `DATABASE_URL`: SQLAlchemy URL (`postgresql+asyncpg://...`)
 - `DB_POOL_*`: connection pool tuning
 
-## Run (development)
-
-From `backend/` with the virtualenv active:
+## Tests
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+cd backend
+uv sync --extra dev
+uv run pytest
+```
+
+Test layout mirrors [`app/`](app/): e.g. [`app/api/categories.py`](app/api/categories.py) ↔ [`tests/app/api/test_categories.py`](tests/app/api/test_categories.py). Factory Boy factories mirror [`app/models/`](app/models/) under [`tests/app/models/factories/`](tests/app/models/factories/) (e.g. [`tests/app/models/factories/category.py`](tests/app/models/factories/category.py) for [`app/models/category.py`](app/models/category.py)); re-exports live in [`tests/app/models/factories/__init__.py`](tests/app/models/factories/__init__.py).
+
+## Run (development)
+
+From `backend/`:
+
+```bash
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Open http://localhost:8000/docs for the interactive API docs.
@@ -67,5 +79,13 @@ Product variation payload example:
 ## Run (production-like)
 
 ```bash
-APP_ENV=production APP_EXPOSE_DOCS=false uvicorn app.main:app --host 0.0.0.0 --port 8000
+APP_ENV=production APP_EXPOSE_DOCS=false uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+## Bootstrap user
+
+With the database reachable and tables created (start the app once or rely on `create_all`):
+
+```bash
+uv run python -m app.scripts.create_user --email you@example.com --password '...' --tenant-slug default --create-tenant
 ```
