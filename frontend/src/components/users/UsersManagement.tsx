@@ -6,7 +6,7 @@ import Checkbox from "@/components/form/input/Checkbox";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import { Modal } from "@/components/ui/modal";
-import Badge from "@/components/ui/badge/Badge";
+import Switch from "@/components/form/switch/Switch";
 import {
   Table,
   TableBody,
@@ -164,7 +164,7 @@ export default function UsersManagement({ users, currentUserId }: Props) {
                       isHeader
                       className="px-5 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
                     >
-                      Situação
+                      Ativo
                     </TableCell>
                     <TableCell
                       isHeader
@@ -184,9 +184,17 @@ export default function UsersManagement({ users, currentUserId }: Props) {
                         {user.email}
                       </TableCell>
                       <TableCell className="px-5 py-4 text-start">
-                        <Badge size="sm" color={user.is_active ? "success" : "error"}>
-                          {user.is_active ? "Ativo" : "Inativo"}
-                        </Badge>
+                        <div
+                          className="pointer-events-none inline-flex"
+                          aria-label={user.is_active ? "Ativo" : "Inativo"}
+                          title={user.is_active ? "Conta ativa" : "Conta inativa"}
+                        >
+                          <Switch
+                            label=""
+                            checked={user.is_active}
+                            onChange={() => {}}
+                          />
+                        </div>
                       </TableCell>
                       <TableCell className="px-5 py-4 text-end">
                         <div className="flex justify-end gap-2">

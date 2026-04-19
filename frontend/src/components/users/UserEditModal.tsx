@@ -2,7 +2,7 @@
 
 import { updateUserAction } from "@/app/actions/users";
 import Button from "@/components/ui/button/Button";
-import Checkbox from "@/components/form/input/Checkbox";
+import Switch from "@/components/form/switch/Switch";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import { Modal } from "@/components/ui/modal";
@@ -125,7 +125,7 @@ export default function UserEditModal({
                 <Input type="text" value={editLast} onChange={(e) => setEditLast(e.target.value)} />
               </div>
               <div className="col-span-2">
-                <Checkbox label="Ativo" checked={editActive} onChange={setEditActive} />
+                <Switch label="Ativo" checked={editActive} onChange={setEditActive} />
               </div>
             </div>
           </div>
