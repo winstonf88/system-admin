@@ -124,7 +124,7 @@ export default function UserDropdown() {
         type="button"
         aria-expanded={isOpen}
         aria-haspopup="true"
-        aria-label="Account menu"
+        aria-label="Menu da conta"
       >
         <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full">
           {session ? (
@@ -163,7 +163,7 @@ export default function UserDropdown() {
       >
         <div className="px-1">
           <span className="block truncate font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            {session ? displayName(session) : sessionLoaded ? "Signed in" : "Loading…"}
+            {session ? displayName(session) : sessionLoaded ? "Sessão iniciada" : "Carregando…"}
           </span>
           {emailLine ? (
             <span className="mt-0.5 block truncate text-theme-xs text-gray-500 dark:text-gray-400">
@@ -193,7 +193,7 @@ export default function UserDropdown() {
                   fill=""
                 />
               </svg>
-              Edit profile
+              Editar perfil
             </DropdownItem>
           </li>
         </ul>
@@ -217,7 +217,7 @@ export default function UserDropdown() {
               fill=""
             />
           </svg>
-          Sign out
+          Sair
         </button>
       </Dropdown>
 
@@ -232,8 +232,8 @@ export default function UserDropdown() {
           router.refresh();
           await refreshSession();
         }}
-        title="Edit profile"
-        description="Update your account details. Leave password blank to keep your current password."
+        title="Editar perfil"
+        description="Atualize os dados da sua conta. Deixe a senha em branco para manter a senha atual."
       />
     </div>
   );

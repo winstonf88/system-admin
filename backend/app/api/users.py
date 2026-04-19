@@ -26,7 +26,7 @@ class UserView:
         )
         user = result.scalar_one_or_none()
         if user is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
         return user
 
     async def _ensure_email_available(self, email: str, exclude_user_id: int | None = None) -> None:
@@ -37,7 +37,7 @@ class UserView:
         if taken is not None:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="A user with this email already exists.",
+                detail="Já existe um usuário com este e-mail.",
             )
 
     @router.get("/", response_model=list[UserRead])
@@ -101,7 +101,7 @@ class UserView:
         if user_id == current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="You cannot delete your own account.",
+                detail="Você não pode excluir sua própria conta.",
             )
         user = await self._get_user_or_404(user_id)
         await self.db.delete(user)

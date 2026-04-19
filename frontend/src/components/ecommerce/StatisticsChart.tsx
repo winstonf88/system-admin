@@ -101,17 +101,17 @@ export default function StatisticsChart() {
       type: "category", // Category-based x-axis
       categories: [
         "Jan",
-        "Feb",
+        "Fev",
         "Mar",
-        "Apr",
-        "May",
+        "Abr",
+        "Mai",
         "Jun",
         "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
+        "Ago",
+        "Set",
+        "Out",
         "Nov",
-        "Dec",
+        "Dez",
       ],
       axisBorder: {
         show: false, // Hide x-axis border
@@ -141,11 +141,11 @@ export default function StatisticsChart() {
 
   const series = [
     {
-      name: "Sales",
+      name: "Vendas",
       data: [180, 190, 170, 160, 175, 165, 170, 205, 230, 210, 240, 235],
     },
     {
-      name: "Revenue",
+      name: "Receita",
       data: [40, 30, 50, 40, 55, 40, 70, 100, 110, 120, 150, 140],
     },
   ];
@@ -154,10 +154,10 @@ export default function StatisticsChart() {
       <div className="flex flex-col gap-5 mb-6 sm:flex-row sm:justify-between">
         <div className="w-full">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            Statistics
+            Estatísticas
           </h3>
           <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
-            Target you've set for each month
+            Meta que você definiu para cada mês
           </p>
         </div>
         <div className="flex items-center gap-3 sm:justify-end">
@@ -167,7 +167,7 @@ export default function StatisticsChart() {
             <input
               ref={datePickerRef}
               className="h-10 w-10 lg:w-40 lg:h-auto  lg:pl-10 lg:pr-3 lg:py-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-transparent lg:text-gray-700 outline-none dark:border-gray-700 dark:bg-gray-800 dark:lg:text-gray-300 cursor-pointer"
-              placeholder="Select date range"
+              placeholder="Selecionar intervalo de datas"
             />
           </div>
         </div>

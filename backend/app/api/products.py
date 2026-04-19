@@ -33,7 +33,7 @@ class ProductView:
         )
         product = result.scalar_one_or_none()
         if product is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found.")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produto não encontrado.")
         return product
 
     async def _validate_category(self, category_id: int) -> None:
@@ -46,7 +46,7 @@ class ProductView:
             .limit(1)
         )
         if category is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found.")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria não encontrada.")
 
     def _replace_variations(self, product: Product, payload_variations: list) -> None:
         product.variations.clear()
@@ -100,7 +100,7 @@ class ProductView:
 
         if "category_id" in payload.model_fields_set:
             if payload.category_id is None:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="category_id cannot be null.")
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="category_id não pode ser nulo.")
             await self._validate_category(payload.category_id)
             product.category_id = payload.category_id
 
@@ -134,7 +134,7 @@ class ProductView:
         product = await self._get_product_or_404(product_id)
 
         if not file.filename:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing filename in upload.")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Falta o nome do arquivo no envio.")
 
         extension = Path(file.filename).suffix
         filename = f"{uuid.uuid4().hex}{extension}"

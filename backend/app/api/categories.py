@@ -33,11 +33,11 @@ class CategoryView:
             return
 
         if category_id is not None and parent_id == category_id:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Category cannot be its own parent.")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A categoria não pode ser pai de si mesma.")
 
         parent = await self._get_category(parent_id)
         if parent is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parent category not found.")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria pai não encontrada.")
 
         # Prevent cycles by walking up the ancestry chain.
         if category_id is not None:
@@ -46,7 +46,7 @@ class CategoryView:
                 if cursor.parent_id == category_id:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Invalid parent category; this would create a cycle.",
+                        detail="Categoria pai inválida; isso criaria um ciclo.",
                     )
                 cursor = await self._get_category(cursor.parent_id)
                 if cursor is None:
@@ -55,7 +55,7 @@ class CategoryView:
     async def _get_category_or_404(self, category_id: int) -> Category:
         category = await self._get_category(category_id)
         if category is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found.")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria não encontrada.")
         return category
 
     @router.post("/", response_model=CategoryRead, status_code=status.HTTP_201_CREATED)
@@ -142,7 +142,7 @@ class CategoryView:
         if has_child:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Delete or move subcategories before deleting this category.",
+                detail="Exclua ou mova as subcategorias antes de excluir esta categoria.",
             )
 
         has_products = await self.db.scalar(
@@ -156,7 +156,7 @@ class CategoryView:
         if has_products:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Delete or move products before deleting this category.",
+                detail="Exclua ou mova os produtos antes de excluir esta categoria.",
             )
 
         await self.db.delete(category)

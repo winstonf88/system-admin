@@ -21,7 +21,7 @@ async def get_current_user(
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
+            detail="Não autenticado",
             headers={"WWW-Authenticate": "Basic"},
         )
 
@@ -32,11 +32,11 @@ async def get_current_user(
     if user is None or not verify_password(credentials.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Credenciais inválidas",
             headers={"WWW-Authenticate": "Basic"},
         )
 
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is disabled.")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="A conta está desativada.")
 
     return user

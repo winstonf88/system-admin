@@ -16,7 +16,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   {
     icon: <UserCircleIcon />,
-    name: "Users",
+    name: "Usuários",
     path: "/users",
   },
 ];
@@ -127,7 +127,7 @@ const AppSidebar: React.FC = () => {
                                 : "menu-dropdown-badge-inactive"
                             } menu-dropdown-badge `}
                           >
-                            new
+                            novo
                           </span>
                         )}
                         {subItem.pro && (
@@ -295,7 +295,7 @@ const AppSidebar: React.FC = () => {
                   }`}
                 >
                   {isExpanded || isHovered || isMobileOpen ? (
-                    "Others"
+                    "Outros"
                   ) : (
                     <HorizontaLDots />
                   )}

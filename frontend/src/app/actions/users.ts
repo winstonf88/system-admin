@@ -22,9 +22,9 @@ async function errorMessage(res: Response): Promise<string> {
         )
         .join(", ");
     }
-    return `Request failed (${res.status})`;
+    return `Falha na solicitação (${res.status})`;
   } catch {
-    return `Request failed (${res.status})`;
+    return `Falha na solicitação (${res.status})`;
   }
 }
 
@@ -47,7 +47,7 @@ export async function createUserAction(input: {
     }),
   });
   if (res === null) {
-    return { ok: false, error: "Not authenticated. Sign in again." };
+    return { ok: false, error: "Não autenticado. Entre novamente." };
   }
   if (!res.ok) {
     return { ok: false, error: await errorMessage(res) };
@@ -81,7 +81,7 @@ export async function updateUserAction(
     body: JSON.stringify(body),
   });
   if (res === null) {
-    return { ok: false, error: "Not authenticated. Sign in again." };
+    return { ok: false, error: "Não autenticado. Entre novamente." };
   }
   if (!res.ok) {
     return { ok: false, error: await errorMessage(res) };
@@ -95,7 +95,7 @@ export async function deleteUserAction(userId: number): Promise<UserActionResult
     method: "DELETE",
   });
   if (res === null) {
-    return { ok: false, error: "Not authenticated. Sign in again." };
+    return { ok: false, error: "Não autenticado. Entre novamente." };
   }
   if (!res.ok) {
     return { ok: false, error: await errorMessage(res) };

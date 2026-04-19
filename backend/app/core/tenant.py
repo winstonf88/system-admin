@@ -20,6 +20,6 @@ async def get_tenant_context(
 ) -> TenantContext:
     tenant_exists = await db.scalar(select(Tenant.id).where(Tenant.id == user.tenant_id).limit(1))
     if not tenant_exists:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organização não encontrada.")
 
     return TenantContext(tenant_id=user.tenant_id)

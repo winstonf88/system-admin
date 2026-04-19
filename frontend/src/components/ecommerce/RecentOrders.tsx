@@ -17,7 +17,7 @@ interface Product {
   price: string; // Price of the product (as a string with currency symbol)
   // status: string; // Status of the product
   image: string; // URL or path to the product image
-  status: "Delivered" | "Pending" | "Canceled"; // Status of the product
+  status: "Entregue" | "Pendente" | "Cancelado"; // Status of the product
 }
 
 // Define the table data using the interface
@@ -25,46 +25,46 @@ const tableData: Product[] = [
   {
     id: 1,
     name: "MacBook Pro 13”",
-    variants: "2 Variants",
-    category: "Laptop",
+    variants: "2 variantes",
+    category: "Notebook",
     price: "$2399.00",
-    status: "Delivered",
+    status: "Entregue",
     image: "/images/product/product-01.jpg", // Replace with actual image URL
   },
   {
     id: 2,
     name: "Apple Watch Ultra",
-    variants: "1 Variant",
-    category: "Watch",
+    variants: "1 variante",
+    category: "Relógio",
     price: "$879.00",
-    status: "Pending",
+    status: "Pendente",
     image: "/images/product/product-02.jpg", // Replace with actual image URL
   },
   {
     id: 3,
     name: "iPhone 15 Pro Max",
-    variants: "2 Variants",
-    category: "SmartPhone",
+    variants: "2 variantes",
+    category: "Smartphone",
     price: "$1869.00",
-    status: "Delivered",
+    status: "Entregue",
     image: "/images/product/product-03.jpg", // Replace with actual image URL
   },
   {
     id: 4,
     name: "iPad Pro 3rd Gen",
-    variants: "2 Variants",
-    category: "Electronics",
+    variants: "2 variantes",
+    category: "Eletrônicos",
     price: "$1699.00",
-    status: "Canceled",
+    status: "Cancelado",
     image: "/images/product/product-04.jpg", // Replace with actual image URL
   },
   {
     id: 5,
     name: "AirPods Pro 2nd Gen",
-    variants: "1 Variant",
-    category: "Accessories",
+    variants: "1 variante",
+    category: "Acessórios",
     price: "$240.00",
-    status: "Delivered",
+    status: "Entregue",
     image: "/images/product/product-05.jpg", // Replace with actual image URL
   },
 ];
@@ -75,7 +75,7 @@ export default function RecentOrders() {
       <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            Recent Orders
+            Pedidos recentes
           </h3>
         </div>
 
@@ -116,10 +116,10 @@ export default function RecentOrders() {
                 strokeWidth="1.5"
               />
             </svg>
-            Filter
+            Filtrar
           </button>
           <button className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-theme-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
-            See all
+            Ver tudo
           </button>
         </div>
       </div>
@@ -132,25 +132,25 @@ export default function RecentOrders() {
                 isHeader
                 className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
               >
-                Products
+                Produtos
               </TableCell>
               <TableCell
                 isHeader
                 className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
               >
-                Category
+                Categoria
               </TableCell>
               <TableCell
                 isHeader
                 className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
               >
-                Price
+                Preço
               </TableCell>
               <TableCell
                 isHeader
                 className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
               >
-                Status
+                Situação
               </TableCell>
             </TableRow>
           </TableHeader>
@@ -191,9 +191,9 @@ export default function RecentOrders() {
                   <Badge
                     size="sm"
                     color={
-                      product.status === "Delivered"
+                      product.status === "Entregue"
                         ? "success"
-                        : product.status === "Pending"
+                        : product.status === "Pendente"
                         ? "warning"
                         : "error"
                     }

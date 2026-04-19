@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ detail: "Invalid JSON body." }, { status: 400 });
+    return NextResponse.json({ detail: "Corpo JSON inválido." }, { status: 400 });
   }
 
   const email =
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
   if (!email || !password) {
     return NextResponse.json(
-      { detail: "Email and password are required." },
+      { detail: "E-mail e senha são obrigatórios." },
       { status: 400 },
     );
   }
@@ -45,14 +45,14 @@ export async function POST(request: Request) {
   });
 
   if (res.status === 401) {
-    return NextResponse.json({ detail: "Invalid email or password." }, { status: 401 });
+    return NextResponse.json({ detail: "E-mail ou senha inválidos." }, { status: 401 });
   }
   if (res.status === 403) {
-    return NextResponse.json({ detail: "This account is disabled." }, { status: 403 });
+    return NextResponse.json({ detail: "Esta conta está desativada." }, { status: 403 });
   }
   if (!res.ok) {
     return NextResponse.json(
-      { detail: "Sign-in failed. Try again later." },
+      { detail: "Falha ao entrar. Tente novamente mais tarde." },
       { status: 502 },
     );
   }

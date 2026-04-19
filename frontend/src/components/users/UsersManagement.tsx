@@ -131,16 +131,16 @@ export default function UsersManagement({ users, currentUserId }: Props) {
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <PageBreadCrumb pageTitle="Users" />
+        <PageBreadCrumb pageTitle="Usuários" />
         <Button size="sm" onClick={openCreate}>
-          Add user
+          Adicionar usuário
         </Button>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
         {users.length === 0 ? (
           <p className="px-5 py-10 text-center text-gray-500 text-theme-sm dark:text-gray-400">
-            No users found for this organization. Add a user to get started.
+            Nenhum usuário encontrado para esta organização. Adicione um usuário para começar.
           </p>
         ) : (
           <div className="max-w-full overflow-x-auto">
@@ -152,25 +152,25 @@ export default function UsersManagement({ users, currentUserId }: Props) {
                       isHeader
                       className="px-5 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
                     >
-                      Name
+                      Nome
                     </TableCell>
                     <TableCell
                       isHeader
                       className="px-5 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
                     >
-                      Email
+                      E-mail
                     </TableCell>
                     <TableCell
                       isHeader
                       className="px-5 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
                     >
-                      Status
+                      Situação
                     </TableCell>
                     <TableCell
                       isHeader
                       className="px-5 py-3 text-end font-medium text-gray-500 text-theme-xs dark:text-gray-400"
                     >
-                      Actions
+                      Ações
                     </TableCell>
                   </TableRow>
                 </TableHeader>
@@ -185,7 +185,7 @@ export default function UsersManagement({ users, currentUserId }: Props) {
                       </TableCell>
                       <TableCell className="px-5 py-4 text-start">
                         <Badge size="sm" color={user.is_active ? "success" : "error"}>
-                          {user.is_active ? "Active" : "Inactive"}
+                          {user.is_active ? "Ativo" : "Inativo"}
                         </Badge>
                       </TableCell>
                       <TableCell className="px-5 py-4 text-end">
@@ -195,16 +195,16 @@ export default function UsersManagement({ users, currentUserId }: Props) {
                             onClick={() => openEdit(user)}
                             className="inline-flex items-center justify-center gap-1 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]"
                           >
-                            Edit
+                            Editar
                           </button>
                           <button
                             type="button"
                             disabled={isSelf(user)}
-                            title={isSelf(user) ? "You cannot delete your own account" : undefined}
+                            title={isSelf(user) ? "Você não pode excluir sua própria conta" : undefined}
                             onClick={() => openDelete(user)}
                             className="inline-flex items-center justify-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 shadow-theme-xs hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/50 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-950/30"
                           >
-                            Delete
+                            Excluir
                           </button>
                         </div>
                       </TableCell>
@@ -221,10 +221,10 @@ export default function UsersManagement({ users, currentUserId }: Props) {
         <div className={modalInner}>
           <div className="px-2 pr-14">
             <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Add user
+              Adicionar usuário
             </h4>
             <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-              Create a new user for your organization. Password must be at least 8 characters.
+              Crie um novo usuário para a sua organização. A senha deve ter pelo menos 8 caracteres.
             </p>
           </div>
           <form onSubmit={handleCreate} className="flex flex-col">
@@ -233,11 +233,11 @@ export default function UsersManagement({ users, currentUserId }: Props) {
             )}
             <div className="custom-scrollbar max-h-[450px] overflow-y-auto px-2 pb-3">
               <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
-                Account
+                Conta
               </h5>
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                 <div className="col-span-2 lg:col-span-1">
-                  <Label>Email</Label>
+                  <Label>E-mail</Label>
                   <Input
                     type="email"
                     required
@@ -247,7 +247,7 @@ export default function UsersManagement({ users, currentUserId }: Props) {
                   />
                 </div>
                 <div className="col-span-2 lg:col-span-1">
-                  <Label>Password</Label>
+                  <Label>Senha</Label>
                   <Input
                     type="password"
                     required
@@ -258,7 +258,7 @@ export default function UsersManagement({ users, currentUserId }: Props) {
                   />
                 </div>
                 <div className="col-span-2 lg:col-span-1">
-                  <Label>First name</Label>
+                  <Label>Nome</Label>
                   <Input
                     type="text"
                     value={createFirst}
@@ -266,7 +266,7 @@ export default function UsersManagement({ users, currentUserId }: Props) {
                   />
                 </div>
                 <div className="col-span-2 lg:col-span-1">
-                  <Label>Last name</Label>
+                  <Label>Sobrenome</Label>
                   <Input
                     type="text"
                     value={createLast}
@@ -275,7 +275,7 @@ export default function UsersManagement({ users, currentUserId }: Props) {
                 </div>
                 <div className="col-span-2">
                   <Checkbox
-                    label="Active"
+                    label="Ativo"
                     checked={createActive}
                     onChange={setCreateActive}
                   />
@@ -284,10 +284,10 @@ export default function UsersManagement({ users, currentUserId }: Props) {
             </div>
             <div className="mt-6 flex items-center gap-3 px-2 lg:justify-end">
               <Button size="sm" variant="outline" type="button" onClick={createModal.closeModal}>
-                Close
+                Fechar
               </Button>
               <Button size="sm" type="submit" disabled={pending}>
-                {pending ? "Saving…" : "Create user"}
+                {pending ? "Salvando…" : "Criar usuário"}
               </Button>
             </div>
           </form>
@@ -308,11 +308,11 @@ export default function UsersManagement({ users, currentUserId }: Props) {
         <div className={modalInner}>
           <div className="px-2 pr-14">
             <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Delete user
+              Excluir usuário
             </h4>
             <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
               {deleting
-                ? `Permanently remove ${deleting.email}? This cannot be undone.`
+                ? `Remover permanentemente ${deleting.email}? Esta ação não pode ser desfeita.`
                 : ""}
             </p>
           </div>
@@ -321,7 +321,7 @@ export default function UsersManagement({ users, currentUserId }: Props) {
           )}
           <div className="flex items-center gap-3 px-2 lg:justify-end">
             <Button size="sm" variant="outline" type="button" onClick={deleteModal.closeModal}>
-              Cancel
+              Cancelar
             </Button>
             <button
               type="button"
@@ -329,7 +329,7 @@ export default function UsersManagement({ users, currentUserId }: Props) {
               onClick={handleDelete}
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 text-sm font-medium text-white shadow-theme-xs hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {pending ? "Deleting…" : "Delete"}
+              {pending ? "Excluindo…" : "Excluir"}
             </button>
           </div>
         </div>

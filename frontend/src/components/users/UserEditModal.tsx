@@ -27,8 +27,8 @@ export default function UserEditModal({
   isOpen,
   onClose,
   onSaved,
-  title = "Edit user",
-  description = "Update user details. Leave password blank to keep the current password.",
+  title = "Editar usuário",
+  description = "Atualize os dados do usuário. Deixe a senha em branco para manter a senha atual.",
 }: Props) {
   const [editEmail, setEditEmail] = useState("");
   const [editPassword, setEditPassword] = useState("");
@@ -92,11 +92,11 @@ export default function UserEditModal({
           )}
           <div className="custom-scrollbar max-h-[450px] overflow-y-auto px-2 pb-3">
             <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
-              Personal information
+              Informações pessoais
             </h5>
             <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
               <div className="col-span-2 lg:col-span-1">
-                <Label>Email</Label>
+                <Label>E-mail</Label>
                 <Input
                   type="email"
                   required
@@ -106,35 +106,35 @@ export default function UserEditModal({
                 />
               </div>
               <div className="col-span-2 lg:col-span-1">
-                <Label>New password</Label>
+                <Label>Nova senha</Label>
                 <Input
                   type="password"
                   minLength={8}
-                  placeholder="Leave blank to keep current"
+                  placeholder="Deixe em branco para manter a atual"
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
                   autoComplete="new-password"
                 />
               </div>
               <div className="col-span-2 lg:col-span-1">
-                <Label>First name</Label>
+                <Label>Nome</Label>
                 <Input type="text" value={editFirst} onChange={(e) => setEditFirst(e.target.value)} />
               </div>
               <div className="col-span-2 lg:col-span-1">
-                <Label>Last name</Label>
+                <Label>Sobrenome</Label>
                 <Input type="text" value={editLast} onChange={(e) => setEditLast(e.target.value)} />
               </div>
               <div className="col-span-2">
-                <Checkbox label="Active" checked={editActive} onChange={setEditActive} />
+                <Checkbox label="Ativo" checked={editActive} onChange={setEditActive} />
               </div>
             </div>
           </div>
           <div className="mt-6 flex items-center gap-3 px-2 lg:justify-end">
             <Button size="sm" variant="outline" type="button" onClick={onClose}>
-              Close
+              Fechar
             </Button>
             <Button size="sm" type="submit" disabled={pending}>
-              {pending ? "Saving…" : "Save changes"}
+              {pending ? "Salvando…" : "Salvar alterações"}
             </Button>
           </div>
         </form>
