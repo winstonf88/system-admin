@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import {
   createCategoryAction,
@@ -12,7 +13,6 @@ import {
 } from "@/app/actions/categories";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
 
-import { CategoryMessages } from "./CategoryMessages";
 import { CategoryTreeSection } from "./CategoryTreeSection";
 import type { CategoryTreeNode } from "./types";
 import {
@@ -49,8 +49,6 @@ export default function CategoriesManager({ initialTree }: Props) {
   } | null>(null);
 
   const [pendingAction, setPendingAction] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const flatCategories = useMemo(() => flattenTree(tree), [tree]);
 
@@ -68,21 +66,6 @@ export default function CategoriesManager({ initialTree }: Props) {
       ),
     [flatCategories],
   );
-
-  const setMessage = (type: "error" | "success", message: string) => {
-    if (type === "error") {
-      setErrorMessage(message);
-      setSuccessMessage(null);
-      return;
-    }
-    setSuccessMessage(message);
-    setErrorMessage(null);
-  };
-
-  const clearMessages = () => {
-    setErrorMessage(null);
-    setSuccessMessage(null);
-  };
 
   const canDropInto = (
     targetParentId: number | null,
@@ -119,18 +102,18 @@ export default function CategoriesManager({ initialTree }: Props) {
       return;
     }
 
-    clearMessages();
+    toast.dismiss();
     setPendingAction(true);
     try {
       const result = await moveCategoryAction(draggedId, targetParentId);
       if (!result.ok) {
-        setMessage("error", result.error);
+        toast.error(result.error, { duration: 5000 });
         return;
       }
       setTree((current) =>
         buildUpdatedTree(current, draggedId, targetParentId),
       );
-      setMessage("success", "Categoria movida com sucesso.");
+      toast.success("Categoria movida com sucesso.", { duration: 3000 });
       router.refresh();
     } finally {
       setPendingAction(false);
@@ -203,7 +186,7 @@ export default function CategoriesManager({ initialTree }: Props) {
       return;
     }
 
-    clearMessages();
+    toast.dismiss();
     setPendingAction(true);
     try {
       const result = await reorderCategorySiblingsAction({
@@ -211,13 +194,13 @@ export default function CategoriesManager({ initialTree }: Props) {
         ordered_ids: orderedIds,
       });
       if (!result.ok) {
-        setMessage("error", result.error);
+        toast.error(result.error, { duration: 5000 });
         return;
       }
       setTree((current) =>
         reorderChildren(current, targetContext.parentId, orderedIds),
       );
-      setMessage("success", "Ordem atualizada com sucesso.");
+      toast.success("Ordem atualizada com sucesso.", { duration: 3000 });
       router.refresh();
     } finally {
       setPendingAction(false);
@@ -258,7 +241,7 @@ export default function CategoriesManager({ initialTree }: Props) {
     orderedIds[context.index] = orderedIds[targetIndex];
     orderedIds[targetIndex] = currentId;
 
-    clearMessages();
+    toast.dismiss();
     setPendingAction(true);
     try {
       const result = await reorderCategorySiblingsAction({
@@ -266,13 +249,13 @@ export default function CategoriesManager({ initialTree }: Props) {
         ordered_ids: orderedIds,
       });
       if (!result.ok) {
-        setMessage("error", result.error);
+        toast.error(result.error, { duration: 5000 });
         return;
       }
       setTree((current) =>
         reorderChildren(current, context.parentId, orderedIds),
       );
-      setMessage("success", "Ordem atualizada com sucesso.");
+      toast.success("Ordem atualizada com sucesso.", { duration: 3000 });
       router.refresh();
     } finally {
       setPendingAction(false);
@@ -289,7 +272,7 @@ export default function CategoriesManager({ initialTree }: Props) {
     setCreateChildDraftName("");
     setEditingId(id);
     setEditDraftName(node.name);
-    clearMessages();
+    toast.dismiss();
   };
 
   const handleStartCreateChild = (parentId: number) => {
@@ -302,7 +285,7 @@ export default function CategoriesManager({ initialTree }: Props) {
       next.delete(parentId);
       return next;
     });
-    clearMessages();
+    toast.dismiss();
   };
 
   const handleCancelCreateChild = () => {
@@ -313,11 +296,11 @@ export default function CategoriesManager({ initialTree }: Props) {
   const handleSaveCreateChild = async (parentId: number) => {
     const trimmed = createChildDraftName.trim();
     if (!trimmed) {
-      setMessage("error", "Informe um nome para a subcategoria.");
+      toast.error("Informe um nome para a subcategoria.", { duration: 5000 });
       return;
     }
 
-    clearMessages();
+    toast.dismiss();
     setPendingAction(true);
     try {
       const result = await createCategoryAction({
@@ -325,7 +308,7 @@ export default function CategoriesManager({ initialTree }: Props) {
         parent_id: parentId,
       });
       if (!result.ok) {
-        setMessage("error", result.error);
+        toast.error(result.error, { duration: 5000 });
         return;
       }
       const newNode: CategoryTreeNode = {
@@ -337,7 +320,7 @@ export default function CategoriesManager({ initialTree }: Props) {
       setTree((current) => insertNode(current, parentId, newNode));
       setCreatingChildUnderId(null);
       setCreateChildDraftName("");
-      setMessage("success", "Subcategoria criada com sucesso.");
+      toast.success("Subcategoria criada com sucesso.", { duration: 3000 });
       router.refresh();
     } finally {
       setPendingAction(false);
@@ -356,7 +339,9 @@ export default function CategoriesManager({ initialTree }: Props) {
     }
     const trimmed = editDraftName.trim();
     if (!trimmed) {
-      setMessage("error", "O nome da categoria não pode ficar vazio.");
+      toast.error("O nome da categoria não pode ficar vazio.", {
+        duration: 5000,
+      });
       return;
     }
 
@@ -365,14 +350,14 @@ export default function CategoriesManager({ initialTree }: Props) {
       return;
     }
 
-    clearMessages();
+    toast.dismiss();
     setPendingAction(true);
     try {
       const result = await updateCategoryAction(categoryId, {
         name: trimmed,
       });
       if (!result.ok) {
-        setMessage("error", result.error);
+        toast.error(result.error, { duration: 5000 });
         return;
       }
 
@@ -388,7 +373,7 @@ export default function CategoriesManager({ initialTree }: Props) {
 
       setEditingId(null);
       setEditDraftName("");
-      setMessage("success", "Categoria atualizada com sucesso.");
+      toast.success("Categoria atualizada com sucesso.", { duration: 3000 });
       router.refresh();
     } finally {
       setPendingAction(false);
@@ -407,12 +392,12 @@ export default function CategoriesManager({ initialTree }: Props) {
       return;
     }
 
-    clearMessages();
+    toast.dismiss();
     setPendingAction(true);
     try {
       const result = await deleteCategoryAction(categoryId);
       if (!result.ok) {
-        setMessage("error", result.error);
+        toast.error(result.error, { duration: 5000 });
         return;
       }
       setTree((current) => removeNode(current, categoryId).tree);
@@ -424,7 +409,7 @@ export default function CategoriesManager({ initialTree }: Props) {
         setCreatingChildUnderId(null);
         setCreateChildDraftName("");
       }
-      setMessage("success", "Categoria excluída com sucesso.");
+      toast.success("Categoria excluída com sucesso.", { duration: 3000 });
       router.refresh();
     } finally {
       setPendingAction(false);
@@ -529,11 +514,6 @@ export default function CategoriesManager({ initialTree }: Props) {
           setHoveredParentId(null);
           void handleDrop(draggedId, null);
         }}
-      />
-
-      <CategoryMessages
-        errorMessage={errorMessage}
-        successMessage={successMessage}
       />
     </div>
   );

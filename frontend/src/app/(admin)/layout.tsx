@@ -2,6 +2,7 @@
 
 import { AuthSessionProvider } from "@/context/AuthSessionContext";
 import { useSidebar } from "@/context/SidebarContext";
+import { AppToaster } from "@/components/common/AppToaster";
 import AppHeader from "@/layout/AppHeader";
 import AppSidebar from "@/layout/AppSidebar";
 import Backdrop from "@/layout/Backdrop";
@@ -35,6 +36,7 @@ export default function AdminLayout({
           <AppHeader />
           {/* Page Content */}
           <div className="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6">
+            <AppToaster />
             {children}
           </div>
         </div>

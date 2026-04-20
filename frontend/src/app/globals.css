@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "sonner/dist/styles.css";
 
 @custom-variant dark (&:is(.dark *));
 
