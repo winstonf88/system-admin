@@ -49,6 +49,7 @@ export default function CategoriesManager({ initialTree }: Props) {
   const [creatingChildUnderId, setCreatingChildUnderId] = useState<
     number | null
   >(null);
+  const [creatingRoot, setCreatingRoot] = useState(false);
   const [createChildDraftName, setCreateChildDraftName] = useState("");
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(new Set());
   const [draggingId, setDraggingId] = useState<number | null>(null);
@@ -320,64 +321,12 @@ export default function CategoriesManager({ initialTree }: Props) {
     clearDragState();
   };
 
-  const canMoveNode = (categoryId: number, direction: "up" | "down") => {
-    const context = siblingContext(tree, categoryId);
-    if (!context) {
-      return false;
-    }
-    if (direction === "up") {
-      return context.index > 0;
-    }
-    return context.index < context.siblingIds.length - 1;
-  };
-
-  const reorderCategoryById = async (
-    categoryId: number,
-    direction: "up" | "down",
-  ) => {
-    const context = siblingContext(tree, categoryId);
-    if (!context) {
-      return;
-    }
-
-    const targetIndex =
-      direction === "up" ? context.index - 1 : context.index + 1;
-    if (targetIndex < 0 || targetIndex >= context.siblingIds.length) {
-      return;
-    }
-
-    const orderedIds = [...context.siblingIds];
-    const currentId = orderedIds[context.index];
-    orderedIds[context.index] = orderedIds[targetIndex];
-    orderedIds[targetIndex] = currentId;
-
-    toast.dismiss();
-    setPendingAction(true);
-    try {
-      const result = await reorderCategorySiblingsAction({
-        parent_id: context.parentId,
-        ordered_ids: orderedIds,
-      });
-      if (!result.ok) {
-        toast.error(result.error, { duration: 5000 });
-        return;
-      }
-      setTree((current) =>
-        reorderChildren(current, context.parentId, orderedIds),
-      );
-      toast.success("Ordem atualizada com sucesso.", { duration: 3000 });
-      router.refresh();
-    } finally {
-      setPendingAction(false);
-      setHoveredSiblingDrop(null);
-    }
-  };
-
   const handleStartEdit = (id: number) => {
     const node = findNode(tree, id);
     if (!node) {
       return;
     }
+    setCreatingRoot(false);
     setCreatingChildUnderId(null);
     setCreateChildDraftName("");
     setEditingId(id);
@@ -386,6 +335,7 @@ export default function CategoriesManager({ initialTree }: Props) {
   };
 
   const handleStartCreateChild = (parentId: number) => {
+    setCreatingRoot(false);
     setEditingId(null);
     setEditDraftName("");
     setCreatingChildUnderId(parentId);
@@ -401,6 +351,54 @@ export default function CategoriesManager({ initialTree }: Props) {
   const handleCancelCreateChild = () => {
     setCreatingChildUnderId(null);
     setCreateChildDraftName("");
+  };
+
+  const handleStartCreateRoot = () => {
+    setEditingId(null);
+    setEditDraftName("");
+    setCreatingChildUnderId(null);
+    setCreatingRoot(true);
+    setCreateChildDraftName("");
+    toast.dismiss();
+  };
+
+  const handleCancelCreateRoot = () => {
+    setCreatingRoot(false);
+    setCreateChildDraftName("");
+  };
+
+  const handleSaveCreateRoot = async () => {
+    const trimmed = createChildDraftName.trim();
+    if (!trimmed) {
+      toast.error("Informe um nome para a categoria.", { duration: 5000 });
+      return;
+    }
+
+    toast.dismiss();
+    setPendingAction(true);
+    try {
+      const result = await createCategoryAction({
+        name: trimmed,
+        parent_id: null,
+      });
+      if (!result.ok) {
+        toast.error(result.error, { duration: 5000 });
+        return;
+      }
+      const newNode: CategoryTreeNode = {
+        id: result.category.id,
+        name: result.category.name,
+        parent_id: result.category.parent_id,
+        subcategories: [],
+      };
+      setTree((current) => insertNode(current, null, newNode));
+      setCreatingRoot(false);
+      setCreateChildDraftName("");
+      toast.success("Categoria criada com sucesso.", { duration: 3000 });
+      router.refresh();
+    } finally {
+      setPendingAction(false);
+    }
   };
 
   const handleSaveCreateChild = async (parentId: number) => {
@@ -552,9 +550,9 @@ export default function CategoriesManager({ initialTree }: Props) {
         hoveredSiblingDrop={hoveredSiblingDrop}
         pendingAction={pendingAction}
         canDropInto={canDropInto}
-        canMoveNode={canMoveNode}
         getDropZoneEnabled={getDropZoneEnabled}
         dragOverlayLabel={dragOverlayLabel}
+        creatingRoot={creatingRoot}
         creatingChildUnderId={creatingChildUnderId}
         createChildDraftName={createChildDraftName}
         onEditDraftChange={setEditDraftName}
@@ -562,13 +560,13 @@ export default function CategoriesManager({ initialTree }: Props) {
         onSaveEdit={handleSaveCategoryName}
         onCancelEdit={handleCancelEdit}
         onCreateChildDraftChange={setCreateChildDraftName}
+        onStartCreateRoot={handleStartCreateRoot}
+        onSaveCreateRoot={handleSaveCreateRoot}
+        onCancelCreateRoot={handleCancelCreateRoot}
         onStartCreateChild={handleStartCreateChild}
         onSaveCreateChild={handleSaveCreateChild}
         onCancelCreateChild={handleCancelCreateChild}
         onDelete={handleDeleteCategory}
-        onReorderNode={(categoryId, direction) => {
-          void reorderCategoryById(categoryId, direction);
-        }}
         onToggleCollapsed={toggleCollapsed}
         onDndDragStart={handleDndDragStart}
         onDndDragOver={handleDndDragOver}

@@ -2,14 +2,7 @@ import { useEffect } from "react";
 import { useDraggable, useDroppable, useDndContext } from "@dnd-kit/core";
 
 import Button from "@/components/ui/button/Button";
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  MoreDotIcon,
-  PencilIcon,
-  PlusIcon,
-  TrashBinIcon,
-} from "@/icons";
+import { MoreDotIcon, PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
 
 import type { CategoryDropZone } from "./category-dnd-ids";
 import { categoryDragId, categoryDropId } from "./category-dnd-ids";
@@ -26,7 +19,6 @@ export type TreeNodeProps = {
   hoveredSiblingDrop: { targetId: number; position: "before" | "after" } | null;
   pendingAction: boolean;
   canDropInto: (targetParentId: number | null, draggedId: number) => boolean;
-  canMoveNode: (categoryId: number, direction: "up" | "down") => boolean;
   getDropZoneEnabled: (
     targetCategoryId: number,
     zone: CategoryDropZone,
@@ -36,13 +28,14 @@ export type TreeNodeProps = {
   onSaveEdit: (id: number) => void;
   onCancelEdit: () => void;
   creatingChildUnderId: number | null;
+  /** When true, root inline create is active; tree actions should be blocked. */
+  creatingRoot: boolean;
   createChildDraftName: string;
   onCreateChildDraftChange: (value: string) => void;
   onStartCreateChild: (parentId: number) => void;
   onSaveCreateChild: (parentId: number) => void;
   onCancelCreateChild: () => void;
   onDelete: (id: number) => void;
-  onReorderNode: (categoryId: number, direction: "up" | "down") => void;
   onToggleCollapsed: (id: number) => void;
 };
 
@@ -81,20 +74,19 @@ export function TreeNode({
   hoveredSiblingDrop,
   pendingAction,
   canDropInto,
-  canMoveNode,
   getDropZoneEnabled,
   onEditDraftChange,
   onStartEdit,
   onSaveEdit,
   onCancelEdit,
   creatingChildUnderId,
+  creatingRoot,
   createChildDraftName,
   onCreateChildDraftChange,
   onStartCreateChild,
   onSaveCreateChild,
   onCancelCreateChild,
   onDelete,
-  onReorderNode,
   onToggleCollapsed,
 }: TreeNodeProps) {
   const isEditing = editingId === node.id;
@@ -104,7 +96,7 @@ export function TreeNode({
   const isCollapsed = collapsedIds.has(node.id);
   const hasChildren = node.subcategories.length > 0;
   const showSubTree = (hasChildren && !isCollapsed) || isCreatingChildHere;
-  const blockActions = creatingChildUnderId !== null;
+  const blockActions = creatingChildUnderId !== null || creatingRoot;
   const isHoveredDropTarget =
     draggingId !== null &&
     hoveredParentId === node.id &&
@@ -282,73 +274,8 @@ export function TreeNode({
                   <span className="truncate text-sm font-medium text-gray-800 dark:text-white/90">
                     {node.name}
                   </span>
-                  <button
-                    type="button"
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onStartEdit(node.id);
-                    }}
-                    disabled={pendingAction || blockActions}
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-visible rounded-md text-gray-500 transition hover:bg-gray-200/80 hover:text-gray-800 disabled:opacity-40 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-                    aria-label="Editar nome"
-                    title="Editar nome"
-                  >
-                    <PencilIcon
-                      width={18}
-                      height={18}
-                      className="pointer-events-none block shrink-0 overflow-visible text-current"
-                      aria-hidden
-                    />
-                  </button>
                 </div>
                 <div className="flex shrink-0 items-center gap-1 overflow-visible">
-                  <button
-                    type="button"
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onReorderNode(node.id, "up");
-                    }}
-                    disabled={
-                      pendingAction ||
-                      blockActions ||
-                      !canMoveNode(node.id, "up")
-                    }
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-                    aria-label="Subir categoria"
-                    title="Subir"
-                  >
-                    <ArrowUpIcon
-                      width={16}
-                      height={16}
-                      className="pointer-events-none block shrink-0 text-current"
-                      aria-hidden
-                    />
-                  </button>
-                  <button
-                    type="button"
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onReorderNode(node.id, "down");
-                    }}
-                    disabled={
-                      pendingAction ||
-                      blockActions ||
-                      !canMoveNode(node.id, "down")
-                    }
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-                    aria-label="Descer categoria"
-                    title="Descer"
-                  >
-                    <ArrowDownIcon
-                      width={16}
-                      height={16}
-                      className="pointer-events-none block shrink-0 text-current"
-                      aria-hidden
-                    />
-                  </button>
                   <button
                     type="button"
                     onPointerDown={(event) => event.stopPropagation()}
@@ -373,6 +300,25 @@ export function TreeNode({
                     onPointerDown={(event) => event.stopPropagation()}
                     onClick={(event) => {
                       event.stopPropagation();
+                      onStartEdit(node.id);
+                    }}
+                    disabled={pendingAction || blockActions}
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-visible rounded-md border border-gray-200 text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                    aria-label="Editar nome"
+                    title="Editar nome"
+                  >
+                    <PencilIcon
+                      width={18}
+                      height={18}
+                      className="pointer-events-none block shrink-0 overflow-visible text-current"
+                      aria-hidden
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => {
+                      event.stopPropagation();
                       onDelete(node.id);
                     }}
                     disabled={pendingAction || blockActions}
@@ -387,9 +333,6 @@ export function TreeNode({
                       aria-hidden
                     />
                   </button>
-                  <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                    #{node.id}
-                  </span>
                 </div>
               </>
             )}
@@ -466,6 +409,7 @@ export function TreeNode({
                 editingId={editingId}
                 editDraftName={editDraftName}
                 creatingChildUnderId={creatingChildUnderId}
+                creatingRoot={creatingRoot}
                 createChildDraftName={createChildDraftName}
                 collapsedIds={collapsedIds}
                 draggingId={draggingId}
@@ -473,7 +417,6 @@ export function TreeNode({
                 hoveredSiblingDrop={hoveredSiblingDrop}
                 pendingAction={pendingAction}
                 canDropInto={canDropInto}
-                canMoveNode={canMoveNode}
                 getDropZoneEnabled={getDropZoneEnabled}
                 onEditDraftChange={onEditDraftChange}
                 onStartEdit={onStartEdit}
@@ -484,7 +427,6 @@ export function TreeNode({
                 onSaveCreateChild={onSaveCreateChild}
                 onCancelCreateChild={onCancelCreateChild}
                 onDelete={onDelete}
-                onReorderNode={onReorderNode}
                 onToggleCollapsed={onToggleCollapsed}
               />
             ))}

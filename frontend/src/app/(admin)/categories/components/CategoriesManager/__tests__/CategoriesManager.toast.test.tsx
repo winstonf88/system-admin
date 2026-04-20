@@ -44,14 +44,25 @@ vi.mock("@/app/actions/categories", () => ({
 
 vi.mock("../CategoryTreeSection", () => ({
   CategoryTreeSection: ({
-    onDrop,
+    onDndDragEnd,
     onSaveCreateChild,
   }: {
-    onDrop: (draggedId: number, parentId: number | null) => void;
+    onDndDragEnd: (event: {
+      active: { id: string };
+      over: { id: string } | null;
+    }) => void;
     onSaveCreateChild: (parentId: number) => void | Promise<void>;
   }) => (
     <div>
-      <button type="button" onClick={() => onDrop(2, null)}>
+      <button
+        type="button"
+        onClick={() =>
+          onDndDragEnd({
+            active: { id: "category-drag-2" },
+            over: { id: "category-drop-root" },
+          })
+        }
+      >
         move-to-root
       </button>
       <button
