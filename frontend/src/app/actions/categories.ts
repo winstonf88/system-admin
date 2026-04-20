@@ -31,6 +31,8 @@ export type CreateCategoryResult =
   | { ok: true; category: CategoryOption }
   | { ok: false; error: string };
 
+export type CategoryActionResult = { ok: true } | { ok: false; error: string };
+
 export async function createCategoryAction(input: {
   name: string;
   parent_id: number | null;
@@ -51,5 +53,96 @@ export async function createCategoryAction(input: {
   }
   const category = (await res.json()) as CategoryOption;
   revalidatePath("/products", "layout");
+  revalidatePath("/categories", "page");
   return { ok: true, category };
+}
+
+export async function updateCategoryAction(
+  categoryId: number,
+  input: {
+    name?: string;
+    parent_id?: number | null;
+  },
+): Promise<CreateCategoryResult> {
+  const payload: { name?: string; parent_id?: number | null } = {};
+  if (typeof input.name === "string") {
+    payload.name = input.name.trim();
+  }
+  if ("parent_id" in input) {
+    payload.parent_id = input.parent_id ?? null;
+  }
+
+  const res = await fetchBackendAuthenticated(`/api/categories/${categoryId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (res === null) {
+    return { ok: false, error: "Não autenticado. Entre novamente." };
+  }
+  if (!res.ok) {
+    return { ok: false, error: await errorMessage(res) };
+  }
+  const category = (await res.json()) as CategoryOption;
+  revalidatePath("/products", "layout");
+  revalidatePath("/categories", "page");
+  return { ok: true, category };
+}
+
+export async function deleteCategoryAction(categoryId: number): Promise<CategoryActionResult> {
+  const res = await fetchBackendAuthenticated(`/api/categories/${categoryId}`, {
+    method: "DELETE",
+  });
+  if (res === null) {
+    return { ok: false, error: "Não autenticado. Entre novamente." };
+  }
+  if (!res.ok) {
+    return { ok: false, error: await errorMessage(res) };
+  }
+  revalidatePath("/products", "layout");
+  revalidatePath("/categories", "page");
+  return { ok: true };
+}
+
+export async function moveCategoryAction(
+  categoryId: number,
+  parentId: number | null,
+): Promise<CategoryActionResult> {
+  const res = await fetchBackendAuthenticated(`/api/categories/${categoryId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ parent_id: parentId }),
+  });
+  if (res === null) {
+    return { ok: false, error: "Não autenticado. Entre novamente." };
+  }
+  if (!res.ok) {
+    return { ok: false, error: await errorMessage(res) };
+  }
+  revalidatePath("/products", "layout");
+  revalidatePath("/categories", "page");
+  return { ok: true };
+}
+
+export async function reorderCategorySiblingsAction(input: {
+  parent_id: number | null;
+  ordered_ids: number[];
+}): Promise<CategoryActionResult> {
+  const res = await fetchBackendAuthenticated("/api/categories/order", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      parent_id: input.parent_id,
+      ordered_ids: input.ordered_ids,
+    }),
+  });
+  if (res === null) {
+    return { ok: false, error: "Não autenticado. Entre novamente." };
+  }
+  if (!res.ok) {
+    return { ok: false, error: await errorMessage(res) };
+  }
+  revalidatePath("/products", "layout");
+  revalidatePath("/categories", "page");
+  return { ok: true };
 }

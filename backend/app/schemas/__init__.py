@@ -2,6 +2,7 @@ from app.schemas.auth import AuthSessionRead
 from app.schemas.tenant import TenantRead, TenantUpdate
 from app.schemas.categories import (
     CategoryCreate,
+    CategoryReorder,
     CategoryRead,
     CategoryTreeRead,
     CategoryUpdate,
@@ -25,6 +26,7 @@ __all__ = [
     "TenantRead",
     "TenantUpdate",
     "CategoryCreate",
+    "CategoryReorder",
     "CategoryRead",
     "CategoryTreeRead",
     "CategoryUpdate",

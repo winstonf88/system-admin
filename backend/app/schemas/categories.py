@@ -21,7 +21,13 @@ class CategoryRead(BaseModel):
     id: int
     name: str
     parent_id: int | None
+    sort_order: int
 
 
 class CategoryTreeRead(CategoryRead):
     subcategories: list["CategoryTreeRead"] = Field(default_factory=list)
+
+
+class CategoryReorder(BaseModel):
+    parent_id: int | None = None
+    ordered_ids: list[int] = Field(min_length=1)

@@ -23,6 +23,7 @@ class Category(Base):
     tenant_id: Mapped[int] = mapped_column(nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     parent_id: Mapped[int | None] = mapped_column(nullable=True, index=True)
+    sort_order: Mapped[int] = mapped_column(nullable=False, default=0)
 
     parent: Mapped[Category | None] = relationship(
         "Category",

@@ -1,11 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_utils.cbv import cbv
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import TenantContext, get_db, get_tenant_context
 from app.models import Category, ProductCategory
-from app.schemas import CategoryCreate, CategoryRead, CategoryTreeRead, CategoryUpdate
+from app.schemas import (
+    CategoryCreate,
+    CategoryRead,
+    CategoryReorder,
+    CategoryTreeRead,
+    CategoryUpdate,
+)
 
 router = APIRouter(prefix="/api/categories", tags=["categories"])
 
@@ -15,6 +21,14 @@ class CategoryView:
     db: AsyncSession = Depends(get_db)
     tenant_context: TenantContext = Depends(get_tenant_context)
 
+    def _siblings_where(self, parent_id: int | None):
+        filters = [Category.tenant_id == self.tenant_context.tenant_id]
+        if parent_id is None:
+            filters.append(Category.parent_id.is_(None))
+        else:
+            filters.append(Category.parent_id == parent_id)
+        return filters
+
     async def _get_category(self, category_id: int) -> Category | None:
         result = await self.db.execute(
             select(Category).where(
@@ -23,6 +37,33 @@ class CategoryView:
             )
         )
         return result.scalar_one_or_none()
+
+    async def _get_category_or_404(self, category_id: int) -> Category:
+        category = await self._get_category(category_id)
+        if category is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria não encontrada.")
+        return category
+
+    async def _list_siblings(self, parent_id: int | None) -> list[Category]:
+        result = await self.db.execute(
+            select(Category)
+            .where(*self._siblings_where(parent_id))
+            .order_by(Category.sort_order.asc(), Category.name.asc(), Category.id.asc())
+        )
+        return list(result.scalars().all())
+
+    async def _next_sort_order(self, parent_id: int | None) -> int:
+        value = await self.db.scalar(
+            select(func.coalesce(func.max(Category.sort_order), -1)).where(
+                *self._siblings_where(parent_id)
+            )
+        )
+        return int(value) + 1
+
+    async def _normalize_sibling_order(self, parent_id: int | None) -> None:
+        siblings = await self._list_siblings(parent_id)
+        for idx, sibling in enumerate(siblings):
+            sibling.sort_order = idx
 
     async def _validate_parent(
         self,
@@ -52,12 +93,6 @@ class CategoryView:
                 if cursor is None:
                     break
 
-    async def _get_category_or_404(self, category_id: int) -> Category:
-        category = await self._get_category(category_id)
-        if category is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria não encontrada.")
-        return category
-
     @router.post("/", response_model=CategoryRead, status_code=status.HTTP_201_CREATED)
     async def create_category(self, payload: CategoryCreate) -> Category:
         await self._validate_parent(payload.parent_id)
@@ -65,6 +100,7 @@ class CategoryView:
             tenant_id=self.tenant_context.tenant_id,
             name=payload.name,
             parent_id=payload.parent_id,
+            sort_order=await self._next_sort_order(payload.parent_id),
         )
         self.db.add(category)
         await self.db.commit()
@@ -76,7 +112,7 @@ class CategoryView:
         result = await self.db.execute(
             select(Category)
             .where(Category.tenant_id == self.tenant_context.tenant_id)
-            .order_by(Category.name.asc())
+            .order_by(Category.parent_id.asc(), Category.sort_order.asc(), Category.name.asc(), Category.id.asc())
         )
         return list(result.scalars().all())
 
@@ -85,12 +121,17 @@ class CategoryView:
         result = await self.db.execute(
             select(Category)
             .where(Category.tenant_id == self.tenant_context.tenant_id)
-            .order_by(Category.name.asc())
+            .order_by(Category.parent_id.asc(), Category.sort_order.asc(), Category.name.asc(), Category.id.asc())
         )
         categories = list(result.scalars().all())
 
         node_map: dict[int, CategoryTreeRead] = {
-            category.id: CategoryTreeRead(id=category.id, name=category.name, parent_id=category.parent_id)
+            category.id: CategoryTreeRead(
+                id=category.id,
+                name=category.name,
+                parent_id=category.parent_id,
+                sort_order=category.sort_order,
+            )
             for category in categories
         }
         roots: list[CategoryTreeRead] = []
@@ -104,6 +145,23 @@ class CategoryView:
 
         return roots
 
+    @router.put("/order", response_model=list[CategoryRead])
+    async def reorder_siblings(self, payload: CategoryReorder) -> list[Category]:
+        siblings = await self._list_siblings(payload.parent_id)
+        current_ids = [category.id for category in siblings]
+        if set(current_ids) != set(payload.ordered_ids) or len(current_ids) != len(payload.ordered_ids):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A nova ordem deve conter exatamente as categorias irmãs atuais.",
+            )
+
+        category_by_id = {category.id: category for category in siblings}
+        for idx, category_id in enumerate(payload.ordered_ids):
+            category_by_id[category_id].sort_order = idx
+
+        await self.db.commit()
+        return await self._list_siblings(payload.parent_id)
+
     @router.get("/{category_id}", response_model=CategoryRead)
     async def get_category(self, category_id: int) -> Category:
         return await self._get_category_or_404(category_id)
@@ -116,9 +174,13 @@ class CategoryView:
     ) -> Category:
         category = await self._get_category_or_404(category_id)
 
-        if "parent_id" in payload.model_fields_set:
+        if "parent_id" in payload.model_fields_set and payload.parent_id != category.parent_id:
             await self._validate_parent(payload.parent_id, category_id=category_id)
+            old_parent_id = category.parent_id
             category.parent_id = payload.parent_id
+            category.sort_order = await self._next_sort_order(payload.parent_id)
+            await self.db.flush()
+            await self._normalize_sibling_order(old_parent_id)
 
         if payload.name is not None:
             category.name = payload.name
@@ -159,5 +221,8 @@ class CategoryView:
                 detail="Exclua ou mova os produtos antes de excluir esta categoria.",
             )
 
+        old_parent_id = category.parent_id
         await self.db.delete(category)
+        await self.db.flush()
+        await self._normalize_sibling_order(old_parent_id)
         await self.db.commit()

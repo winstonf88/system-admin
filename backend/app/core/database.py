@@ -1,5 +1,7 @@
 from collections.abc import AsyncGenerator
+from typing import Any
 
+from sqlalchemy import inspect
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -45,6 +47,49 @@ async def migrate_legacy_product_images(connection) -> None:
         )
         """)
     )
+
+
+def _has_column(connection, table_name: str, column_name: str) -> bool:
+    inspector = inspect(connection)
+    columns: list[dict[str, Any]] = inspector.get_columns(table_name)
+    return any(column.get("name") == column_name for column in columns)
+
+
+async def migrate_category_sort_order(connection) -> None:
+    """Add and initialize ``categories.sort_order`` if it does not exist."""
+
+    has_sort_order = await connection.run_sync(
+        lambda sync_connection: _has_column(sync_connection, "categories", "sort_order")
+    )
+    if has_sort_order:
+        return
+
+    await connection.execute(
+        text("ALTER TABLE categories ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0")
+    )
+    rows = await connection.execute(
+        text("""
+        SELECT id, parent_id
+        FROM categories
+        ORDER BY
+            CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END,
+            parent_id,
+            id
+        """)
+    )
+
+    next_sort_order: dict[int | None, int] = {}
+    updates: list[dict[str, int]] = []
+    for category_id, parent_id in rows.fetchall():
+        idx = next_sort_order.get(parent_id, 0)
+        updates.append({"id": int(category_id), "sort_order": idx})
+        next_sort_order[parent_id] = idx + 1
+
+    if updates:
+        await connection.execute(
+            text("UPDATE categories SET sort_order = :sort_order WHERE id = :id"),
+            updates,
+        )
 
 
 async def check_db_connection() -> None:

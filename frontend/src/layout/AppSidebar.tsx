@@ -13,15 +13,17 @@ type NavItem = {
   path?: string;
   /** When true, active if pathname equals `path` or starts with `path/` (nested routes). */
   matchPrefix?: boolean;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+  subItems?: { name: string; path: string; pro?: boolean; new?: boolean; matchPrefix?: boolean }[];
 };
 
 const navItems: NavItem[] = [
   {
     icon: <BoxCubeIcon />,
     name: "Produtos",
-    path: "/products",
-    matchPrefix: true,
+    subItems: [
+      { name: "Todos os produtos", path: "/products", matchPrefix: true },
+      { name: "Categorias", path: "/categories" },
+    ],
   },
   {
     icon: <UserCircleIcon />,
@@ -154,7 +156,7 @@ const AppSidebar: React.FC = () => {
                     <Link
                       href={subItem.path}
                       className={`menu-dropdown-item ${
-                        pathIsActive(subItem.path)
+                        pathIsActive(subItem.path, subItem.matchPrefix)
                           ? "menu-dropdown-item-active"
                           : "menu-dropdown-item-inactive"
                       }`}
@@ -164,7 +166,7 @@ const AppSidebar: React.FC = () => {
                         {subItem.new && (
                           <span
                             className={`ml-auto ${
-                              pathIsActive(subItem.path)
+                              pathIsActive(subItem.path, subItem.matchPrefix)
                                 ? "menu-dropdown-badge-active"
                                 : "menu-dropdown-badge-inactive"
                             } menu-dropdown-badge `}
@@ -175,7 +177,7 @@ const AppSidebar: React.FC = () => {
                         {subItem.pro && (
                           <span
                             className={`ml-auto ${
-                              pathIsActive(subItem.path)
+                              pathIsActive(subItem.path, subItem.matchPrefix)
                                 ? "menu-dropdown-badge-active"
                                 : "menu-dropdown-badge-inactive"
                             } menu-dropdown-badge `}
@@ -222,7 +224,7 @@ const AppSidebar: React.FC = () => {
       items.forEach((nav, index) => {
         if (nav.subItems) {
           nav.subItems.forEach((subItem) => {
-            if (pathIsActive(subItem.path)) {
+            if (pathIsActive(subItem.path, subItem.matchPrefix)) {
               setOpenSubmenu({
                 type: menuType as "main" | "others",
                 index,
