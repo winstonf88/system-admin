@@ -1,3 +1,4 @@
+import { AuthSessionProvider } from "@/context/AuthSessionContext";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -67,7 +68,11 @@ describe("UserDropdown", () => {
 
   it("loads session and signs out via API + navigation", async () => {
     const user = userEvent.setup();
-    render(<UserDropdown />);
+    render(
+      <AuthSessionProvider>
+        <UserDropdown />
+      </AuthSessionProvider>,
+    );
 
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalled();

@@ -1,9 +1,10 @@
 "use client";
 import UserEditModal from "@/components/users/UserEditModal";
 import type { UserRow } from "@/components/users/user-types";
+import { useAuthSession } from "@/context/AuthSessionContext";
 import { useModal } from "@/hooks/useModal";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import AvatarText from "@/components/ui/avatar/AvatarText";
 import type { AuthSession } from "@/lib/auth-session";
 import { Dropdown } from "../ui/dropdown/Dropdown";
@@ -38,49 +39,9 @@ function avatarLabel(session: AuthSession): string {
 export default function UserDropdown() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [session, setSession] = useState<AuthSession | null>(null);
-  const [sessionLoaded, setSessionLoaded] = useState(false);
+  const { session, sessionLoaded, refreshSession } = useAuthSession();
   const editProfileModal = useModal();
   const [profileEditUser, setProfileEditUser] = useState<UserRow | null>(null);
-
-  const refreshSession = async () => {
-    try {
-      const res = await fetch("/api/auth/session", { credentials: "include" });
-      if (res.ok) {
-        setSession((await res.json()) as AuthSession);
-      }
-    } catch {
-      /* ignore */
-    }
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await fetch("/api/auth/session", { credentials: "include" });
-        if (cancelled) {
-          return;
-        }
-        if (res.ok) {
-          setSession((await res.json()) as AuthSession);
-        } else {
-          setSession(null);
-        }
-      } catch {
-        if (!cancelled) {
-          setSession(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setSessionLoaded(true);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   function toggleDropdown(e: React.MouseEvent<HTMLButtonElement>) {
     e.stopPropagation();

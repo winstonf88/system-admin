@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { AUTH_SESSION_REFRESH_EVENT, type AuthSession } from "@/lib/auth-session";
+import { useAuthSession } from "@/context/AuthSessionContext";
 import { useSidebar } from "../context/SidebarContext";
 import { BoxCubeIcon, ChevronDownIcon, GearIcon, HorizontaLDots, UserCircleIcon } from "../icons/index";
 
@@ -42,32 +42,8 @@ const othersItems: NavItem[] = [];
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
-  const [tenantName, setTenantName] = useState<string | null>(null);
-
-  const loadTenantName = useCallback(async () => {
-    try {
-      const res = await fetch("/api/auth/session", { credentials: "include" });
-      if (!res.ok) {
-        return;
-      }
-      const data = (await res.json()) as AuthSession;
-      setTenantName(data.tenant_name || null);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadTenantName();
-  }, [loadTenantName, pathname]);
-
-  useEffect(() => {
-    const onRefresh = () => {
-      void loadTenantName();
-    };
-    window.addEventListener(AUTH_SESSION_REFRESH_EVENT, onRefresh);
-    return () => window.removeEventListener(AUTH_SESSION_REFRESH_EVENT, onRefresh);
-  }, [loadTenantName]);
+  const { session } = useAuthSession();
+  const tenantName = session?.tenant_name ?? null;
 
   const renderMenuItems = (
     navItems: NavItem[],
