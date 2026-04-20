@@ -11,7 +11,9 @@ async def test_get_tenant_requires_auth(client) -> None:
     assert response.status_code == 401
 
 
-async def test_get_tenant_ok(client, session_maker: async_sessionmaker[AsyncSession]) -> None:
+async def test_get_tenant_ok(
+    client, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
     await seed_two_tenant_users(session_maker)
     response = await client.get("/api/tenant/", auth=AUTH_TENANT_ONE)
     assert response.status_code == 200

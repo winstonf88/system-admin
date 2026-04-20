@@ -6,7 +6,13 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from app.routers import auth_router, categories_router, products_router, tenant_router, users_router
+from app.routers import (
+    auth_router,
+    categories_router,
+    products_router,
+    tenant_router,
+    users_router,
+)
 from app.core.database import get_db
 from app.models import Base
 
@@ -51,5 +57,7 @@ async def app(session_maker: async_sessionmaker[AsyncSession]) -> FastAPI:
 
 @pytest_asyncio.fixture
 async def client(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
         yield client

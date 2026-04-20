@@ -1,7 +1,11 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from tests.app.models.factories import AUTH_TENANT_ONE, AUTH_TENANT_TWO, seed_two_tenant_users
+from tests.app.models.factories import (
+    AUTH_TENANT_ONE,
+    AUTH_TENANT_TWO,
+    seed_two_tenant_users,
+)
 
 pytestmark = pytest.mark.asyncio
 
@@ -25,7 +29,9 @@ async def test_list_users_requires_auth(client) -> None:
     assert response.status_code == 401
 
 
-async def test_create_user(client, session_maker: async_sessionmaker[AsyncSession]) -> None:
+async def test_create_user(
+    client, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
     await seed_two_tenant_users(session_maker)
     response = await client.post(
         "/api/users/",
@@ -58,7 +64,9 @@ async def test_create_user_duplicate_email(
     assert response.status_code == 409
 
 
-async def test_update_user(client, session_maker: async_sessionmaker[AsyncSession]) -> None:
+async def test_update_user(
+    client, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
     await seed_two_tenant_users(session_maker)
     users = (await client.get("/api/users/", auth=AUTH_TENANT_ONE)).json()
     u1 = next(u for u in users if u["email"] == "u1@test.com")
@@ -71,7 +79,9 @@ async def test_update_user(client, session_maker: async_sessionmaker[AsyncSessio
     assert response.json()["first_name"] == "Updated"
 
 
-async def test_delete_user(client, session_maker: async_sessionmaker[AsyncSession]) -> None:
+async def test_delete_user(
+    client, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
     await seed_two_tenant_users(session_maker)
     users = (await client.get("/api/users/", auth=AUTH_TENANT_ONE)).json()
     inactive = next(u for u in users if u["email"] == "inactive@test.com")
@@ -79,7 +89,9 @@ async def test_delete_user(client, session_maker: async_sessionmaker[AsyncSessio
     assert response.status_code == 204
 
 
-async def test_cannot_delete_self(client, session_maker: async_sessionmaker[AsyncSession]) -> None:
+async def test_cannot_delete_self(
+    client, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
     await seed_two_tenant_users(session_maker)
     users = (await client.get("/api/users/", auth=AUTH_TENANT_ONE)).json()
     u1 = next(u for u in users if u["email"] == "u1@test.com")

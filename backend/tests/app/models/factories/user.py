@@ -26,7 +26,9 @@ class UserFactory(factory.Factory):
     is_active = True
 
 
-async def seed_two_tenant_users(session_maker: async_sessionmaker[AsyncSession]) -> None:
+async def seed_two_tenant_users(
+    session_maker: async_sessionmaker[AsyncSession],
+) -> None:
     """Two tenants (id 1 and 2) and three users: u1/u2 active, inactive@ on tenant 1."""
     async with session_maker() as session:
         session.add_all(

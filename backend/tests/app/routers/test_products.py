@@ -3,7 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.models import ProductCategory, ProductImage
 
-from tests.app.models.factories import AUTH_TENANT_ONE, CategoryFactory, ProductFactory, seed_two_tenant_users
+from tests.app.models.factories import (
+    AUTH_TENANT_ONE,
+    CategoryFactory,
+    ProductFactory,
+    seed_two_tenant_users,
+)
 
 pytestmark = pytest.mark.asyncio
 
@@ -13,8 +18,12 @@ async def test_product_lookup_blocks_cross_tenant_access(
 ) -> None:
     await seed_two_tenant_users(session_maker)
     async with session_maker() as session:
-        tenant1_category = CategoryFactory.build(tenant_id=1, name="T1 Cat", parent_id=None)
-        tenant2_category = CategoryFactory.build(tenant_id=2, name="T2 Cat", parent_id=None)
+        tenant1_category = CategoryFactory.build(
+            tenant_id=1, name="T1 Cat", parent_id=None
+        )
+        tenant2_category = CategoryFactory.build(
+            tenant_id=2, name="T2 Cat", parent_id=None
+        )
         session.add_all([tenant1_category, tenant2_category])
         await session.flush()
         tenant2_product = ProductFactory.build(
@@ -108,7 +117,9 @@ async def test_upload_url_stays_tenant_agnostic_and_enforced(
     assert body["images"][0]["url"] != body["images"][1]["url"]
 
     img_id = body["images"][0]["id"]
-    deleted = await client.delete(f"/api/products/{product_1.id}/images/{img_id}", auth=AUTH_TENANT_ONE)
+    deleted = await client.delete(
+        f"/api/products/{product_1.id}/images/{img_id}", auth=AUTH_TENANT_ONE
+    )
     assert deleted.status_code == 204
     after = await client.get(f"/api/products/{product_1.id}", auth=AUTH_TENANT_ONE)
     assert len(after.json()["images"]) == 1
