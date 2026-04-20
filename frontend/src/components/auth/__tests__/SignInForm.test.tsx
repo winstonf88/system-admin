@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import SignInForm from "./SignInForm";
+import SignInForm from "../SignInForm";
 
 const push = vi.fn();
 const refresh = vi.fn();

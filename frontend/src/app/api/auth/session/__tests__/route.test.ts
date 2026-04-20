@@ -23,7 +23,7 @@ vi.mock("@/lib/server-api", () => ({
   getBackendBaseUrl: () => "http://api.test",
 }));
 
-import { GET } from "./route";
+import { GET } from "../route";
 
 describe("GET /api/auth/session", () => {
   beforeEach(() => {

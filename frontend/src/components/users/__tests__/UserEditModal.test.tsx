@@ -10,7 +10,7 @@ vi.mock("@/app/actions/users", () => ({
   updateUserAction: (...a: unknown[]) => updateUserAction(...a),
 }));
 
-import UserEditModal from "./UserEditModal";
+import UserEditModal from "../UserEditModal";
 
 describe("UserEditModal", () => {
   const userRow: UserRow = {

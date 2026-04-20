@@ -15,7 +15,7 @@ import {
   createUserAction,
   deleteUserAction,
   updateUserAction,
-} from "./users";
+} from "../users";
 
 describe("user server actions", () => {
   beforeEach(() => {

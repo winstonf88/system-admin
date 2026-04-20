@@ -20,7 +20,7 @@ vi.mock("@/app/actions/users", () => ({
   updateUserAction: (...a: unknown[]) => updateUserAction(...a),
 }));
 
-import UsersManagement from "./UsersManagement";
+import UsersManagement from "../UsersManagement";
 
 describe("UsersManagement", () => {
   const users: UserRow[] = [

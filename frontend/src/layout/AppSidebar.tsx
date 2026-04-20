@@ -5,16 +5,24 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { AUTH_SESSION_REFRESH_EVENT, type AuthSession } from "@/lib/auth-session";
 import { useSidebar } from "../context/SidebarContext";
-import { ChevronDownIcon, GearIcon, HorizontaLDots, UserCircleIcon } from "../icons/index";
+import { BoxCubeIcon, ChevronDownIcon, GearIcon, HorizontaLDots, UserCircleIcon } from "../icons/index";
 
 type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
+  /** When true, active if pathname equals `path` or starts with `path/` (nested routes). */
+  matchPrefix?: boolean;
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
 };
 
 const navItems: NavItem[] = [
+  {
+    icon: <BoxCubeIcon />,
+    name: "Produtos",
+    path: "/products",
+    matchPrefix: true,
+  },
   {
     icon: <UserCircleIcon />,
     name: "Usuários",
@@ -107,12 +115,14 @@ const AppSidebar: React.FC = () => {
               <Link
                 href={nav.path}
                 className={`menu-item group ${
-                  isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
+                  nav.path && pathIsActive(nav.path, nav.matchPrefix)
+                    ? "menu-item-active"
+                    : "menu-item-inactive"
                 }`}
               >
                 <span
                   className={`${
-                    isActive(nav.path)
+                    nav.path && pathIsActive(nav.path, nav.matchPrefix)
                       ? "menu-item-icon-active"
                       : "menu-item-icon-inactive"
                   }`}
@@ -144,7 +154,7 @@ const AppSidebar: React.FC = () => {
                     <Link
                       href={subItem.path}
                       className={`menu-dropdown-item ${
-                        isActive(subItem.path)
+                        pathIsActive(subItem.path)
                           ? "menu-dropdown-item-active"
                           : "menu-dropdown-item-inactive"
                       }`}
@@ -154,7 +164,7 @@ const AppSidebar: React.FC = () => {
                         {subItem.new && (
                           <span
                             className={`ml-auto ${
-                              isActive(subItem.path)
+                              pathIsActive(subItem.path)
                                 ? "menu-dropdown-badge-active"
                                 : "menu-dropdown-badge-inactive"
                             } menu-dropdown-badge `}
@@ -165,7 +175,7 @@ const AppSidebar: React.FC = () => {
                         {subItem.pro && (
                           <span
                             className={`ml-auto ${
-                              isActive(subItem.path)
+                              pathIsActive(subItem.path)
                                 ? "menu-dropdown-badge-active"
                                 : "menu-dropdown-badge-inactive"
                             } menu-dropdown-badge `}
@@ -194,8 +204,15 @@ const AppSidebar: React.FC = () => {
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // const isActive = (path: string) => path === pathname;
-   const isActive = useCallback((path: string) => path === pathname, [pathname]);
+  const pathIsActive = useCallback(
+    (path: string, matchPrefix?: boolean) => {
+      if (matchPrefix) {
+        return pathname === path || pathname.startsWith(`${path}/`);
+      }
+      return pathname === path;
+    },
+    [pathname],
+  );
 
   useEffect(() => {
     // Check if the current path matches any submenu item
@@ -205,7 +222,7 @@ const AppSidebar: React.FC = () => {
       items.forEach((nav, index) => {
         if (nav.subItems) {
           nav.subItems.forEach((subItem) => {
-            if (isActive(subItem.path)) {
+            if (pathIsActive(subItem.path)) {
               setOpenSubmenu({
                 type: menuType as "main" | "others",
                 index,
@@ -221,7 +238,7 @@ const AppSidebar: React.FC = () => {
     if (!submenuMatched) {
       setOpenSubmenu(null);
     }
-  }, [pathname,isActive]);
+  }, [pathname, pathIsActive]);
 
   useEffect(() => {
     // Set the height of the submenu items when the submenu is opened

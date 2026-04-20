@@ -32,7 +32,7 @@ vi.mock("@/lib/server-api", () => ({
   getBackendBaseUrl: () => "http://api.test",
 }));
 
-import { POST } from "./route";
+import { POST } from "../route";
 
 describe("POST /api/auth/login", () => {
   beforeEach(() => {

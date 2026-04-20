@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
 
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
-import { middleware } from "./middleware";
+import { middleware } from "../middleware";
 
 function request(path: string, cookieHeader?: string) {
   const url = `http://localhost:3000${path}`;

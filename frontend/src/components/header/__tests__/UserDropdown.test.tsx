@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import UserDropdown from "./UserDropdown";
+import UserDropdown from "../UserDropdown";
 
 vi.mock("@/app/actions/users", () => ({
   updateUserAction: vi.fn(),

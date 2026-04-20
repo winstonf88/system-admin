@@ -28,7 +28,7 @@ vi.mock("next/headers", () => ({
   cookies: async () => cookieStoreRef.current,
 }));
 
-import { POST } from "./route";
+import { POST } from "../route";
 
 describe("POST /api/auth/logout", () => {
   beforeEach(() => {
