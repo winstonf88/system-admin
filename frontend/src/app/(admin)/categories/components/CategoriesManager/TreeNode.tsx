@@ -7,6 +7,7 @@ import { MoreDotIcon, PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
 import type { CategoryDropZone } from "./category-dnd-ids";
 import { categoryDragId, categoryDropId } from "./category-dnd-ids";
 import type { CategoryTreeNode } from "./types";
+import { SavingSpinner } from "./SavingSpinner";
 
 export type TreeNodeProps = {
   node: CategoryTreeNode;
@@ -91,6 +92,8 @@ export function TreeNode({
 }: TreeNodeProps) {
   const isEditing = editingId === node.id;
   const isCreatingChildHere = creatingChildUnderId === node.id;
+  const isSavingEdit = pendingAction && isEditing;
+  const isSavingChild = pendingAction && isCreatingChildHere;
   const editInputId = `category-edit-${node.id}`;
   const createChildInputId = `category-create-child-${node.id}`;
   const isCollapsed = collapsedIds.has(node.id);
@@ -253,9 +256,15 @@ export function TreeNode({
                     type="button"
                     size="sm"
                     disabled={pendingAction}
+                    aria-busy={isSavingEdit}
+                    startIcon={
+                      isSavingEdit ? (
+                        <SavingSpinner className="size-3.5" />
+                      ) : undefined
+                    }
                     onClick={() => onSaveEdit(node.id)}
                   >
-                    {pendingAction ? "Salvando..." : "Salvar"}
+                    {isSavingEdit ? "Salvando…" : "Salvar"}
                   </Button>
                   <button
                     type="button"
@@ -382,9 +391,15 @@ export function TreeNode({
                     type="button"
                     size="sm"
                     disabled={pendingAction}
+                    aria-busy={isSavingChild}
+                    startIcon={
+                      isSavingChild ? (
+                        <SavingSpinner className="size-3.5" />
+                      ) : undefined
+                    }
                     onClick={() => onSaveCreateChild(node.id)}
                   >
-                    {pendingAction ? "Salvando..." : "Salvar"}
+                    {isSavingChild ? "Salvando…" : "Salvar"}
                   </Button>
                   <button
                     type="button"

@@ -20,6 +20,7 @@ import { PlusIcon } from "@/icons";
 
 import type { CategoryTreeNode } from "./types";
 import { CATEGORY_DROP_ROOT, parseCategoryDragId } from "./category-dnd-ids";
+import { SavingSpinner } from "./SavingSpinner";
 import { TreeNode, type TreeNodeProps } from "./TreeNode";
 
 type CategoryTreeSectionProps = {
@@ -133,14 +134,27 @@ export function CategoryTreeSection({
     el?.focus();
   }, [creatingRoot]);
 
+  const isSavingRoot = pendingAction && creatingRoot;
+
   return (
-    <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-white/[0.03]">
+    <section
+      className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-white/[0.03]"
+      aria-busy={pendingAction}
+    >
       <header className="border-b border-gray-100 bg-gray-50/80 px-5 py-4 dark:border-white/[0.06] dark:bg-white/[0.02]">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
-              Árvore de categorias
-            </h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
+                Árvore de categorias
+              </h3>
+              {pendingAction ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-100/90 px-2.5 py-1 text-xs font-medium text-brand-800 dark:bg-brand-500/15 dark:text-brand-200">
+                  <SavingSpinner className="size-3.5" />
+                  Salvando…
+                </span>
+              ) : null}
+            </div>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Use o ícone ⋮ para arrastar. Solte na borda superior/inferior da
               linha para reordenar irmãos, ou na faixa central para tornar
@@ -213,9 +227,15 @@ export function CategoryTreeSection({
                   type="button"
                   size="sm"
                   disabled={pendingAction}
+                  aria-busy={isSavingRoot}
+                  startIcon={
+                    isSavingRoot ? (
+                      <SavingSpinner className="size-3.5" />
+                    ) : undefined
+                  }
                   onClick={() => void onSaveCreateRoot()}
                 >
-                  {pendingAction ? "Salvando..." : "Salvar"}
+                  {isSavingRoot ? "Salvando…" : "Salvar"}
                 </Button>
                 <button
                   type="button"
@@ -257,7 +277,7 @@ export function CategoryTreeSection({
           ) : null}
 
           {tree.length > 0 ? (
-            <ul className="space-y-2">
+            <ul className="space-y-6">
               {tree.map((node) => (
                 <TreeNode
                   key={node.id}
