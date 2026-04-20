@@ -3,7 +3,10 @@ type CategoryMessagesProps = {
   successMessage: string | null;
 };
 
-export function CategoryMessages({ errorMessage, successMessage }: CategoryMessagesProps) {
+export function CategoryMessages({
+  errorMessage,
+  successMessage,
+}: CategoryMessagesProps) {
   if (!errorMessage && !successMessage) {
     return null;
   }

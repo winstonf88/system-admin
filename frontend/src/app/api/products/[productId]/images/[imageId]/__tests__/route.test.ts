@@ -45,9 +45,12 @@ describe("DELETE /api/products/[productId]/images/[imageId]", () => {
     });
 
     expect(res.status).toBe(204);
-    expect(mockFetchBackend).toHaveBeenCalledWith("/api/products/10/images/11", {
-      method: "DELETE",
-    });
+    expect(mockFetchBackend).toHaveBeenCalledWith(
+      "/api/products/10/images/11",
+      {
+        method: "DELETE",
+      },
+    );
     expect(mockRevalidatePath).toHaveBeenCalledWith("/products");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/products/10/edit");
   });

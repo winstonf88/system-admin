@@ -50,7 +50,9 @@ vi.mock("@/app/actions/categories", () => ({
 import ProductForm from "../index";
 
 describe("ProductForm category modal flow", () => {
-  const baseCategories: CategoryOption[] = [{ id: 1, name: "Acessórios", parent_id: null }];
+  const baseCategories: CategoryOption[] = [
+    { id: 1, name: "Acessórios", parent_id: null },
+  ];
 
   beforeEach(() => {
     push.mockReset();
@@ -69,10 +71,14 @@ describe("ProductForm category modal flow", () => {
 
     render(<ProductForm categories={[]} mode="create" />);
 
-    expect(screen.getByRole("heading", { name: "Nova categoria" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Nova categoria" }),
+    ).toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/Nome da categoria/i), "Calçados");
-    await user.click(screen.getByRole("button", { name: "Criar e selecionar" }));
+    await user.click(
+      screen.getByRole("button", { name: "Criar e selecionar" }),
+    );
 
     await waitFor(() => {
       expect(createCategoryAction).toHaveBeenCalledWith({
@@ -82,7 +88,9 @@ describe("ProductForm category modal flow", () => {
     });
 
     await waitFor(() => {
-      expect(screen.queryByRole("heading", { name: "Nova categoria" })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("heading", { name: "Nova categoria" }),
+      ).not.toBeInTheDocument();
     });
 
     expect(screen.getByRole("checkbox", { name: /Calçados/i })).toBeChecked();
@@ -107,14 +115,20 @@ describe("ProductForm category modal flow", () => {
 
     render(<ProductForm categories={baseCategories} mode="create" />);
 
-    expect(screen.queryByRole("heading", { name: "Nova categoria" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Nova categoria" }),
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Nova categoria/i }));
 
-    expect(screen.getByRole("heading", { name: "Nova categoria" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Nova categoria" }),
+    ).toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/Nome da categoria/i), "Sub");
-    await user.click(screen.getByRole("button", { name: "Criar e selecionar" }));
+    await user.click(
+      screen.getByRole("button", { name: "Criar e selecionar" }),
+    );
 
     await waitFor(() => {
       expect(createCategoryAction).toHaveBeenCalledWith({
@@ -131,9 +145,13 @@ describe("ProductForm category modal flow", () => {
 
     render(<ProductForm categories={[]} mode="create" />);
 
-    await user.click(screen.getByRole("button", { name: "Criar e selecionar" }));
+    await user.click(
+      screen.getByRole("button", { name: "Criar e selecionar" }),
+    );
 
-    expect(await screen.findByText("Informe o nome da categoria.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Informe o nome da categoria."),
+    ).toBeInTheDocument();
     expect(createCategoryAction).not.toHaveBeenCalled();
   });
 
@@ -147,7 +165,9 @@ describe("ProductForm category modal flow", () => {
     render(<ProductForm categories={[]} mode="create" />);
 
     await user.type(screen.getByLabelText(/Nome da categoria/i), "Dup");
-    await user.click(screen.getByRole("button", { name: "Criar e selecionar" }));
+    await user.click(
+      screen.getByRole("button", { name: "Criar e selecionar" }),
+    );
 
     expect(await screen.findByText("Nome já existe.")).toBeInTheDocument();
   });

@@ -117,7 +117,11 @@ export default function UserDropdown() {
       >
         <div className="px-1">
           <span className="block truncate font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            {session ? displayName(session) : sessionLoaded ? "Sessão iniciada" : "Carregando…"}
+            {session
+              ? displayName(session)
+              : sessionLoaded
+                ? "Sessão iniciada"
+                : "Carregando…"}
           </span>
           {emailLine ? (
             <span className="mt-0.5 block truncate text-theme-xs text-gray-500 dark:text-gray-400">

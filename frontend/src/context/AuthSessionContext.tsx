@@ -1,6 +1,9 @@
 "use client";
 
-import { AUTH_SESSION_REFRESH_EVENT, type AuthSession } from "@/lib/auth-session";
+import {
+  AUTH_SESSION_REFRESH_EVENT,
+  type AuthSession,
+} from "@/lib/auth-session";
 import { fetchAuthSession } from "@/lib/auth-session-client";
 import React, {
   createContext,
@@ -20,7 +23,11 @@ const AuthSessionContext = createContext<AuthSessionContextValue | undefined>(
   undefined,
 );
 
-export function AuthSessionProvider({ children }: { children: React.ReactNode }) {
+export function AuthSessionProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
 
@@ -50,11 +57,14 @@ export function AuthSessionProvider({ children }: { children: React.ReactNode })
       void refreshSession();
     };
     window.addEventListener(AUTH_SESSION_REFRESH_EVENT, onRefresh);
-    return () => window.removeEventListener(AUTH_SESSION_REFRESH_EVENT, onRefresh);
+    return () =>
+      window.removeEventListener(AUTH_SESSION_REFRESH_EVENT, onRefresh);
   }, [refreshSession]);
 
   return (
-    <AuthSessionContext.Provider value={{ session, sessionLoaded, refreshSession }}>
+    <AuthSessionContext.Provider
+      value={{ session, sessionLoaded, refreshSession }}
+    >
       {children}
     </AuthSessionContext.Provider>
   );

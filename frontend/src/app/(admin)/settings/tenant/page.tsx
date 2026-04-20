@@ -20,11 +20,14 @@ export default async function TenantSettingsPage() {
     return (
       <>
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">Configurações</h2>
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">
+            Configurações
+          </h2>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-white/[0.05] dark:bg-white/[0.03]">
           <p className="text-gray-700 dark:text-gray-300">
-            Sua sessão não inclui credenciais de API. Saia e entre novamente para editar a organização.
+            Sua sessão não inclui credenciais de API. Saia e entre novamente
+            para editar a organização.
           </p>
         </div>
       </>
@@ -35,7 +38,9 @@ export default async function TenantSettingsPage() {
     return (
       <>
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">Configurações</h2>
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">
+            Configurações
+          </h2>
         </div>
         <div className="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900/40 dark:bg-red-950/30">
           <p className="text-red-800 dark:text-red-200">
@@ -51,7 +56,9 @@ export default async function TenantSettingsPage() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">Configurações</h2>
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">
+          Configurações
+        </h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Nome da sua organização no painel.
         </p>

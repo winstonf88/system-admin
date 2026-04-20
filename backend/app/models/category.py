@@ -10,8 +10,12 @@ class Category(Base):
     __tablename__ = "categories"
     __table_args__ = (
         UniqueConstraint("id", "tenant_id", name="uq_categories_id_tenant"),
-        UniqueConstraint("tenant_id", "name", "parent_id", name="uq_category_tenant_name_parent"),
-        ForeignKeyConstraint(["tenant_id"], ["tenants.id"], name="fk_categories_tenant_id"),
+        UniqueConstraint(
+            "tenant_id", "name", "parent_id", name="uq_category_tenant_name_parent"
+        ),
+        ForeignKeyConstraint(
+            ["tenant_id"], ["tenants.id"], name="fk_categories_tenant_id"
+        ),
         ForeignKeyConstraint(
             ["parent_id", "tenant_id"],
             ["categories.id", "categories.tenant_id"],

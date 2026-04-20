@@ -14,7 +14,9 @@ class ProductImage(Base):
             ["products.id", "products.tenant_id"],
             name="fk_product_images_product",
         ),
-        UniqueConstraint("product_id", "tenant_id", "sort_order", name="uq_product_images_order"),
+        UniqueConstraint(
+            "product_id", "tenant_id", "sort_order", name="uq_product_images_order"
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -30,7 +32,9 @@ class Product(Base):
     __tablename__ = "products"
     __table_args__ = (
         UniqueConstraint("id", "tenant_id", name="uq_products_id_tenant"),
-        ForeignKeyConstraint(["tenant_id"], ["tenants.id"], name="fk_products_tenant_id"),
+        ForeignKeyConstraint(
+            ["tenant_id"], ["tenants.id"], name="fk_products_tenant_id"
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -60,7 +64,9 @@ class Product(Base):
 class ProductCategory(Base):
     __tablename__ = "product_categories"
     __table_args__ = (
-        UniqueConstraint("product_id", "category_id", name="uq_product_categories_pair"),
+        UniqueConstraint(
+            "product_id", "category_id", name="uq_product_categories_pair"
+        ),
         ForeignKeyConstraint(
             ["product_id", "tenant_id"],
             ["products.id", "products.tenant_id"],
@@ -93,7 +99,9 @@ class ProductVariation(Base):
     __tablename__ = "product_variations"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), index=True)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"), index=True
+    )
     size: Mapped[str | None] = mapped_column(String(64), nullable=True)
     color: Mapped[str | None] = mapped_column(String(64), nullable=True)
     quantity: Mapped[int] = mapped_column(default=0)

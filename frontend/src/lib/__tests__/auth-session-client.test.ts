@@ -2,7 +2,15 @@ import {
   fetchAuthSession,
   resetAuthSessionClientForTests,
 } from "@/lib/auth-session-client";
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 const sessionPayload = {
   id: 1,

@@ -75,17 +75,22 @@ export function CategoryTreeSection({
   return (
     <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-white/[0.03]">
       <header className="border-b border-gray-100 bg-gray-50/80 px-5 py-4 dark:border-white/[0.06] dark:bg-white/[0.02]">
-        <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">Árvore de categorias</h3>
+        <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
+          Árvore de categorias
+        </h3>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Arraste para borda superior/inferior para reordenar irmãos, ou no centro de uma categoria para torná-la
-          subcategoria. Use o ícone de adicionar para nova subcategoria, ou o lápis para editar o nome.
+          Arraste para borda superior/inferior para reordenar irmãos, ou no
+          centro de uma categoria para torná-la subcategoria. Use o ícone de
+          adicionar para nova subcategoria, ou o lápis para editar o nome.
         </p>
       </header>
 
       <div className="space-y-4 p-5">
         <div
           className={`rounded-xl border border-dashed px-4 py-3 text-sm transition ${
-            hoveredParentId === "root" && draggingId !== null && canDropInto(null, draggingId)
+            hoveredParentId === "root" &&
+            draggingId !== null &&
+            canDropInto(null, draggingId)
               ? "border-brand-300 bg-brand-50 text-brand-700 dark:border-brand-500/60 dark:bg-brand-500/10 dark:text-brand-300"
               : "border-gray-300 bg-gray-50 text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400"
           }`}

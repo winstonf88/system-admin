@@ -5,7 +5,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.routers import auth_router, categories_router, products_router, tenant_router, users_router
+from app.routers import (
+    auth_router,
+    categories_router,
+    products_router,
+    tenant_router,
+    users_router,
+)
 from app.core.config import get_settings
 from app.core.database import (
     check_db_connection,

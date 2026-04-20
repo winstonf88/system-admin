@@ -11,11 +11,7 @@ vi.mock("@/lib/backend-server-fetch", () => ({
   fetchBackendAuthenticated: (...args: unknown[]) => mockFetchBackend(...args),
 }));
 
-import {
-  createUserAction,
-  deleteUserAction,
-  updateUserAction,
-} from "../users";
+import { createUserAction, deleteUserAction, updateUserAction } from "../users";
 
 describe("user server actions", () => {
   beforeEach(() => {
@@ -58,7 +54,10 @@ describe("user server actions", () => {
       last_name: "",
       is_active: false,
     });
-    expect(r).toEqual({ ok: false, error: "Não autenticado. Entre novamente." });
+    expect(r).toEqual({
+      ok: false,
+      error: "Não autenticado. Entre novamente.",
+    });
     expect(mockRevalidatePath).not.toHaveBeenCalled();
   });
 
@@ -101,7 +100,9 @@ describe("user server actions", () => {
     mockFetchBackend.mockResolvedValue(new Response(null, { status: 204 }));
     const r = await deleteUserAction(9);
     expect(r).toEqual({ ok: true });
-    expect(mockFetchBackend).toHaveBeenCalledWith("/api/users/9", { method: "DELETE" });
+    expect(mockFetchBackend).toHaveBeenCalledWith("/api/users/9", {
+      method: "DELETE",
+    });
     expect(mockRevalidatePath).toHaveBeenCalledWith("/users");
   });
 

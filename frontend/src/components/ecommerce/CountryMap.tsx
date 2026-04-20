@@ -6,9 +6,9 @@ import dynamic from "next/dynamic";
 const VectorMap = dynamic(
   () =>
     import("@react-jvectormap/core").then(
-      (mod) => mod.VectorMap ?? mod.default?.VectorMap
+      (mod) => mod.VectorMap ?? mod.default?.VectorMap,
     ),
-  { ssr: false }
+  { ssr: false },
 );
 
 // Define the component props

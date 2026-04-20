@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -279,8 +279,6 @@
   background-color: #344054;
 }
 
-
-
 @layer utilities {
   /* For Remove Date Icon */
   input[type="date"]::-webkit-inner-spin-button,
@@ -395,8 +393,8 @@
   font-weight: 500;
 }
 .flatpickr-month
-.flatpickr-current-month
-.flatpickr-monthDropdown-months:focus {
+  .flatpickr-current-month
+  .flatpickr-monthDropdown-months:focus {
   outline: none !important;
   border: 0 !important;
 }
@@ -426,7 +424,9 @@ span.flatpickr-weekday,
   @apply !bg-none;
 }
 .flatpickr-day.inRange {
-  box-shadow: -5px 0 0 #f9fafb, 5px 0 0 #f9fafb !important;
+  box-shadow:
+    -5px 0 0 #f9fafb,
+    5px 0 0 #f9fafb !important;
   @apply dark:!shadow-datepicker;
 }
 .flatpickr-day.inRange,
@@ -646,7 +646,7 @@ span.flatpickr-weekday,
 
 .stocks-slider-outer .swiper-button-next,
 .stocks-slider-outer .swiper-button-prev {
-  @apply !static mt-0 h-8 w-9 rounded-full border dark:hover:bg-white/[0.05] border-gray-200 !text-gray-700 transition hover:bg-gray-100 dark:border-white/[0.03] dark:bg-gray-800 dark:!text-gray-400  dark:hover:!text-white/90;
+  @apply !static mt-0 h-8 w-9 rounded-full border dark:hover:bg-white/[0.05] border-gray-200 !text-gray-700 transition hover:bg-gray-100 dark:border-white/[0.03] dark:bg-gray-800 dark:!text-gray-400 dark:hover:!text-white/90;
 }
 
 .stocks-slider-outer .swiper-button-next.swiper-button-disabled,
@@ -745,7 +745,8 @@ span.flatpickr-weekday,
 
 .task {
   border-radius: 0.75rem;
-  box-shadow: 0 1px 3px 0 rgba(16, 24, 40, 0.1),
+  box-shadow:
+    0 1px 3px 0 rgba(16, 24, 40, 0.1),
     0 1px 2px 0 rgba(16, 24, 40, 0.06);
   opacity: 0.8;
   cursor: grabbing; /* Changes the cursor to indicate dragging */

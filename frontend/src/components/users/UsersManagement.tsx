@@ -126,7 +126,8 @@ export default function UsersManagement({ users, currentUserId }: Props) {
     }
   };
 
-  const isSelf = (u: UserRow) => currentUserId !== null && u.id === currentUserId;
+  const isSelf = (u: UserRow) =>
+    currentUserId !== null && u.id === currentUserId;
 
   return (
     <>
@@ -140,7 +141,8 @@ export default function UsersManagement({ users, currentUserId }: Props) {
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
         {users.length === 0 ? (
           <p className="px-5 py-10 text-center text-gray-500 text-theme-sm dark:text-gray-400">
-            Nenhum usuário encontrado para esta organização. Adicione um usuário para começar.
+            Nenhum usuário encontrado para esta organização. Adicione um usuário
+            para começar.
           </p>
         ) : (
           <div className="max-w-full overflow-x-auto">
@@ -187,7 +189,9 @@ export default function UsersManagement({ users, currentUserId }: Props) {
                         <div
                           className="pointer-events-none inline-flex"
                           aria-label={user.is_active ? "Ativo" : "Inativo"}
-                          title={user.is_active ? "Conta ativa" : "Conta inativa"}
+                          title={
+                            user.is_active ? "Conta ativa" : "Conta inativa"
+                          }
                         >
                           <Switch
                             label=""
@@ -208,7 +212,11 @@ export default function UsersManagement({ users, currentUserId }: Props) {
                           <button
                             type="button"
                             disabled={isSelf(user)}
-                            title={isSelf(user) ? "Você não pode excluir sua própria conta" : undefined}
+                            title={
+                              isSelf(user)
+                                ? "Você não pode excluir sua própria conta"
+                                : undefined
+                            }
                             onClick={() => openDelete(user)}
                             className="inline-flex items-center justify-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 shadow-theme-xs hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/50 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-950/30"
                           >
@@ -225,19 +233,26 @@ export default function UsersManagement({ users, currentUserId }: Props) {
         )}
       </div>
 
-      <Modal isOpen={createModal.isOpen} onClose={createModal.closeModal} className="max-w-[700px] m-4">
+      <Modal
+        isOpen={createModal.isOpen}
+        onClose={createModal.closeModal}
+        className="max-w-[700px] m-4"
+      >
         <div className={modalInner}>
           <div className="px-2 pr-14">
             <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
               Adicionar usuário
             </h4>
             <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-              Crie um novo usuário para a sua organização. A senha deve ter pelo menos 8 caracteres.
+              Crie um novo usuário para a sua organização. A senha deve ter pelo
+              menos 8 caracteres.
             </p>
           </div>
           <form onSubmit={handleCreate} className="flex flex-col">
             {createError && (
-              <p className="mb-4 px-2 text-sm text-red-600 dark:text-red-400">{createError}</p>
+              <p className="mb-4 px-2 text-sm text-red-600 dark:text-red-400">
+                {createError}
+              </p>
             )}
             <div className="custom-scrollbar max-h-[450px] overflow-y-auto px-2 pb-3">
               <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
@@ -291,7 +306,12 @@ export default function UsersManagement({ users, currentUserId }: Props) {
               </div>
             </div>
             <div className="mt-6 flex items-center gap-3 px-2 lg:justify-end">
-              <Button size="sm" variant="outline" type="button" onClick={createModal.closeModal}>
+              <Button
+                size="sm"
+                variant="outline"
+                type="button"
+                onClick={createModal.closeModal}
+              >
                 Fechar
               </Button>
               <Button size="sm" type="submit" disabled={pending}>
@@ -312,7 +332,11 @@ export default function UsersManagement({ users, currentUserId }: Props) {
         onSaved={() => router.refresh()}
       />
 
-      <Modal isOpen={deleteModal.isOpen} onClose={deleteModal.closeModal} className="max-w-[520px] m-4">
+      <Modal
+        isOpen={deleteModal.isOpen}
+        onClose={deleteModal.closeModal}
+        className="max-w-[520px] m-4"
+      >
         <div className={modalInner}>
           <div className="px-2 pr-14">
             <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
@@ -325,10 +349,17 @@ export default function UsersManagement({ users, currentUserId }: Props) {
             </p>
           </div>
           {deleteError && (
-            <p className="mb-4 px-2 text-sm text-red-600 dark:text-red-400">{deleteError}</p>
+            <p className="mb-4 px-2 text-sm text-red-600 dark:text-red-400">
+              {deleteError}
+            </p>
           )}
           <div className="flex items-center gap-3 px-2 lg:justify-end">
-            <Button size="sm" variant="outline" type="button" onClick={deleteModal.closeModal}>
+            <Button
+              size="sm"
+              variant="outline"
+              type="button"
+              onClick={deleteModal.closeModal}
+            >
               Cancelar
             </Button>
             <button

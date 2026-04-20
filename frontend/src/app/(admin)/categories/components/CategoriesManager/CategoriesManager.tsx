@@ -34,11 +34,15 @@ export default function CategoriesManager({ initialTree }: Props) {
   const [tree, setTree] = useState(initialTree);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDraftName, setEditDraftName] = useState("");
-  const [creatingChildUnderId, setCreatingChildUnderId] = useState<number | null>(null);
+  const [creatingChildUnderId, setCreatingChildUnderId] = useState<
+    number | null
+  >(null);
   const [createChildDraftName, setCreateChildDraftName] = useState("");
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(new Set());
   const [draggingId, setDraggingId] = useState<number | null>(null);
-  const [hoveredParentId, setHoveredParentId] = useState<number | "root" | null>(null);
+  const [hoveredParentId, setHoveredParentId] = useState<
+    number | "root" | null
+  >(null);
   const [hoveredSiblingDrop, setHoveredSiblingDrop] = useState<{
     targetId: number;
     position: "before" | "after";
@@ -55,7 +59,11 @@ export default function CategoriesManager({ initialTree }: Props) {
       new Map(
         flatCategories.map((item) => [
           item.id,
-          { parentId: item.parent_id, ancestorIds: item.ancestorIds, name: item.name },
+          {
+            parentId: item.parent_id,
+            ancestorIds: item.ancestorIds,
+            name: item.name,
+          },
         ]),
       ),
     [flatCategories],
@@ -76,7 +84,10 @@ export default function CategoriesManager({ initialTree }: Props) {
     setSuccessMessage(null);
   };
 
-  const canDropInto = (targetParentId: number | null, draggedId: number): boolean => {
+  const canDropInto = (
+    targetParentId: number | null,
+    draggedId: number,
+  ): boolean => {
     if (!Number.isFinite(draggedId)) {
       return false;
     }
@@ -95,7 +106,10 @@ export default function CategoriesManager({ initialTree }: Props) {
     return true;
   };
 
-  const handleDrop = async (draggedId: number, targetParentId: number | null) => {
+  const handleDrop = async (
+    draggedId: number,
+    targetParentId: number | null,
+  ) => {
     if (!canDropInto(targetParentId, draggedId)) {
       return;
     }
@@ -113,7 +127,9 @@ export default function CategoriesManager({ initialTree }: Props) {
         setMessage("error", result.error);
         return;
       }
-      setTree((current) => buildUpdatedTree(current, draggedId, targetParentId));
+      setTree((current) =>
+        buildUpdatedTree(current, draggedId, targetParentId),
+      );
       setMessage("success", "Categoria movida com sucesso.");
       router.refresh();
     } finally {
@@ -168,7 +184,9 @@ export default function CategoriesManager({ initialTree }: Props) {
       return;
     }
 
-    const orderedIds = targetContext.siblingIds.filter((id) => id !== draggedId);
+    const orderedIds = targetContext.siblingIds.filter(
+      (id) => id !== draggedId,
+    );
     const targetIndex = orderedIds.indexOf(targetId);
     if (targetIndex < 0) {
       return;
@@ -196,7 +214,9 @@ export default function CategoriesManager({ initialTree }: Props) {
         setMessage("error", result.error);
         return;
       }
-      setTree((current) => reorderChildren(current, targetContext.parentId, orderedIds));
+      setTree((current) =>
+        reorderChildren(current, targetContext.parentId, orderedIds),
+      );
       setMessage("success", "Ordem atualizada com sucesso.");
       router.refresh();
     } finally {
@@ -218,13 +238,17 @@ export default function CategoriesManager({ initialTree }: Props) {
     return context.index < context.siblingIds.length - 1;
   };
 
-  const reorderCategoryById = async (categoryId: number, direction: "up" | "down") => {
+  const reorderCategoryById = async (
+    categoryId: number,
+    direction: "up" | "down",
+  ) => {
     const context = siblingContext(tree, categoryId);
     if (!context) {
       return;
     }
 
-    const targetIndex = direction === "up" ? context.index - 1 : context.index + 1;
+    const targetIndex =
+      direction === "up" ? context.index - 1 : context.index + 1;
     if (targetIndex < 0 || targetIndex >= context.siblingIds.length) {
       return;
     }
@@ -245,7 +269,9 @@ export default function CategoriesManager({ initialTree }: Props) {
         setMessage("error", result.error);
         return;
       }
-      setTree((current) => reorderChildren(current, context.parentId, orderedIds));
+      setTree((current) =>
+        reorderChildren(current, context.parentId, orderedIds),
+      );
       setMessage("success", "Ordem atualizada com sucesso.");
       router.refresh();
     } finally {
@@ -479,7 +505,12 @@ export default function CategoriesManager({ initialTree }: Props) {
           }
         }}
         onRootDragOver={(event) => {
-          const draggedId = Number(event.dataTransfer.getData("text/category-id"));
+          const draggedId =
+            draggingId ??
+            Number(event.dataTransfer.getData("text/category-id"));
+          if (!Number.isFinite(draggedId)) {
+            return;
+          }
           if (!canDropInto(null, draggedId)) {
             return;
           }
@@ -489,7 +520,9 @@ export default function CategoriesManager({ initialTree }: Props) {
         }}
         onRootDrop={(event) => {
           event.preventDefault();
-          const draggedId = Number(event.dataTransfer.getData("text/category-id"));
+          const draggedId =
+            draggingId ??
+            Number(event.dataTransfer.getData("text/category-id"));
           if (!Number.isFinite(draggedId)) {
             return;
           }
@@ -498,7 +531,10 @@ export default function CategoriesManager({ initialTree }: Props) {
         }}
       />
 
-      <CategoryMessages errorMessage={errorMessage} successMessage={successMessage} />
+      <CategoryMessages
+        errorMessage={errorMessage}
+        successMessage={successMessage}
+      />
     </div>
   );
 }

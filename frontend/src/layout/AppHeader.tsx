@@ -114,8 +114,7 @@ const AppHeader: React.FC = () => {
             {/* <!-- Dark Mode Toggler --> */}
           </div>
           {/* <!-- User Area --> */}
-          <UserDropdown /> 
-    
+          <UserDropdown />
         </div>
       </div>
     </header>

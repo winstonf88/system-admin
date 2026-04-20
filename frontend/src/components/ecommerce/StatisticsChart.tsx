@@ -8,7 +8,7 @@ import { CalenderIcon } from "../../icons";
 
 const Chart = dynamic(
   () => import("react-apexcharts").then((mod) => mod.default),
-  { ssr: false }
+  { ssr: false },
 );
 
 export default function StatisticsChart() {

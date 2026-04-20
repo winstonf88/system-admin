@@ -41,7 +41,10 @@ class CategoryView:
     async def _get_category_or_404(self, category_id: int) -> Category:
         category = await self._get_category(category_id)
         if category is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria não encontrada.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Categoria não encontrada.",
+            )
         return category
 
     async def _list_siblings(self, parent_id: int | None) -> list[Category]:
@@ -74,11 +77,17 @@ class CategoryView:
             return
 
         if category_id is not None and parent_id == category_id:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A categoria não pode ser pai de si mesma.")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A categoria não pode ser pai de si mesma.",
+            )
 
         parent = await self._get_category(parent_id)
         if parent is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria pai não encontrada.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Categoria pai não encontrada.",
+            )
 
         # Prevent cycles by walking up the ancestry chain.
         if category_id is not None:
@@ -112,7 +121,12 @@ class CategoryView:
         result = await self.db.execute(
             select(Category)
             .where(Category.tenant_id == self.tenant_context.tenant_id)
-            .order_by(Category.parent_id.asc(), Category.sort_order.asc(), Category.name.asc(), Category.id.asc())
+            .order_by(
+                Category.parent_id.asc(),
+                Category.sort_order.asc(),
+                Category.name.asc(),
+                Category.id.asc(),
+            )
         )
         return list(result.scalars().all())
 
@@ -121,7 +135,12 @@ class CategoryView:
         result = await self.db.execute(
             select(Category)
             .where(Category.tenant_id == self.tenant_context.tenant_id)
-            .order_by(Category.parent_id.asc(), Category.sort_order.asc(), Category.name.asc(), Category.id.asc())
+            .order_by(
+                Category.parent_id.asc(),
+                Category.sort_order.asc(),
+                Category.name.asc(),
+                Category.id.asc(),
+            )
         )
         categories = list(result.scalars().all())
 
@@ -149,7 +168,9 @@ class CategoryView:
     async def reorder_siblings(self, payload: CategoryReorder) -> list[Category]:
         siblings = await self._list_siblings(payload.parent_id)
         current_ids = [category.id for category in siblings]
-        if set(current_ids) != set(payload.ordered_ids) or len(current_ids) != len(payload.ordered_ids):
+        if set(current_ids) != set(payload.ordered_ids) or len(current_ids) != len(
+            payload.ordered_ids
+        ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="A nova ordem deve conter exatamente as categorias irmãs atuais.",
@@ -174,7 +195,10 @@ class CategoryView:
     ) -> Category:
         category = await self._get_category_or_404(category_id)
 
-        if "parent_id" in payload.model_fields_set and payload.parent_id != category.parent_id:
+        if (
+            "parent_id" in payload.model_fields_set
+            and payload.parent_id != category.parent_id
+        ):
             await self._validate_parent(payload.parent_id, category_id=category_id)
             old_parent_id = category.parent_id
             category.parent_id = payload.parent_id

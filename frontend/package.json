@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -32,6 +34,7 @@
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.12",
     "@svgr/webpack": "^8.1.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.0",

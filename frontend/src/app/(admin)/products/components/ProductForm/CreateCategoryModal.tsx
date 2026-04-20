@@ -49,8 +49,9 @@ export function CreateCategoryModal({
             Nova categoria
           </h4>
           <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-            Ela será adicionada às categorias deste produto assim que for criada. Opcionalmente, defina
-            uma categoria pai para montar hierarquias (ex.: Vestuário › Camisetas).
+            Ela será adicionada às categorias deste produto assim que for
+            criada. Opcionalmente, defina uma categoria pai para montar
+            hierarquias (ex.: Vestuário › Camisetas).
           </p>
         </div>
 
@@ -66,11 +67,15 @@ export function CreateCategoryModal({
             />
           </div>
           <div className="sm:col-span-2">
-            <Label htmlFor="new-category-parent">Categoria pai (opcional)</Label>
+            <Label htmlFor="new-category-parent">
+              Categoria pai (opcional)
+            </Label>
             <select
               id="new-category-parent"
               className="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-              value={newCategoryParentId === "" ? "" : String(newCategoryParentId)}
+              value={
+                newCategoryParentId === "" ? "" : String(newCategoryParentId)
+              }
               onChange={(e) => {
                 const value = e.target.value;
                 onParentIdChange(value === "" ? "" : Number(value));
@@ -88,16 +93,30 @@ export function CreateCategoryModal({
         </div>
 
         {categoryCreateError && (
-          <p className="mx-2 mt-4 text-sm text-red-600 dark:text-red-400" role="alert">
+          <p
+            className="mx-2 mt-4 text-sm text-red-600 dark:text-red-400"
+            role="alert"
+          >
             {categoryCreateError}
           </p>
         )}
 
         <div className="mt-8 flex flex-wrap items-center justify-end gap-3 px-2 lg:mt-10">
-          <Button size="sm" variant="outline" type="button" disabled={creatingCategory} onClick={onClose}>
+          <Button
+            size="sm"
+            variant="outline"
+            type="button"
+            disabled={creatingCategory}
+            onClick={onClose}
+          >
             Cancelar
           </Button>
-          <Button size="sm" type="button" disabled={creatingCategory} onClick={onSubmit}>
+          <Button
+            size="sm"
+            type="button"
+            disabled={creatingCategory}
+            onClick={onSubmit}
+          >
             {creatingCategory ? "Criando…" : "Criar e selecionar"}
           </Button>
         </div>

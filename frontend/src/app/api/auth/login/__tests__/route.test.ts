@@ -1,9 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-import {
-  AUTH_BASIC_COOKIE,
-  AUTH_SESSION_COOKIE,
-} from "@/lib/auth-session";
+import { AUTH_BASIC_COOKIE, AUTH_SESSION_COOKIE } from "@/lib/auth-session";
 
 function createCookieStore(initial?: Record<string, string>) {
   const jar = new Map<string, string>(Object.entries(initial ?? {}));
@@ -63,9 +60,9 @@ describe("POST /api/auth/login", () => {
   });
 
   it("returns 401 when backend rejects credentials", async () => {
-    const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(null, { status: 401 }),
-    );
+    const spy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(null, { status: 401 }));
     try {
       const res = await POST(
         new Request("http://localhost/api/auth/login", {
@@ -83,7 +80,9 @@ describe("POST /api/auth/login", () => {
 
   it("sets session cookies when backend accepts credentials", async () => {
     const spy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ id: 1, email: "a@b.co" }), { status: 200 }),
+      new Response(JSON.stringify({ id: 1, email: "a@b.co" }), {
+        status: 200,
+      }),
     );
     try {
       const res = await POST(

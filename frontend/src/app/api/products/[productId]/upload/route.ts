@@ -19,10 +19,16 @@ export async function POST(
   const incoming = await req.formData();
   const file = incoming.get("file");
   if (!(file instanceof File) || file.size === 0) {
-    return Response.json({ detail: "Selecione um arquivo de imagem." }, { status: 400 });
+    return Response.json(
+      { detail: "Selecione um arquivo de imagem." },
+      { status: 400 },
+    );
   }
   if (file.size > MAX_BYTES) {
-    return Response.json({ detail: "Arquivo muito grande (máx. 10 MB)." }, { status: 400 });
+    return Response.json(
+      { detail: "Arquivo muito grande (máx. 10 MB)." },
+      { status: 400 },
+    );
   }
 
   const outbound = new FormData();
@@ -34,7 +40,10 @@ export async function POST(
   });
 
   if (res === null) {
-    return Response.json({ detail: "Não autenticado. Entre novamente." }, { status: 401 });
+    return Response.json(
+      { detail: "Não autenticado. Entre novamente." },
+      { status: 401 },
+    );
   }
 
   const text = await res.text();
@@ -45,6 +54,8 @@ export async function POST(
 
   return new Response(text, {
     status: res.status,
-    headers: { "Content-Type": res.headers.get("Content-Type") ?? "application/json" },
+    headers: {
+      "Content-Type": res.headers.get("Content-Type") ?? "application/json",
+    },
   });
 }

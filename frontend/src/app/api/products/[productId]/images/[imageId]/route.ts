@@ -11,18 +11,27 @@ export async function DELETE(
   const productId = Number(rawPid);
   const imageId = Number(rawIid);
   if (!Number.isFinite(productId) || productId < 1) {
-    return Response.json({ detail: "ID de produto inválido." }, { status: 400 });
+    return Response.json(
+      { detail: "ID de produto inválido." },
+      { status: 400 },
+    );
   }
   if (!Number.isFinite(imageId) || imageId < 1) {
     return Response.json({ detail: "ID de imagem inválido." }, { status: 400 });
   }
 
-  const res = await fetchBackendAuthenticated(`/api/products/${productId}/images/${imageId}`, {
-    method: "DELETE",
-  });
+  const res = await fetchBackendAuthenticated(
+    `/api/products/${productId}/images/${imageId}`,
+    {
+      method: "DELETE",
+    },
+  );
 
   if (res === null) {
-    return Response.json({ detail: "Não autenticado. Entre novamente." }, { status: 401 });
+    return Response.json(
+      { detail: "Não autenticado. Entre novamente." },
+      { status: 401 },
+    );
   }
 
   if (res.ok) {

@@ -8,7 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.dependencies import TenantContext, get_db, get_tenant_context
-from app.models import Category, Product, ProductCategory, ProductImage, ProductVariation
+from app.models import (
+    Category,
+    Product,
+    ProductCategory,
+    ProductImage,
+    ProductVariation,
+)
 from app.schemas import (
     ProductCreate,
     ProductImageOrderUpdate,
@@ -53,7 +59,9 @@ class ProductView:
             image_url=primary_url,
             images=image_reads,
             category_ids=category_ids,
-            variations=[ProductVariationRead.model_validate(v) for v in product.variations],
+            variations=[
+                ProductVariationRead.model_validate(v) for v in product.variations
+            ],
         )
 
     async def _get_product_or_404(self, product_id: int) -> Product:
@@ -71,7 +79,9 @@ class ProductView:
         )
         product = result.scalar_one_or_none()
         if product is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produto não encontrado.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Produto não encontrado."
+            )
         return product
 
     async def _validate_categories(self, category_ids: list[int]) -> None:
@@ -86,13 +96,20 @@ class ProductView:
         found = {row[0] for row in result.all()}
         missing = set(category_ids) - found
         if missing:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria não encontrada.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Categoria não encontrada.",
+            )
 
     def _replace_variations(self, product: Product, payload_variations: list) -> None:
         product.variations.clear()
         for variation in payload_variations:
             product.variations.append(
-                ProductVariation(size=variation.size, color=variation.color, quantity=variation.quantity)
+                ProductVariation(
+                    size=variation.size,
+                    color=variation.color,
+                    quantity=variation.quantity,
+                )
             )
 
     @router.post("/", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
@@ -115,7 +132,11 @@ class ProductView:
 
         for variation in payload.variations:
             product.variations.append(
-                ProductVariation(size=variation.size, color=variation.color, quantity=variation.quantity)
+                ProductVariation(
+                    size=variation.size,
+                    color=variation.color,
+                    quantity=variation.quantity,
+                )
             )
 
         self.db.add(product)
@@ -151,7 +172,10 @@ class ProductView:
     ) -> ProductRead:
         product = await self._get_product_or_404(product_id)
 
-        if "category_ids" in payload.model_fields_set and payload.category_ids is not None:
+        if (
+            "category_ids" in payload.model_fields_set
+            and payload.category_ids is not None
+        ):
             await self._validate_categories(payload.category_ids)
             product.category_links.clear()
             for cid in payload.category_ids:
@@ -235,7 +259,10 @@ class ProductView:
         product = await self._get_product_or_404(product_id)
 
         if not file.filename:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Falta o nome do arquivo no envio.")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Falta o nome do arquivo no envio.",
+            )
 
         await self._persist_legacy_image_row_if_needed(product)
         next_index = await self._image_row_count(product.id)
@@ -265,7 +292,9 @@ class ProductView:
 
         return UploadResponse(file_url=file_url)
 
-    @router.delete("/{product_id}/images/{image_id}", status_code=status.HTTP_204_NO_CONTENT)
+    @router.delete(
+        "/{product_id}/images/{image_id}", status_code=status.HTTP_204_NO_CONTENT
+    )
     async def delete_product_image(self, product_id: int, image_id: int) -> None:
         await self._get_product_or_404(product_id)
         result = await self.db.execute(
@@ -277,7 +306,9 @@ class ProductView:
         )
         row = result.scalar_one_or_none()
         if row is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Imagem não encontrada.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Imagem não encontrada."
+            )
         url = row.url
         await self.db.delete(row)
         await self.db.commit()
@@ -291,9 +322,13 @@ class ProductView:
         payload: ProductImageOrderUpdate,
     ) -> ProductRead:
         product = await self._get_product_or_404(product_id)
-        current_ids = [img.id for img in sorted(product.images, key=lambda x: x.sort_order)]
+        current_ids = [
+            img.id for img in sorted(product.images, key=lambda x: x.sort_order)
+        ]
         requested_ids = payload.image_ids
-        if set(requested_ids) != set(current_ids) or len(requested_ids) != len(current_ids):
+        if set(requested_ids) != set(current_ids) or len(requested_ids) != len(
+            current_ids
+        ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="A nova ordem deve conter exatamente as imagens atuais do produto.",

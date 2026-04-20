@@ -36,7 +36,9 @@ class TenantView:
             tenant.name = payload.name.strip()
 
         if "config" in payload.model_fields_set:
-            tenant.config = payload.config if payload.config is not None else TenantConfig()
+            tenant.config = (
+                payload.config if payload.config is not None else TenantConfig()
+            )
 
         await self.db.commit()
         await self.db.refresh(tenant)

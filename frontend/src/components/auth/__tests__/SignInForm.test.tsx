@@ -1,7 +1,15 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import SignInForm from "../SignInForm";
 
@@ -13,7 +21,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default ({
+  default({
     children,
     href,
     ...rest
@@ -56,7 +64,10 @@ describe("SignInForm", () => {
     );
 
     render(<SignInForm />);
-    await user.type(screen.getByPlaceholderText("info@gmail.com"), "bad@test.co");
+    await user.type(
+      screen.getByPlaceholderText("info@gmail.com"),
+      "bad@test.co",
+    );
     await user.type(screen.getByPlaceholderText("Digite sua senha"), "wrong");
     await user.click(screen.getByRole("button", { name: "Entrar" }));
 
@@ -76,8 +87,14 @@ describe("SignInForm", () => {
     );
 
     render(<SignInForm />);
-    await user.type(screen.getByPlaceholderText("info@gmail.com"), "good@test.co");
-    await user.type(screen.getByPlaceholderText("Digite sua senha"), "secret123");
+    await user.type(
+      screen.getByPlaceholderText("info@gmail.com"),
+      "good@test.co",
+    );
+    await user.type(
+      screen.getByPlaceholderText("Digite sua senha"),
+      "secret123",
+    );
     await user.click(screen.getByRole("button", { name: "Entrar" }));
 
     await waitFor(() => {

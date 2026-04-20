@@ -30,19 +30,27 @@ async def _run(
     email_norm = email.strip().lower()
     async with SessionLocal() as session:
         if new_tenant:
-            taken = await session.scalar(select(Tenant.id).where(Tenant.slug == tenant_slug).limit(1))
+            taken = await session.scalar(
+                select(Tenant.id).where(Tenant.slug == tenant_slug).limit(1)
+            )
             if taken is not None:
                 raise SystemExit(f"Tenant slug already exists: {tenant_slug!r}")
             tenant = Tenant(slug=tenant_slug, name=tenant_name or tenant_slug)
             session.add(tenant)
             await session.flush()
         else:
-            result = await session.execute(select(Tenant).where(Tenant.slug == tenant_slug).limit(1))
+            result = await session.execute(
+                select(Tenant).where(Tenant.slug == tenant_slug).limit(1)
+            )
             tenant = result.scalar_one_or_none()
             if tenant is None:
-                raise SystemExit(f"No tenant with slug={tenant_slug!r}; use --create-tenant to create one.")
+                raise SystemExit(
+                    f"No tenant with slug={tenant_slug!r}; use --create-tenant to create one."
+                )
 
-        existing = await session.scalar(select(User.id).where(User.email == email_norm).limit(1))
+        existing = await session.scalar(
+            select(User.id).where(User.email == email_norm).limit(1)
+        )
         if existing is not None:
             raise SystemExit(f"User already exists: {email_norm}")
 
@@ -56,15 +64,21 @@ async def _run(
         )
         session.add(user)
         await session.commit()
-        print(f"Created user {email_norm} for tenant id={tenant.id} slug={tenant.slug!r}")
+        print(
+            f"Created user {email_norm} for tenant id={tenant.id} slug={tenant.slug!r}"
+        )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Create a user linked to a tenant.")
     parser.add_argument("--email", required=True)
     parser.add_argument("--password", required=True)
-    parser.add_argument("--tenant-slug", default="default", help="Tenant slug (existing or new).")
-    parser.add_argument("--tenant-name", default=None, help="Display name when creating a new tenant.")
+    parser.add_argument(
+        "--tenant-slug", default="default", help="Tenant slug (existing or new)."
+    )
+    parser.add_argument(
+        "--tenant-name", default=None, help="Display name when creating a new tenant."
+    )
     parser.add_argument(
         "--create-tenant",
         action="store_true",

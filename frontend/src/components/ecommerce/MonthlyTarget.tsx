@@ -10,7 +10,7 @@ import { DropdownItem } from "../ui/dropdown/DropdownItem";
 // Dynamically import the ReactApexChart component
 const ReactApexChart = dynamic(
   () => import("react-apexcharts").then((mod) => mod.default),
-  { ssr: false }
+  { ssr: false },
 );
 
 export default function MonthlyTarget() {

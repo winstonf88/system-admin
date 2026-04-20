@@ -50,7 +50,9 @@ def _create_shell_sync_session() -> tuple[Engine, Session]:
             }
         )
     sync_engine = create_engine(sync_url, **engine_kwargs)
-    SyncSessionLocal = sessionmaker(bind=sync_engine, autoflush=False, expire_on_commit=False)
+    SyncSessionLocal = sessionmaker(
+        bind=sync_engine, autoflush=False, expire_on_commit=False
+    )
     return sync_engine, SyncSessionLocal()
 
 

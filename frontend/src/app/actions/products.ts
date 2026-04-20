@@ -34,7 +34,9 @@ export type VariationPayload = {
   quantity: number;
 };
 
-export type CreateProductResult = { ok: true; id: number } | { ok: false; error: string };
+export type CreateProductResult =
+  | { ok: true; id: number }
+  | { ok: false; error: string };
 
 export async function createProductAction(input: {
   name: string;
@@ -104,9 +106,12 @@ export async function deleteProductImageAction(
   productId: number,
   imageId: number,
 ): Promise<ProductActionResult> {
-  const res = await fetchBackendAuthenticated(`/api/products/${productId}/images/${imageId}`, {
-    method: "DELETE",
-  });
+  const res = await fetchBackendAuthenticated(
+    `/api/products/${productId}/images/${imageId}`,
+    {
+      method: "DELETE",
+    },
+  );
   if (res === null) {
     return { ok: false, error: "Não autenticado. Entre novamente." };
   }
@@ -122,11 +127,14 @@ export async function reorderProductImagesAction(
   productId: number,
   imageIds: number[],
 ): Promise<ProductActionResult> {
-  const res = await fetchBackendAuthenticated(`/api/products/${productId}/images/order`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image_ids: imageIds }),
-  });
+  const res = await fetchBackendAuthenticated(
+    `/api/products/${productId}/images/order`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image_ids: imageIds }),
+    },
+  );
   if (res === null) {
     return { ok: false, error: "Não autenticado. Entre novamente." };
   }
@@ -138,7 +146,9 @@ export async function reorderProductImagesAction(
   return { ok: true };
 }
 
-export async function deleteProductAction(productId: number): Promise<ProductActionResult> {
+export async function deleteProductAction(
+  productId: number,
+): Promise<ProductActionResult> {
   const res = await fetchBackendAuthenticated(`/api/products/${productId}`, {
     method: "DELETE",
   });

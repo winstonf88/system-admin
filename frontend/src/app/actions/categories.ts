@@ -89,7 +89,9 @@ export async function updateCategoryAction(
   return { ok: true, category };
 }
 
-export async function deleteCategoryAction(categoryId: number): Promise<CategoryActionResult> {
+export async function deleteCategoryAction(
+  categoryId: number,
+): Promise<CategoryActionResult> {
   const res = await fetchBackendAuthenticated(`/api/categories/${categoryId}`, {
     method: "DELETE",
   });

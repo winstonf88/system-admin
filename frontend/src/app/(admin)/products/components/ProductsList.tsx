@@ -12,7 +12,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatProductCategories } from "@/app/(admin)/products/components/category-labels";
-import type { CategoryOption, ProductRow } from "@/app/(admin)/products/components/product-types";
+import type {
+  CategoryOption,
+  ProductRow,
+} from "@/app/(admin)/products/components/product-types";
 import { backendPublicUrl } from "@/lib/api-public";
 import { useModal } from "@/hooks/useModal";
 import Link from "next/link";
@@ -79,7 +82,10 @@ export default function ProductsList({ products, categories }: Props) {
         {products.length === 0 ? (
           <p className="px-5 py-10 text-center text-gray-500 text-theme-sm dark:text-gray-400">
             Nenhum produto cadastrado.{" "}
-            <Link href="/products/new" className="font-medium text-brand-500 hover:text-brand-600">
+            <Link
+              href="/products/new"
+              className="font-medium text-brand-500 hover:text-brand-600"
+            >
               Criar o primeiro
             </Link>
           </p>
@@ -131,7 +137,11 @@ export default function ProductsList({ products, categories }: Props) {
                           <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-gray-100 bg-gray-50 dark:border-white/[0.06] dark:bg-white/[0.04]">
                             {img ? (
                               // eslint-disable-next-line @next/next/no-img-element -- dynamic backend URL
-                              <img src={img} alt="" className="max-h-full max-w-full object-contain" />
+                              <img
+                                src={img}
+                                alt=""
+                                className="max-h-full max-w-full object-contain"
+                              />
                             ) : (
                               <span className="text-xs text-gray-400">—</span>
                             )}
@@ -141,7 +151,10 @@ export default function ProductsList({ products, categories }: Props) {
                           {product.name}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
-                          {formatProductCategories(categories, product.category_ids)}
+                          {formatProductCategories(
+                            categories,
+                            product.category_ids,
+                          )}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
                           {product.variations.length}
@@ -173,7 +186,11 @@ export default function ProductsList({ products, categories }: Props) {
         )}
       </div>
 
-      <Modal isOpen={deleteModal.isOpen} onClose={deleteModal.closeModal} className="max-w-[520px] m-4">
+      <Modal
+        isOpen={deleteModal.isOpen}
+        onClose={deleteModal.closeModal}
+        className="max-w-[520px] m-4"
+      >
         <div className={modalInner}>
           <div className="px-2 pr-14">
             <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
@@ -186,10 +203,17 @@ export default function ProductsList({ products, categories }: Props) {
             </p>
           </div>
           {deleteError && (
-            <p className="mb-4 px-2 text-sm text-red-600 dark:text-red-400">{deleteError}</p>
+            <p className="mb-4 px-2 text-sm text-red-600 dark:text-red-400">
+              {deleteError}
+            </p>
           )}
           <div className="flex items-center gap-3 px-2 lg:justify-end">
-            <Button size="sm" variant="outline" type="button" onClick={deleteModal.closeModal}>
+            <Button
+              size="sm"
+              variant="outline"
+              type="button"
+              onClick={deleteModal.closeModal}
+            >
               Cancelar
             </Button>
             <button

@@ -25,10 +25,14 @@ class UserView:
         )
         user = result.scalar_one_or_none()
         if user is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado."
+            )
         return user
 
-    async def _ensure_email_available(self, email: str, exclude_user_id: int | None = None) -> None:
+    async def _ensure_email_available(
+        self, email: str, exclude_user_id: int | None = None
+    ) -> None:
         q = select(User.id).where(User.email == email)
         if exclude_user_id is not None:
             q = q.where(User.id != exclude_user_id)
@@ -96,7 +100,9 @@ class UserView:
         return user
 
     @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-    async def delete_user(self, user_id: int, current_user: User = Depends(get_current_user)) -> None:
+    async def delete_user(
+        self, user_id: int, current_user: User = Depends(get_current_user)
+    ) -> None:
         if user_id == current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

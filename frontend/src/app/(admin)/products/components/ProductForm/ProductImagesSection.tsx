@@ -8,15 +8,28 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 import Label from "@/components/form/Label";
 import { CloseLineIcon } from "@/icons";
 import Button from "@/components/ui/button/Button";
 
-import type { PendingFileItem, SavedImageUrl, UploadProgressItem } from "./form-types";
-import { formatMaxImageLabel, MAX_IMAGE_FILES, MAX_PRODUCT_IMAGES } from "./form-types";
+import type {
+  PendingFileItem,
+  SavedImageUrl,
+  UploadProgressItem,
+} from "./form-types";
+import {
+  formatMaxImageLabel,
+  MAX_IMAGE_FILES,
+  MAX_PRODUCT_IMAGES,
+} from "./form-types";
 
 type Props = {
   mode: "create" | "edit";
@@ -29,7 +42,9 @@ type Props = {
   pendingFiles: PendingFileItem[];
   pendingObjectUrls: Map<string, string>;
   uploadProgress: UploadProgressItem[] | null;
-  getRootProps: (props: { className: string }) => React.HTMLAttributes<HTMLDivElement>;
+  getRootProps: (props: {
+    className: string;
+  }) => React.HTMLAttributes<HTMLDivElement>;
   getInputProps: () => React.InputHTMLAttributes<HTMLInputElement>;
   onOpenLightbox: (event: React.MouseEvent, src: string, alt: string) => void;
   onReorderSavedImages: (orderedImageIds: number[]) => void;
@@ -39,7 +54,9 @@ type Props = {
   onClearPendingImages: () => void;
 };
 
-function parseSortableId(value: string): { kind: "saved" | "pending"; id: number | string } | null {
+function parseSortableId(
+  value: string,
+): { kind: "saved" | "pending"; id: number | string } | null {
   if (value.startsWith("saved-")) {
     const id = Number(value.slice("saved-".length));
     if (!Number.isFinite(id)) {
@@ -64,8 +81,20 @@ type SortableThumbProps = {
   children: React.ReactNode;
 };
 
-function SortableThumb({ sortableId, busy, title, children }: SortableThumbProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+function SortableThumb({
+  sortableId,
+  busy,
+  title,
+  children,
+}: SortableThumbProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: sortableId,
     disabled: busy,
   });
@@ -81,7 +110,9 @@ function SortableThumb({ sortableId, busy, title, children }: SortableThumbProps
       {...attributes}
       {...listeners}
       className={`relative aspect-square overflow-hidden rounded-lg border border-gray-200 bg-gray-100 touch-none dark:border-white/[0.08] dark:bg-gray-800 ${
-        isDragging ? "z-20 cursor-grabbing shadow-lg ring-2 ring-brand-400" : "cursor-grab"
+        isDragging
+          ? "z-20 cursor-grabbing shadow-lg ring-2 ring-brand-400"
+          : "cursor-grab"
       }`}
       title={title}
       aria-label="Arraste para reordenar"
@@ -124,7 +155,10 @@ export function ProductImagesSection({
     () => pendingFiles.map((pendingFile) => `pending-${pendingFile.id}`),
     [pendingFiles],
   );
-  const sortableIds = useMemo(() => [...savedSortableIds, ...pendingSortableIds], [savedSortableIds, pendingSortableIds]);
+  const sortableIds = useMemo(
+    () => [...savedSortableIds, ...pendingSortableIds],
+    [savedSortableIds, pendingSortableIds],
+  );
 
   const onDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -139,21 +173,37 @@ export function ProductImagesSection({
       }
 
       if (activeMeta.kind === "saved") {
-        const oldIndex = savedImageUrls.findIndex((image) => image.id === activeMeta.id);
-        const newIndex = savedImageUrls.findIndex((image) => image.id === overMeta.id);
+        const oldIndex = savedImageUrls.findIndex(
+          (image) => image.id === activeMeta.id,
+        );
+        const newIndex = savedImageUrls.findIndex(
+          (image) => image.id === overMeta.id,
+        );
         if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) {
           return;
         }
-        onReorderSavedImages(arrayMove(savedImageUrls, oldIndex, newIndex).map((image) => image.id));
+        onReorderSavedImages(
+          arrayMove(savedImageUrls, oldIndex, newIndex).map(
+            (image) => image.id,
+          ),
+        );
         return;
       }
 
-      const oldIndex = pendingFiles.findIndex((pendingFile) => pendingFile.id === activeMeta.id);
-      const newIndex = pendingFiles.findIndex((pendingFile) => pendingFile.id === overMeta.id);
+      const oldIndex = pendingFiles.findIndex(
+        (pendingFile) => pendingFile.id === activeMeta.id,
+      );
+      const newIndex = pendingFiles.findIndex(
+        (pendingFile) => pendingFile.id === overMeta.id,
+      );
       if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) {
         return;
       }
-      onReorderPendingFiles(arrayMove(pendingFiles, oldIndex, newIndex).map((pendingFile) => pendingFile.id));
+      onReorderPendingFiles(
+        arrayMove(pendingFiles, oldIndex, newIndex).map(
+          (pendingFile) => pendingFile.id,
+        ),
+      );
     },
     [onReorderPendingFiles, onReorderSavedImages, pendingFiles, savedImageUrls],
   );
@@ -164,7 +214,9 @@ export function ProductImagesSection({
       <div
         {...getRootProps({
           className: `rounded-xl border border-dashed border-gray-300 p-7 transition dark:border-gray-700 lg:p-10 ${
-            busy || imageSlotsLeft === 0 ? "cursor-not-allowed opacity-70" : "cursor-pointer"
+            busy || imageSlotsLeft === 0
+              ? "cursor-not-allowed opacity-70"
+              : "cursor-pointer"
           } ${
             isDragActive
               ? "border-brand-500 bg-brand-50 dark:bg-gray-800"
@@ -175,7 +227,10 @@ export function ProductImagesSection({
         <input {...getInputProps()} />
         <div className="dz-message m-0 flex w-full flex-col items-center text-center">
           {imageUploadError && (
-            <p className="mb-4 w-full max-w-md text-sm text-red-600 dark:text-red-400" role="alert">
+            <p
+              className="mb-4 w-full max-w-md text-sm text-red-600 dark:text-red-400"
+              role="alert"
+            >
               {imageUploadError}
             </p>
           )}
@@ -186,14 +241,21 @@ export function ProductImagesSection({
               collisionDetection={closestCenter}
               onDragEnd={onDragEnd}
             >
-              <SortableContext items={sortableIds} strategy={rectSortingStrategy}>
+              <SortableContext
+                items={sortableIds}
+                strategy={rectSortingStrategy}
+              >
                 <div className="mb-6 grid w-full max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
                   {savedImageUrls.map((img, idx) => (
                     <SortableThumb
                       key={img.id}
                       sortableId={`saved-${img.id}`}
                       busy={busy || deletingImageId === img.id}
-                      title={idx === 0 ? "Imagem principal (miniatura)" : "Imagem salva no produto"}
+                      title={
+                        idx === 0
+                          ? "Imagem principal (miniatura)"
+                          : "Imagem salva no produto"
+                      }
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element -- backend URL is dynamic */}
                       <img
@@ -208,7 +270,9 @@ export function ProductImagesSection({
                           onOpenLightbox(
                             event,
                             img.src,
-                            idx === 0 ? "Imagem principal do produto" : "Imagem do produto",
+                            idx === 0
+                              ? "Imagem principal do produto"
+                              : "Imagem do produto",
                           )
                         }
                         aria-label="Ver imagem em tamanho real"
@@ -227,7 +291,10 @@ export function ProductImagesSection({
                         }}
                         className="absolute top-1.5 right-1.5 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-900/70 text-white shadow-md backdrop-blur-sm transition hover:bg-gray-900/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:pointer-events-none disabled:opacity-50"
                       >
-                        <CloseLineIcon className="h-4 w-4 shrink-0" aria-hidden />
+                        <CloseLineIcon
+                          className="h-4 w-4 shrink-0"
+                          aria-hidden
+                        />
                       </button>
                     </SortableThumb>
                   ))}
@@ -251,7 +318,13 @@ export function ProductImagesSection({
                           <button
                             type="button"
                             className="absolute inset-0 z-10 cursor-zoom-in rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
-                            onClick={(event) => onOpenLightbox(event, thumbSrc, pendingFile.file.name)}
+                            onClick={(event) =>
+                              onOpenLightbox(
+                                event,
+                                thumbSrc,
+                                pendingFile.file.name,
+                              )
+                            }
                             aria-label={`Ver ${pendingFile.file.name} em tamanho real`}
                           />
                         ) : null}
@@ -266,7 +339,10 @@ export function ProductImagesSection({
                           }}
                           className="absolute top-1.5 right-1.5 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-900/70 text-white shadow-md backdrop-blur-sm transition hover:bg-gray-900/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:pointer-events-none disabled:opacity-50"
                         >
-                          <CloseLineIcon className="h-4 w-4 shrink-0" aria-hidden />
+                          <CloseLineIcon
+                            className="h-4 w-4 shrink-0"
+                            aria-hidden
+                          />
                         </button>
                         <span className="sr-only">{pendingFile.file.name}</span>
                       </SortableThumb>
@@ -304,13 +380,18 @@ export function ProductImagesSection({
             {isDragActive ? "Solte as imagens aqui" : "Arraste imagens para cá"}
           </h4>
           <span className="mb-5 block w-full max-w-[360px] text-sm text-gray-700 dark:text-gray-400">
-            Até {MAX_PRODUCT_IMAGES} imagens no produto ({formatMaxImageLabel()} cada; até{" "}
-            {MAX_IMAGE_FILES} por seleção). O envio ocorre após salvar; a primeira imagem é usada como
-            miniatura na lista. Você também pode arrastar as miniaturas para reordenar.
+            Até {MAX_PRODUCT_IMAGES} imagens no produto ({formatMaxImageLabel()}{" "}
+            cada; até {MAX_IMAGE_FILES} por seleção). O envio ocorre após
+            salvar; a primeira imagem é usada como miniatura na lista. Você
+            também pode arrastar as miniaturas para reordenar.
           </span>
           {imageSlotsLeft === 0 && (
-            <p className="mb-3 text-sm text-amber-700 dark:text-amber-400/90" role="status">
-              Limite de {MAX_PRODUCT_IMAGES} imagens atingido. Remova uma imagem para adicionar outras.
+            <p
+              className="mb-3 text-sm text-amber-700 dark:text-amber-400/90"
+              role="status"
+            >
+              Limite de {MAX_PRODUCT_IMAGES} imagens atingido. Remova uma imagem
+              para adicionar outras.
             </p>
           )}
           {pendingFiles.length > 0 && (
@@ -342,7 +423,9 @@ export function ProductImagesSection({
               onClick={(event) => event.stopPropagation()}
               onKeyDown={(event) => event.stopPropagation()}
             >
-              <p className="mb-3 text-sm font-medium text-gray-800 dark:text-white/90">Envio de imagens</p>
+              <p className="mb-3 text-sm font-medium text-gray-800 dark:text-white/90">
+                Envio de imagens
+              </p>
               <div className="space-y-3">
                 {uploadProgress.map((row) => (
                   <div key={row.id} className="text-sm">
@@ -355,7 +438,9 @@ export function ProductImagesSection({
                         {row.status === "uploading" && `${row.progress}%`}
                         {row.status === "done" && "Concluído"}
                         {row.status === "error" && (
-                          <span className="text-red-600 dark:text-red-400">{row.error ?? "Erro"}</span>
+                          <span className="text-red-600 dark:text-red-400">
+                            {row.error ?? "Erro"}
+                          </span>
                         )}
                       </span>
                     </div>
@@ -363,7 +448,9 @@ export function ProductImagesSection({
                       <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                         <div
                           className="h-full bg-brand-500 transition-all duration-150"
-                          style={{ width: `${row.status === "done" ? 100 : row.progress}%` }}
+                          style={{
+                            width: `${row.status === "done" ? 100 : row.progress}%`,
+                          }}
                         />
                       </div>
                     )}

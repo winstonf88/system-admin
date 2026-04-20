@@ -9,11 +9,15 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    email: Mapped[str] = mapped_column(
+        String(255), nullable=False, unique=True, index=True
+    )
     first_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     last_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id", name="fk_users_tenant_id"), nullable=False, index=True)
+    tenant_id: Mapped[int] = mapped_column(
+        ForeignKey("tenants.id", name="fk_users_tenant_id"), nullable=False, index=True
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     tenant = relationship("Tenant", back_populates="users")

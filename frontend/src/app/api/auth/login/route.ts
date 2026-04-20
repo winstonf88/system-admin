@@ -13,7 +13,10 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ detail: "Corpo JSON inválido." }, { status: 400 });
+    return NextResponse.json(
+      { detail: "Corpo JSON inválido." },
+      { status: 400 },
+    );
   }
 
   const email =
@@ -45,10 +48,16 @@ export async function POST(request: Request) {
   });
 
   if (res.status === 401) {
-    return NextResponse.json({ detail: "E-mail ou senha inválidos." }, { status: 401 });
+    return NextResponse.json(
+      { detail: "E-mail ou senha inválidos." },
+      { status: 401 },
+    );
   }
   if (res.status === 403) {
-    return NextResponse.json({ detail: "Esta conta está desativada." }, { status: 403 });
+    return NextResponse.json(
+      { detail: "Esta conta está desativada." },
+      { status: 403 },
+    );
   }
   if (!res.ok) {
     return NextResponse.json(

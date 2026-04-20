@@ -10,6 +10,7 @@ from app.models.tenant_config import TenantConfig
 if TYPE_CHECKING:
     from app.models.user import User
 
+
 def _default_tenant_config() -> TenantConfig:
     return TenantConfig()
 
@@ -21,7 +22,9 @@ class Tenant(Base):
     __tablename__ = "tenants"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    slug: Mapped[str] = mapped_column(String(80), nullable=False, unique=True, index=True)
+    slug: Mapped[str] = mapped_column(
+        String(80), nullable=False, unique=True, index=True
+    )
     name: Mapped[str] = mapped_column(String(180), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     config: Mapped[TenantConfig] = mapped_column(

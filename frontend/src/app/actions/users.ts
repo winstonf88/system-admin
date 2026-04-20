@@ -90,7 +90,9 @@ export async function updateUserAction(
   return { ok: true };
 }
 
-export async function deleteUserAction(userId: number): Promise<UserActionResult> {
+export async function deleteUserAction(
+  userId: number,
+): Promise<UserActionResult> {
   const res = await fetchBackendAuthenticated(`/api/users/${userId}`, {
     method: "DELETE",
   });

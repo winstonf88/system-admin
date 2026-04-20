@@ -3,7 +3,10 @@ import userEvent from "@testing-library/user-event";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { CategoryOption, ProductRow } from "@/app/(admin)/products/components/product-types";
+import type {
+  CategoryOption,
+  ProductRow,
+} from "@/app/(admin)/products/components/product-types";
 
 const refresh = vi.fn();
 
@@ -12,7 +15,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default ({
+  default({
     children,
     href,
     ...rest
@@ -106,7 +109,10 @@ describe("ProductsList", () => {
 
   it("shows delete error when delete fails", async () => {
     const user = userEvent.setup();
-    deleteProductAction.mockResolvedValue({ ok: false, error: "Sem permissão." });
+    deleteProductAction.mockResolvedValue({
+      ok: false,
+      error: "Sem permissão.",
+    });
 
     render(<ProductsList products={[product]} categories={categories} />);
 

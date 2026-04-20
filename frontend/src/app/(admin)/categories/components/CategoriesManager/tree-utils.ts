@@ -22,12 +22,17 @@ export function flattenTree(
       depth,
       ancestorIds,
     });
-    items.push(...flattenTree(node.subcategories, depth + 1, [...ancestorIds, node.id]));
+    items.push(
+      ...flattenTree(node.subcategories, depth + 1, [...ancestorIds, node.id]),
+    );
   }
   return items;
 }
 
-export function findNode(tree: CategoryTreeNode[], nodeId: number): CategoryTreeNode | null {
+export function findNode(
+  tree: CategoryTreeNode[],
+  nodeId: number,
+): CategoryTreeNode | null {
   for (const node of tree) {
     if (node.id === nodeId) {
       return node;
@@ -113,12 +118,16 @@ export function reorderChildren(
 ): CategoryTreeNode[] {
   if (parentId === null) {
     const byId = new Map(tree.map((node) => [node.id, node]));
-    return orderedIds.map((id) => byId.get(id)).filter((node): node is CategoryTreeNode => Boolean(node));
+    return orderedIds
+      .map((id) => byId.get(id))
+      .filter((node): node is CategoryTreeNode => Boolean(node));
   }
 
   return tree.map((node) => {
     if (node.id === parentId) {
-      const byId = new Map(node.subcategories.map((child) => [child.id, child]));
+      const byId = new Map(
+        node.subcategories.map((child) => [child.id, child]),
+      );
       return {
         ...node,
         subcategories: orderedIds

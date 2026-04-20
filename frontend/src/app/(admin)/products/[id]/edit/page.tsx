@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import ProductForm from "@/app/(admin)/products/components/ProductForm";
-import type { CategoryOption, ProductRow } from "@/app/(admin)/products/components/product-types";
+import type {
+  CategoryOption,
+  ProductRow,
+} from "@/app/(admin)/products/components/product-types";
 import { fetchBackendAuthenticated } from "@/lib/backend-server-fetch";
 
 type Props = { params: Promise<{ id: string }> };

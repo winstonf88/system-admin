@@ -25,7 +25,9 @@ class PydanticJSON(TypeDecorator):
         self._model = model
         self._coerce_null_to_empty = coerce_null_to_empty
 
-    def process_bind_param(self, value: Any, dialect: Any) -> dict[str, Any] | list[Any] | None:
+    def process_bind_param(
+        self, value: Any, dialect: Any
+    ) -> dict[str, Any] | list[Any] | None:
         if value is None:
             if self._coerce_null_to_empty:
                 return self._model().model_dump(mode="json")

@@ -44,12 +44,16 @@ describe("UserEditModal", () => {
     );
 
     const fields = screen.getAllByRole("textbox");
-    const emailInput = fields.find((el) => (el as HTMLInputElement).type === "email");
+    const emailInput = fields.find(
+      (el) => (el as HTMLInputElement).type === "email",
+    );
     expect(emailInput).toBeTruthy();
     await u.clear(emailInput as HTMLInputElement);
     await u.type(emailInput as HTMLInputElement, "updated@test.co");
 
-    await u.click(screen.getAllByRole("button", { name: "Salvar alterações" })[0]);
+    await u.click(
+      screen.getAllByRole("button", { name: "Salvar alterações" })[0],
+    );
 
     await waitFor(() => {
       expect(updateUserAction).toHaveBeenCalledWith(
@@ -66,11 +70,23 @@ describe("UserEditModal", () => {
 
   it("shows error when update fails", async () => {
     const u = userEvent.setup();
-    updateUserAction.mockResolvedValue({ ok: false, error: "E-mail inválido." });
+    updateUserAction.mockResolvedValue({
+      ok: false,
+      error: "E-mail inválido.",
+    });
 
-    render(<UserEditModal user={userRow} isOpen onClose={onClose} onSaved={onSaved} />);
+    render(
+      <UserEditModal
+        user={userRow}
+        isOpen
+        onClose={onClose}
+        onSaved={onSaved}
+      />,
+    );
 
-    await u.click(screen.getAllByRole("button", { name: "Salvar alterações" })[0]);
+    await u.click(
+      screen.getAllByRole("button", { name: "Salvar alterações" })[0],
+    );
 
     expect(await screen.findByText("E-mail inválido.")).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();

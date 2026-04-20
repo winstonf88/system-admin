@@ -22,7 +22,9 @@ describe("POST /api/products/[productId]/upload", () => {
 
   it("returns 400 when product id is invalid", async () => {
     const req = { formData: async () => new FormData() } as NextRequest;
-    const res = await POST(req, { params: Promise.resolve({ productId: "abc" }) });
+    const res = await POST(req, {
+      params: Promise.resolve({ productId: "abc" }),
+    });
 
     expect(res.status).toBe(400);
     expect(mockFetchBackend).not.toHaveBeenCalled();
@@ -31,7 +33,9 @@ describe("POST /api/products/[productId]/upload", () => {
   it("returns 400 when file is missing", async () => {
     const req = { formData: async () => new FormData() } as NextRequest;
 
-    const res = await POST(req, { params: Promise.resolve({ productId: "1" }) });
+    const res = await POST(req, {
+      params: Promise.resolve({ productId: "1" }),
+    });
     expect(res.status).toBe(400);
     expect((await res.json()) as { detail: string }).toEqual({
       detail: "Selecione um arquivo de imagem.",
@@ -45,7 +49,9 @@ describe("POST /api/products/[productId]/upload", () => {
     mockFetchBackend.mockResolvedValue(null);
 
     const req = { formData: async () => fd } as NextRequest;
-    const res = await POST(req, { params: Promise.resolve({ productId: "10" }) });
+    const res = await POST(req, {
+      params: Promise.resolve({ productId: "10" }),
+    });
 
     expect(res.status).toBe(401);
     expect(mockRevalidatePath).not.toHaveBeenCalled();
@@ -62,7 +68,9 @@ describe("POST /api/products/[productId]/upload", () => {
     );
 
     const req = { formData: async () => fd } as NextRequest;
-    const res = await POST(req, { params: Promise.resolve({ productId: "10" }) });
+    const res = await POST(req, {
+      params: Promise.resolve({ productId: "10" }),
+    });
 
     expect(res.status).toBe(200);
     expect((await res.json()) as { file_url: string }).toEqual({

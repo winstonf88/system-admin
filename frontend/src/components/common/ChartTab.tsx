@@ -15,7 +15,7 @@ const ChartTab: React.FC = () => {
       <button
         onClick={() => setSelected("optionOne")}
         className={`px-3 py-2 font-medium w-full rounded-md text-theme-sm hover:text-gray-900   dark:hover:text-white ${getButtonClass(
-          "optionOne"
+          "optionOne",
         )}`}
       >
         Mensal
@@ -24,7 +24,7 @@ const ChartTab: React.FC = () => {
       <button
         onClick={() => setSelected("optionTwo")}
         className={`px-3 py-2 font-medium w-full rounded-md text-theme-sm hover:text-gray-900   dark:hover:text-white ${getButtonClass(
-          "optionTwo"
+          "optionTwo",
         )}`}
       >
         Trimestral
@@ -33,7 +33,7 @@ const ChartTab: React.FC = () => {
       <button
         onClick={() => setSelected("optionThree")}
         className={`px-3 py-2 font-medium w-full rounded-md text-theme-sm hover:text-gray-900   dark:hover:text-white ${getButtonClass(
-          "optionThree"
+          "optionThree",
         )}`}
       >
         Anual

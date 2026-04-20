@@ -83,12 +83,18 @@ export default function UserEditModal({
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[700px] m-4">
       <div className={modalInner}>
         <div className="px-2 pr-14">
-          <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">{title}</h4>
-          <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">{description}</p>
+          <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+            {title}
+          </h4>
+          <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
+            {description}
+          </p>
         </div>
         <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col">
           {editError && (
-            <p className="mb-4 px-2 text-sm text-red-600 dark:text-red-400">{editError}</p>
+            <p className="mb-4 px-2 text-sm text-red-600 dark:text-red-400">
+              {editError}
+            </p>
           )}
           <div className="custom-scrollbar max-h-[450px] overflow-y-auto px-2 pb-3">
             <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
@@ -118,14 +124,26 @@ export default function UserEditModal({
               </div>
               <div className="col-span-2 lg:col-span-1">
                 <Label>Nome</Label>
-                <Input type="text" value={editFirst} onChange={(e) => setEditFirst(e.target.value)} />
+                <Input
+                  type="text"
+                  value={editFirst}
+                  onChange={(e) => setEditFirst(e.target.value)}
+                />
               </div>
               <div className="col-span-2 lg:col-span-1">
                 <Label>Sobrenome</Label>
-                <Input type="text" value={editLast} onChange={(e) => setEditLast(e.target.value)} />
+                <Input
+                  type="text"
+                  value={editLast}
+                  onChange={(e) => setEditLast(e.target.value)}
+                />
               </div>
               <div className="col-span-2">
-                <Switch label="Ativo" checked={editActive} onChange={setEditActive} />
+                <Switch
+                  label="Ativo"
+                  checked={editActive}
+                  onChange={setEditActive}
+                />
               </div>
             </div>
           </div>

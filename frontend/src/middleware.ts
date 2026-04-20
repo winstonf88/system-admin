@@ -3,11 +3,7 @@ import type { NextRequest } from "next/server";
 
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
 
-const PUBLIC_PATHS = new Set([
-  "/signin",
-  "/signup",
-  "/reset-password",
-]);
+const PUBLIC_PATHS = new Set(["/signin", "/signup", "/reset-password"]);
 
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true;

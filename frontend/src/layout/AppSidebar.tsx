@@ -5,7 +5,13 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuthSession } from "@/context/AuthSessionContext";
 import { useSidebar } from "../context/SidebarContext";
-import { BoxCubeIcon, ChevronDownIcon, GearIcon, HorizontaLDots, UserCircleIcon } from "../icons/index";
+import {
+  BoxCubeIcon,
+  ChevronDownIcon,
+  GearIcon,
+  HorizontaLDots,
+  UserCircleIcon,
+} from "../icons/index";
 
 type NavItem = {
   name: string;
@@ -13,7 +19,13 @@ type NavItem = {
   path?: string;
   /** When true, active if pathname equals `path` or starts with `path/` (nested routes). */
   matchPrefix?: boolean;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean; matchPrefix?: boolean }[];
+  subItems?: {
+    name: string;
+    path: string;
+    pro?: boolean;
+    new?: boolean;
+    matchPrefix?: boolean;
+  }[];
 };
 
 const navItems: NavItem[] = [
@@ -47,7 +59,7 @@ const AppSidebar: React.FC = () => {
 
   const renderMenuItems = (
     navItems: NavItem[],
-    menuType: "main" | "others"
+    menuType: "main" | "others",
   ) => (
     <ul className="flex flex-col gap-4">
       {navItems.map((nav, index) => (
@@ -178,7 +190,7 @@ const AppSidebar: React.FC = () => {
     index: number;
   } | null>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
-    {}
+    {},
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -251,8 +263,8 @@ const AppSidebar: React.FC = () => {
           isExpanded || isMobileOpen
             ? "w-[290px]"
             : isHovered
-            ? "w-[290px]"
-            : "w-[90px]"
+              ? "w-[290px]"
+              : "w-[90px]"
         }
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         lg:translate-x-0`}

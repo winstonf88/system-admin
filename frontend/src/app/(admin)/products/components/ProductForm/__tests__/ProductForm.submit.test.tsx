@@ -3,7 +3,10 @@ import userEvent from "@testing-library/user-event";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { CategoryOption, ProductRow } from "@/app/(admin)/products/components/product-types";
+import type {
+  CategoryOption,
+  ProductRow,
+} from "@/app/(admin)/products/components/product-types";
 
 const push = vi.fn();
 const refresh = vi.fn();
@@ -50,7 +53,9 @@ vi.mock("@/app/actions/categories", () => ({
 import ProductForm from "../index";
 
 describe("ProductForm submit flow", () => {
-  const baseCategories: CategoryOption[] = [{ id: 1, name: "Acessórios", parent_id: null }];
+  const baseCategories: CategoryOption[] = [
+    { id: 1, name: "Acessórios", parent_id: null },
+  ];
 
   const sampleProduct: ProductRow = {
     id: 5,
@@ -104,7 +109,13 @@ describe("ProductForm submit flow", () => {
     const user = userEvent.setup();
     updateProductAction.mockResolvedValue({ ok: true });
 
-    render(<ProductForm categories={baseCategories} mode="edit" product={sampleProduct} />);
+    render(
+      <ProductForm
+        categories={baseCategories}
+        mode="edit"
+        product={sampleProduct}
+      />,
+    );
 
     const nameInput = screen.getByLabelText(/Nome/i);
     await user.clear(nameInput);

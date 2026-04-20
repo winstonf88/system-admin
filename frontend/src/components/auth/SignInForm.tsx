@@ -108,7 +108,10 @@ export default function SignInForm({ redirectTo }: { redirectTo?: string }) {
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 {error ? (
-                  <p className="text-sm text-error-500 dark:text-error-400" role="alert">
+                  <p
+                    className="text-sm text-error-500 dark:text-error-400"
+                    role="alert"
+                  >
                     {error}
                   </p>
                 ) : null}
@@ -160,7 +163,12 @@ export default function SignInForm({ redirectTo }: { redirectTo?: string }) {
                 </div>
 
                 <div>
-                  <Button className="w-full" size="sm" type="submit" disabled={loading}>
+                  <Button
+                    className="w-full"
+                    size="sm"
+                    type="submit"
+                    disabled={loading}
+                  >
                     {loading ? "Entrando…" : "Entrar"}
                   </Button>
                 </div>

@@ -24,7 +24,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
 
   const countryCodes: Record<string, string> = countries.reduce(
     (acc, { code, label }) => ({ ...acc, [code]: label }),
-    {}
+    {},
   );
 
   const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

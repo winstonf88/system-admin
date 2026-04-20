@@ -17,7 +17,9 @@ describe("middleware", () => {
   it("redirects unauthenticated users away from protected routes", () => {
     const res = middleware(request("/users"));
     expect(res.status).toBe(307);
-    expect(res.headers.get("location")).toBe("http://localhost:3000/signin?from=%2Fusers");
+    expect(res.headers.get("location")).toBe(
+      "http://localhost:3000/signin?from=%2Fusers",
+    );
   });
 
   it("allows public auth pages without session", () => {
@@ -26,9 +28,7 @@ describe("middleware", () => {
   });
 
   it("redirects signed-in users away from signin", () => {
-    const res = middleware(
-      request("/signin", `${AUTH_SESSION_COOKIE}=1`),
-    );
+    const res = middleware(request("/signin", `${AUTH_SESSION_COOKIE}=1`));
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toBe("http://localhost:3000/");
   });

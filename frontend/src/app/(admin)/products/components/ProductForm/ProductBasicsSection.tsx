@@ -62,7 +62,9 @@ export function ProductBasicsSection({
           className="mt-1.5 max-h-52 space-y-2 overflow-y-auto rounded-lg border border-gray-300 bg-transparent px-3 py-2.5 text-sm text-gray-800 shadow-theme-xs dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
         >
           {categoryList.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400">Crie uma categoria (botão acima)…</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              Crie uma categoria (botão acima)…
+            </p>
           ) : (
             categoryOptions.map((option) => {
               const checked = selectedCategoryIds.includes(option.id);

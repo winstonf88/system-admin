@@ -19,7 +19,12 @@ export type UploadProgressItem = {
   error?: string;
 };
 
-export type VariationDraft = { key: string; size: string; color: string; quantity: number };
+export type VariationDraft = {
+  key: string;
+  size: string;
+  color: string;
+  quantity: number;
+};
 
 export type SavedImageUrl = { id: number; src: string };
 

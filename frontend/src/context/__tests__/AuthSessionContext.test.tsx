@@ -1,9 +1,20 @@
-import { AuthSessionProvider, useAuthSession } from "@/context/AuthSessionContext";
+import {
+  AuthSessionProvider,
+  useAuthSession,
+} from "@/context/AuthSessionContext";
 import { AUTH_SESSION_REFRESH_EVENT } from "@/lib/auth-session";
 import { resetAuthSessionClientForTests } from "@/lib/auth-session-client";
 import { render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 const sessionA = {
   id: 1,
@@ -70,7 +81,9 @@ describe("AuthSessionProvider", () => {
     });
 
     expect(
-      fetchSpy.mock.calls.filter((c) => String(c[0]).includes("/api/auth/session")),
+      fetchSpy.mock.calls.filter((c) =>
+        String(c[0]).includes("/api/auth/session"),
+      ),
     ).toHaveLength(1);
   });
 
@@ -106,7 +119,9 @@ describe("AuthSessionProvider", () => {
     });
 
     expect(
-      fetchSpy.mock.calls.filter((c) => String(c[0]).includes("/api/auth/session")),
+      fetchSpy.mock.calls.filter((c) =>
+        String(c[0]).includes("/api/auth/session"),
+      ),
     ).toHaveLength(2);
   });
 

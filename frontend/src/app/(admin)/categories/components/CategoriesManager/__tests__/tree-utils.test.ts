@@ -24,7 +24,13 @@ describe("tree-utils", () => {
 
   it("flattenTree preserves depth and ancestors", () => {
     const flat = flattenTree(sample);
-    expect(flat.map((f) => ({ id: f.id, depth: f.depth, ancestorIds: f.ancestorIds }))).toEqual([
+    expect(
+      flat.map((f) => ({
+        id: f.id,
+        depth: f.depth,
+        ancestorIds: f.ancestorIds,
+      })),
+    ).toEqual([
       { id: 1, depth: 0, ancestorIds: [] },
       { id: 11, depth: 1, ancestorIds: [1] },
       { id: 12, depth: 1, ancestorIds: [1] },
@@ -36,7 +42,8 @@ describe("tree-utils", () => {
     const next = buildUpdatedTree(sample, 11, null);
     const roots = next.map((n) => n.id);
     expect(roots).toContain(11);
-    const underA = next.find((n) => n.id === 1)?.subcategories.map((c) => c.id) ?? [];
+    const underA =
+      next.find((n) => n.id === 1)?.subcategories.map((c) => c.id) ?? [];
     expect(underA).not.toContain(11);
   });
 

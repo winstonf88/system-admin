@@ -1,7 +1,13 @@
 import { useEffect } from "react";
 
 import Button from "@/components/ui/button/Button";
-import { ArrowDownIcon, ArrowUpIcon, PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashBinIcon,
+} from "@/icons";
 
 import type { CategoryTreeNode } from "./types";
 
@@ -37,11 +43,18 @@ export type TreeNodeProps = {
   onDelete: (id: number) => void;
   onDrop: (draggedId: number, targetParentId: number | null) => void;
   onReorderNode: (categoryId: number, direction: "up" | "down") => void;
-  onSiblingDrop: (draggedId: number, targetId: number, position: "before" | "after") => void;
+  onSiblingDrop: (
+    draggedId: number,
+    targetId: number,
+    position: "before" | "after",
+  ) => void;
   onDragStart: (id: number) => void;
   onDragEnd: () => void;
   onDragHover: (targetId: number | "root" | null) => void;
-  onSiblingHover: (targetId: number | null, position: "before" | "after" | null) => void;
+  onSiblingHover: (
+    targetId: number | null,
+    position: "before" | "after" | null,
+  ) => void;
   onToggleCollapsed: (id: number) => void;
 };
 
@@ -95,6 +108,14 @@ export function TreeNode({
       ? hoveredSiblingDrop.position
       : null;
 
+  const resolveDraggedId = (event: React.DragEvent) => {
+    if (draggingId !== null) {
+      return draggingId;
+    }
+    const fromData = Number(event.dataTransfer.getData("text/category-id"));
+    return Number.isFinite(fromData) ? fromData : null;
+  };
+
   useEffect(() => {
     if (!isEditing) {
       return;
@@ -108,7 +129,9 @@ export function TreeNode({
     if (!isCreatingChildHere) {
       return;
     }
-    const el = document.getElementById(createChildInputId) as HTMLInputElement | null;
+    const el = document.getElementById(
+      createChildInputId,
+    ) as HTMLInputElement | null;
     el?.focus();
   }, [isCreatingChildHere, createChildInputId]);
 
@@ -136,8 +159,8 @@ export function TreeNode({
           if (isEditing || isCreatingChildHere) {
             return;
           }
-          const draggedId = Number(event.dataTransfer.getData("text/category-id"));
-          if (!Number.isFinite(draggedId)) {
+          const draggedId = resolveDraggedId(event);
+          if (draggedId === null) {
             return;
           }
           const rect = event.currentTarget.getBoundingClientRect();
@@ -168,8 +191,8 @@ export function TreeNode({
             return;
           }
           event.preventDefault();
-          const draggedId = Number(event.dataTransfer.getData("text/category-id"));
-          if (!Number.isFinite(draggedId)) {
+          const draggedId = resolveDraggedId(event);
+          if (draggedId === null) {
             return;
           }
           const rect = event.currentTarget.getBoundingClientRect();
@@ -267,7 +290,9 @@ export function TreeNode({
           </div>
         ) : (
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
-            <span className="truncate text-sm font-medium text-gray-800 dark:text-white/90">{node.name}</span>
+            <span className="truncate text-sm font-medium text-gray-800 dark:text-white/90">
+              {node.name}
+            </span>
             <button
               type="button"
               onMouseDown={(event) => event.stopPropagation()}
@@ -297,7 +322,12 @@ export function TreeNode({
               event.stopPropagation();
               onReorderNode(node.id, "up");
             }}
-            disabled={pendingAction || isEditing || blockActions || !canMoveNode(node.id, "up")}
+            disabled={
+              pendingAction ||
+              isEditing ||
+              blockActions ||
+              !canMoveNode(node.id, "up")
+            }
             className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
             aria-label="Subir categoria"
             title="Subir"
@@ -316,7 +346,12 @@ export function TreeNode({
               event.stopPropagation();
               onReorderNode(node.id, "down");
             }}
-            disabled={pendingAction || isEditing || blockActions || !canMoveNode(node.id, "down")}
+            disabled={
+              pendingAction ||
+              isEditing ||
+              blockActions ||
+              !canMoveNode(node.id, "down")
+            }
             className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
             aria-label="Descer categoria"
             title="Descer"
@@ -389,7 +424,9 @@ export function TreeNode({
                   id={createChildInputId}
                   type="text"
                   value={createChildDraftName}
-                  onChange={(event) => onCreateChildDraftChange(event.target.value)}
+                  onChange={(event) =>
+                    onCreateChildDraftChange(event.target.value)
+                  }
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
                       event.preventDefault();
@@ -429,40 +466,40 @@ export function TreeNode({
           {hasChildren &&
             !isCollapsed &&
             node.subcategories.map((child) => (
-            <TreeNode
-              key={child.id}
-              node={child}
-              depth={depth + 1}
-              editingId={editingId}
-              editDraftName={editDraftName}
-              creatingChildUnderId={creatingChildUnderId}
-              createChildDraftName={createChildDraftName}
-              collapsedIds={collapsedIds}
-              draggingId={draggingId}
-              hoveredParentId={hoveredParentId}
-              hoveredSiblingDrop={hoveredSiblingDrop}
-              pendingAction={pendingAction}
-              canDropInto={canDropInto}
-              canMoveNode={canMoveNode}
-              getDropIntent={getDropIntent}
-              onEditDraftChange={onEditDraftChange}
-              onStartEdit={onStartEdit}
-              onSaveEdit={onSaveEdit}
-              onCancelEdit={onCancelEdit}
-              onCreateChildDraftChange={onCreateChildDraftChange}
-              onStartCreateChild={onStartCreateChild}
-              onSaveCreateChild={onSaveCreateChild}
-              onCancelCreateChild={onCancelCreateChild}
-              onDelete={onDelete}
-              onDrop={onDrop}
-              onReorderNode={onReorderNode}
-              onSiblingDrop={onSiblingDrop}
-              onDragStart={onDragStart}
-              onDragEnd={onDragEnd}
-              onDragHover={onDragHover}
-              onSiblingHover={onSiblingHover}
-              onToggleCollapsed={onToggleCollapsed}
-            />
+              <TreeNode
+                key={child.id}
+                node={child}
+                depth={depth + 1}
+                editingId={editingId}
+                editDraftName={editDraftName}
+                creatingChildUnderId={creatingChildUnderId}
+                createChildDraftName={createChildDraftName}
+                collapsedIds={collapsedIds}
+                draggingId={draggingId}
+                hoveredParentId={hoveredParentId}
+                hoveredSiblingDrop={hoveredSiblingDrop}
+                pendingAction={pendingAction}
+                canDropInto={canDropInto}
+                canMoveNode={canMoveNode}
+                getDropIntent={getDropIntent}
+                onEditDraftChange={onEditDraftChange}
+                onStartEdit={onStartEdit}
+                onSaveEdit={onSaveEdit}
+                onCancelEdit={onCancelEdit}
+                onCreateChildDraftChange={onCreateChildDraftChange}
+                onStartCreateChild={onStartCreateChild}
+                onSaveCreateChild={onSaveCreateChild}
+                onCancelCreateChild={onCancelCreateChild}
+                onDelete={onDelete}
+                onDrop={onDrop}
+                onReorderNode={onReorderNode}
+                onSiblingDrop={onSiblingDrop}
+                onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
+                onDragHover={onDragHover}
+                onSiblingHover={onSiblingHover}
+                onToggleCollapsed={onToggleCollapsed}
+              />
             ))}
         </ul>
       )}

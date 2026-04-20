@@ -33,7 +33,10 @@ describe("category server actions", () => {
       }),
     );
     const r = await createCategoryAction({ name: "  X  ", parent_id: null });
-    expect(r).toMatchObject({ ok: true, category: { id: 1, name: "X", parent_id: null } });
+    expect(r).toMatchObject({
+      ok: true,
+      category: { id: 1, name: "X", parent_id: null },
+    });
     expect(mockRevalidatePath).toHaveBeenCalledWith("/products", "layout");
     expect(mockRevalidatePath).toHaveBeenCalledWith("/categories", "page");
   });
@@ -75,7 +78,9 @@ describe("category server actions", () => {
     mockFetchBackend.mockResolvedValue(new Response(null, { status: 204 }));
     const r = await deleteCategoryAction(4);
     expect(r).toEqual({ ok: true });
-    expect(mockFetchBackend).toHaveBeenCalledWith("/api/categories/4", { method: "DELETE" });
+    expect(mockFetchBackend).toHaveBeenCalledWith("/api/categories/4", {
+      method: "DELETE",
+    });
     expect(mockRevalidatePath).toHaveBeenCalledWith("/categories", "page");
   });
 
@@ -111,7 +116,10 @@ describe("category server actions", () => {
   it("returns unauthenticated error without revalidating", async () => {
     mockFetchBackend.mockResolvedValue(null);
     const r = await deleteCategoryAction(1);
-    expect(r).toEqual({ ok: false, error: "Não autenticado. Entre novamente." });
+    expect(r).toEqual({
+      ok: false,
+      error: "Não autenticado. Entre novamente.",
+    });
     expect(mockRevalidatePath).not.toHaveBeenCalled();
   });
 });

@@ -28,7 +28,9 @@ async function errorMessage(res: Response): Promise<string> {
   }
 }
 
-export async function updateTenantAction(input: { name: string }): Promise<TenantActionResult> {
+export async function updateTenantAction(input: {
+  name: string;
+}): Promise<TenantActionResult> {
   const res = await fetchBackendAuthenticated("/api/tenant/", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },

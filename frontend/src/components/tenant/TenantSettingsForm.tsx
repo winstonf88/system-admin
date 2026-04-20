@@ -12,7 +12,11 @@ export type TenantSettings = {
   name: string;
 };
 
-export default function TenantSettingsForm({ initial }: { initial: TenantSettings }) {
+export default function TenantSettingsForm({
+  initial,
+}: {
+  initial: TenantSettings;
+}) {
   const router = useRouter();
   const [name, setName] = useState(initial.name);
   const [error, setError] = useState("");
