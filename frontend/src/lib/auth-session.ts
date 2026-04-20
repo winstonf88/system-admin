@@ -8,6 +8,9 @@ export type AuthSession = {
   tenant_name: string;
 };
 
+/** Dispatched on `window` after tenant/org settings change so shell UI can refetch `GET /api/auth/session`. */
+export const AUTH_SESSION_REFRESH_EVENT = "sa:auth-session-refresh";
+
 /** HttpOnly cookie set after successful login (validated against the API). */
 export const AUTH_SESSION_COOKIE = "sa_session";
 

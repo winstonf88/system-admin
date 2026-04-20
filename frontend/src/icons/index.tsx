@@ -44,6 +44,7 @@ import TableIcon from "./table.svg";
 import PageIcon from "./page.svg";
 import PieChartIcon from "./pie-chart.svg";
 import BoxCubeIcon from "./box-cube.svg";
+import GearIcon from "./gear.svg";
 import PlugInIcon from "./plug-in.svg";
 import DocsIcon from "./docs.svg";
 import MailIcon from "./mail-line.svg";
@@ -100,6 +101,7 @@ export {
   TaskIcon,
   PieChartIcon,
   BoxCubeIcon,
+  GearIcon,
   PlugInIcon,
   DocsIcon,
   MailIcon,

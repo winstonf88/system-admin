@@ -3,9 +3,9 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import type { AuthSession } from "@/lib/auth-session";
+import { AUTH_SESSION_REFRESH_EVENT, type AuthSession } from "@/lib/auth-session";
 import { useSidebar } from "../context/SidebarContext";
-import { ChevronDownIcon, HorizontaLDots, UserCircleIcon } from "../icons/index";
+import { ChevronDownIcon, GearIcon, HorizontaLDots, UserCircleIcon } from "../icons/index";
 
 type NavItem = {
   name: string;
@@ -20,6 +20,11 @@ const navItems: NavItem[] = [
     name: "Usuários",
     path: "/users",
   },
+  {
+    icon: <GearIcon />,
+    name: "Configurações",
+    path: "/settings/tenant",
+  },
 ];
 
 const othersItems: NavItem[] = [];
@@ -29,26 +34,30 @@ const AppSidebar: React.FC = () => {
   const pathname = usePathname();
   const [tenantName, setTenantName] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await fetch("/api/auth/session", { credentials: "include" });
-        if (cancelled || !res.ok) {
-          return;
-        }
-        const data = (await res.json()) as AuthSession;
-        if (!cancelled) {
-          setTenantName(data.tenant_name || null);
-        }
-      } catch {
-        /* ignore */
+  const loadTenantName = useCallback(async () => {
+    try {
+      const res = await fetch("/api/auth/session", { credentials: "include" });
+      if (!res.ok) {
+        return;
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+      const data = (await res.json()) as AuthSession;
+      setTenantName(data.tenant_name || null);
+    } catch {
+      /* ignore */
+    }
   }, []);
+
+  useEffect(() => {
+    void loadTenantName();
+  }, [loadTenantName, pathname]);
+
+  useEffect(() => {
+    const onRefresh = () => {
+      void loadTenantName();
+    };
+    window.addEventListener(AUTH_SESSION_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(AUTH_SESSION_REFRESH_EVENT, onRefresh);
+  }, [loadTenantName]);
 
   const renderMenuItems = (
     navItems: NavItem[],

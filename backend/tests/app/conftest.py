@@ -6,7 +6,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from app.routers import auth_router, categories_router, products_router, users_router
+from app.routers import auth_router, categories_router, products_router, tenant_router, users_router
 from app.core.database import get_db
 from app.models import Base
 
@@ -38,6 +38,7 @@ async def app(session_maker: async_sessionmaker[AsyncSession]) -> FastAPI:
     app.include_router(auth_router)
     app.include_router(categories_router)
     app.include_router(products_router)
+    app.include_router(tenant_router)
     app.include_router(users_router)
 
     async def override_get_db() -> AsyncGenerator[AsyncSession, None]:

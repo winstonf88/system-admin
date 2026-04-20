@@ -1,4 +1,5 @@
 from app.schemas.auth import AuthSessionRead
+from app.schemas.tenant import TenantRead, TenantUpdate
 from app.schemas.categories import (
     CategoryCreate,
     CategoryRead,
@@ -19,6 +20,8 @@ CategoryTreeRead.model_rebuild()
 
 __all__ = [
     "AuthSessionRead",
+    "TenantRead",
+    "TenantUpdate",
     "CategoryCreate",
     "CategoryRead",
     "CategoryTreeRead",

@@ -58,4 +58,5 @@ async def test_auth_session_ok(
         "first_name": "User",
         "last_name": "One",
         "is_active": True,
+        "tenant_name": "Tenant One",
     }

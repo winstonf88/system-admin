@@ -25,6 +25,8 @@ def test_schema_has_tenant_columns_and_constraints() -> None:
 
     assert "is_active" in tenant_cols
     assert not tenant_cols["is_active"].nullable
+    assert "config" in tenant_cols
+    assert not tenant_cols["config"].nullable
 
     category_unique_sets = [
         tuple(column.name for column in constraint.columns)
