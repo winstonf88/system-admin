@@ -6,7 +6,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from app.api import auth_router, categories_router, products_router, users_router
+from app.routers import auth_router, categories_router, products_router, users_router
 from app.core.database import get_db
 from app.models import Base
 

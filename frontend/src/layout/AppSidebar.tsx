@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import type { AuthSession } from "@/lib/auth-session";
 import { useSidebar } from "../context/SidebarContext";
 import { ChevronDownIcon, HorizontaLDots, UserCircleIcon } from "../icons/index";
 
@@ -26,6 +27,28 @@ const othersItems: NavItem[] = [];
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
+  const [tenantName, setTenantName] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/auth/session", { credentials: "include" });
+        if (cancelled || !res.ok) {
+          return;
+        }
+        const data = (await res.json()) as AuthSession;
+        if (!cancelled) {
+          setTenantName(data.tenant_name || null);
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const renderMenuItems = (
     navItems: NavItem[],
@@ -237,31 +260,23 @@ const AppSidebar: React.FC = () => {
           !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
         }`}
       >
-        <Link href="/users">
-          {isExpanded || isHovered || isMobileOpen ? (
-            <>
-              <Image
-                className="dark:hidden"
-                src="/images/logo/logo.svg"
-                alt="Logo"
-                width={150}
-                height={40}
-              />
-              <Image
-                className="hidden dark:block"
-                src="/images/logo/logo-dark.svg"
-                alt="Logo"
-                width={150}
-                height={40}
-              />
-            </>
-          ) : (
-            <Image
-              src="/images/logo/logo-icon.svg"
-              alt="Logo"
-              width={32}
-              height={32}
-            />
+        <Link
+          href="/users"
+          className={`flex items-center gap-3 min-w-0 ${
+            !isExpanded && !isHovered ? "lg:justify-center" : ""
+          }`}
+        >
+          <Image
+            src="/images/logo/logo-icon.svg"
+            alt=""
+            width={32}
+            height={32}
+            className="shrink-0"
+          />
+          {(isExpanded || isHovered || isMobileOpen) && (
+            <span className="text-xl font-semibold tracking-tight text-gray-800 truncate dark:text-white/90">
+              {tenantName ?? "…"}
+            </span>
           )}
         </Link>
       </div>

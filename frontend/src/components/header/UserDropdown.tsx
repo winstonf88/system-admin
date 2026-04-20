@@ -5,18 +5,11 @@ import { useModal } from "@/hooks/useModal";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import AvatarText from "@/components/ui/avatar/AvatarText";
+import type { AuthSession } from "@/lib/auth-session";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 
-export type AuthSessionClient = {
-  id: number;
-  email: string;
-  first_name: string | null;
-  last_name: string | null;
-  is_active: boolean;
-};
-
-function sessionToUserRow(session: AuthSessionClient): UserRow {
+function sessionToUserRow(session: AuthSession): UserRow {
   return {
     id: session.id,
     email: session.email,
@@ -26,7 +19,7 @@ function sessionToUserRow(session: AuthSessionClient): UserRow {
   };
 }
 
-function displayName(session: AuthSessionClient): string {
+function displayName(session: AuthSession): string {
   const parts = [session.first_name, session.last_name].filter(Boolean);
   if (parts.length > 0) {
     return parts.join(" ");
@@ -34,7 +27,7 @@ function displayName(session: AuthSessionClient): string {
   return session.email.split("@")[0] ?? session.email;
 }
 
-function avatarLabel(session: AuthSessionClient): string {
+function avatarLabel(session: AuthSession): string {
   const parts = [session.first_name, session.last_name].filter(Boolean);
   if (parts.length > 0) {
     return parts.join(" ");
@@ -45,7 +38,7 @@ function avatarLabel(session: AuthSessionClient): string {
 export default function UserDropdown() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [session, setSession] = useState<AuthSessionClient | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const editProfileModal = useModal();
   const [profileEditUser, setProfileEditUser] = useState<UserRow | null>(null);
@@ -54,7 +47,7 @@ export default function UserDropdown() {
     try {
       const res = await fetch("/api/auth/session", { credentials: "include" });
       if (res.ok) {
-        setSession((await res.json()) as AuthSessionClient);
+        setSession((await res.json()) as AuthSession);
       }
     } catch {
       /* ignore */
@@ -70,7 +63,7 @@ export default function UserDropdown() {
           return;
         }
         if (res.ok) {
-          setSession((await res.json()) as AuthSessionClient);
+          setSession((await res.json()) as AuthSession);
         } else {
           setSession(null);
         }

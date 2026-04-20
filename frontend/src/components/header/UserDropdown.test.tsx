@@ -50,6 +50,7 @@ describe("UserDropdown", () => {
               first_name: "Jane",
               last_name: "Doe",
               is_active: true,
+              tenant_name: "Acme Co",
             }),
             { status: 200, headers: { "Content-Type": "application/json" } },
           ),

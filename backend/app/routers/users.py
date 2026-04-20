@@ -3,9 +3,8 @@ from fastapi_utils.cbv import cbv
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import get_current_user, normalize_email
-from app.core.database import get_db
-from app.core.tenant import TenantContext, get_tenant_context
+from app.core.auth import normalize_email
+from app.dependencies import TenantContext, get_current_user, get_db, get_tenant_context
 from app.models import User
 from app.schemas import UserCreate, UserRead, UserUpdate
 

@@ -7,8 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.database import get_db
-from app.core.tenant import TenantContext, get_tenant_context
+from app.dependencies import TenantContext, get_db, get_tenant_context
 from app.models import Category, Product, ProductVariation
 from app.schemas import ProductCreate, ProductRead, ProductUpdate, UploadResponse
 
@@ -16,6 +15,7 @@ UPLOAD_DIR = Path("uploads/products")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 router = APIRouter(prefix="/api/products", tags=["products"])
+
 
 @cbv(router)
 class ProductView:

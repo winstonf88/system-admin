@@ -3,12 +3,12 @@ from fastapi_utils.cbv import cbv
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
-from app.core.tenant import TenantContext, get_tenant_context
+from app.dependencies import TenantContext, get_db, get_tenant_context
 from app.models import Category, Product
 from app.schemas import CategoryCreate, CategoryRead, CategoryTreeRead, CategoryUpdate
 
 router = APIRouter(prefix="/api/categories", tags=["categories"])
+
 
 @cbv(router)
 class CategoryView:
@@ -25,7 +25,7 @@ class CategoryView:
         return result.scalar_one_or_none()
 
     async def _validate_parent(
-        self,        
+        self,
         parent_id: int | None,
         category_id: int | None = None,
     ) -> None:

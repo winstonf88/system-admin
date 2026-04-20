@@ -47,7 +47,7 @@ uv sync --extra dev
 uv run pytest
 ```
 
-Test layout mirrors [`app/`](app/): e.g. [`app/api/categories.py`](app/api/categories.py) ↔ [`tests/app/api/test_categories.py`](tests/app/api/test_categories.py). Factory Boy factories mirror [`app/models/`](app/models/) under [`tests/app/models/factories/`](tests/app/models/factories/) (e.g. [`tests/app/models/factories/category.py`](tests/app/models/factories/category.py) for [`app/models/category.py`](app/models/category.py)); re-exports live in [`tests/app/models/factories/__init__.py`](tests/app/models/factories/__init__.py).
+Test layout mirrors [`app/`](app/): e.g. [`app/routers/categories.py`](app/routers/categories.py) ↔ [`tests/app/routers/test_categories.py`](tests/app/routers/test_categories.py). Factory Boy factories mirror [`app/models/`](app/models/) under [`tests/app/models/factories/`](tests/app/models/factories/) (e.g. [`tests/app/models/factories/category.py`](tests/app/models/factories/category.py) for [`app/models/category.py`](app/models/category.py)); re-exports live in [`tests/app/models/factories/__init__.py`](tests/app/models/factories/__init__.py).
 
 ## Run (development)
 

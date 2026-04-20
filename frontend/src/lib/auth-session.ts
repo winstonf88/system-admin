@@ -1,3 +1,13 @@
+/** Shape of `GET /api/auth/session` (proxied from the FastAPI backend). */
+export type AuthSession = {
+  id: number;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  is_active: boolean;
+  tenant_name: string;
+};
+
 /** HttpOnly cookie set after successful login (validated against the API). */
 export const AUTH_SESSION_COOKIE = "sa_session";
 
