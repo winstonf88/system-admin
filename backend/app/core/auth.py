@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import verify_password
-from app.models import User
+from app.models import Tenant, User
 
 http_basic = HTTPBasic(auto_error=False)
 
@@ -26,10 +26,22 @@ async def get_current_user(
         )
 
     email = normalize_email(credentials.username)
-    result = await db.execute(select(User).where(User.email == email).limit(1))
-    user = result.scalar_one_or_none()
+    result = await db.execute(
+        select(User, Tenant)
+        .join(Tenant, Tenant.id == User.tenant_id)
+        .where(User.email == email)
+        .limit(1)
+    )
+    row = result.first()
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciais inválidas",
+            headers={"WWW-Authenticate": "Basic"},
+        )
 
-    if user is None or not verify_password(credentials.password, user.password_hash):
+    user, tenant = row
+    if not verify_password(credentials.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciais inválidas",
@@ -38,5 +50,8 @@ async def get_current_user(
 
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="A conta está desativada.")
+
+    if not tenant.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="A organização está desativada.")
 
     return user

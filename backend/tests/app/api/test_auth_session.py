@@ -1,5 +1,8 @@
 import pytest
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from app.models import Tenant
 
 from tests.app.models.factories import seed_two_tenant_users
 
@@ -27,6 +30,18 @@ async def test_auth_session_inactive_forbidden(
 ) -> None:
     await seed_two_tenant_users(session_maker)
     response = await client.get("/api/auth/session", auth=("inactive@test.com", "secret"))
+    assert response.status_code == 403
+
+
+async def test_auth_session_inactive_tenant_forbidden(
+    client, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    await seed_two_tenant_users(session_maker)
+    async with session_maker() as session:
+        await session.execute(update(Tenant).where(Tenant.id == 1).values(is_active=False))
+        await session.commit()
+
+    response = await client.get("/api/auth/session", auth=("u1@test.com", "secret"))
     assert response.status_code == 403
 
 

@@ -1,10 +1,11 @@
-from app.models import Category, Product, ProductVariation, User
+from app.models import Category, Product, ProductVariation, Tenant, User
 
 
 def test_schema_has_tenant_columns_and_constraints() -> None:
     category_cols = Category.__table__.c
     product_cols = Product.__table__.c
     user_cols = User.__table__.c
+    tenant_cols = Tenant.__table__.c
 
     assert "tenant_id" in category_cols
     assert "tenant_id" in product_cols
@@ -21,6 +22,9 @@ def test_schema_has_tenant_columns_and_constraints() -> None:
     assert "password_hash" in user_cols
     assert "is_active" in user_cols
     assert not user_cols["tenant_id"].nullable
+
+    assert "is_active" in tenant_cols
+    assert not tenant_cols["is_active"].nullable
 
     category_unique_sets = [
         tuple(column.name for column in constraint.columns)
