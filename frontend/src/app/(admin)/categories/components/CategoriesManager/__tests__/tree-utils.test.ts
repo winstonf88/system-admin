@@ -4,6 +4,7 @@ import type { CategoryTreeNode } from "../types";
 import {
   buildUpdatedTree,
   flattenTree,
+  getValidDropZones,
   reorderChildren,
   siblingContext,
 } from "../tree-utils";
@@ -64,6 +65,24 @@ describe("tree-utils", () => {
       parentId: 1,
       siblingIds: [11, 12],
       index: 1,
+    });
+  });
+
+  it("getValidDropZones allows before/after only for same parent", () => {
+    const allow = () => true;
+    const same = getValidDropZones(sample, 11, 12, allow);
+    expect(same).toEqual({ before: true, after: true, inside: true });
+
+    const cross = getValidDropZones(sample, 11, 2, allow);
+    expect(cross).toEqual({ before: false, after: false, inside: true });
+  });
+
+  it("getValidDropZones disables all zones when target is self", () => {
+    const allow = () => true;
+    expect(getValidDropZones(sample, 11, 11, allow)).toEqual({
+      before: false,
+      after: false,
+      inside: false,
     });
   });
 });

@@ -1,4 +1,21 @@
+"use client";
+
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  pointerWithin,
+  useDndContext,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+
 import type { CategoryTreeNode } from "./types";
+import { CATEGORY_DROP_ROOT, parseCategoryDragId } from "./category-dnd-ids";
 import { TreeNode, type TreeNodeProps } from "./TreeNode";
 
 type CategoryTreeSectionProps = {
@@ -14,7 +31,8 @@ type CategoryTreeSectionProps = {
   pendingAction: boolean;
   canDropInto: TreeNodeProps["canDropInto"];
   canMoveNode: TreeNodeProps["canMoveNode"];
-  getDropIntent: TreeNodeProps["getDropIntent"];
+  getDropZoneEnabled: TreeNodeProps["getDropZoneEnabled"];
+  dragOverlayLabel: string | null;
   onEditDraftChange: TreeNodeProps["onEditDraftChange"];
   onStartEdit: TreeNodeProps["onStartEdit"];
   onSaveEdit: TreeNodeProps["onSaveEdit"];
@@ -24,18 +42,41 @@ type CategoryTreeSectionProps = {
   onSaveCreateChild: TreeNodeProps["onSaveCreateChild"];
   onCancelCreateChild: TreeNodeProps["onCancelCreateChild"];
   onDelete: TreeNodeProps["onDelete"];
-  onDrop: TreeNodeProps["onDrop"];
   onReorderNode: TreeNodeProps["onReorderNode"];
-  onSiblingDrop: TreeNodeProps["onSiblingDrop"];
-  onDragStart: TreeNodeProps["onDragStart"];
-  onDragEnd: TreeNodeProps["onDragEnd"];
-  onDragHover: TreeNodeProps["onDragHover"];
-  onSiblingHover: TreeNodeProps["onSiblingHover"];
   onToggleCollapsed: TreeNodeProps["onToggleCollapsed"];
-  onRootDragLeave: () => void;
-  onRootDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
-  onRootDrop: (event: React.DragEvent<HTMLDivElement>) => void;
+  onDndDragStart: (event: DragStartEvent) => void;
+  onDndDragOver: (event: DragOverEvent) => void;
+  onDndDragEnd: (event: DragEndEvent) => void;
+  onDndDragCancel: () => void;
 };
+
+function CategoryRootDropZone({
+  canDropInto,
+}: {
+  canDropInto: (targetParentId: number | null, draggedId: number) => boolean;
+}) {
+  const { active } = useDndContext();
+  const draggedId = active ? parseCategoryDragId(String(active.id)) : null;
+  const rootAllowed = draggedId !== null && canDropInto(null, draggedId);
+  const { setNodeRef, isOver } = useDroppable({
+    id: CATEGORY_DROP_ROOT,
+    disabled: active === null || !rootAllowed,
+  });
+  const highlight = isOver && rootAllowed;
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`rounded-xl border border-dashed px-4 py-3 text-sm transition ${
+        highlight
+          ? "border-brand-300 bg-brand-50 text-brand-700 dark:border-brand-500/60 dark:bg-brand-500/10 dark:text-brand-300"
+          : "border-gray-300 bg-gray-50 text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400"
+      }`}
+    >
+      Solte aqui para mover para a raiz
+    </div>
+  );
+}
 
 export function CategoryTreeSection({
   tree,
@@ -50,7 +91,8 @@ export function CategoryTreeSection({
   pendingAction,
   canDropInto,
   canMoveNode,
-  getDropIntent,
+  getDropZoneEnabled,
+  dragOverlayLabel,
   onEditDraftChange,
   onStartEdit,
   onSaveEdit,
@@ -60,18 +102,19 @@ export function CategoryTreeSection({
   onSaveCreateChild,
   onCancelCreateChild,
   onDelete,
-  onDrop,
   onReorderNode,
-  onSiblingDrop,
-  onDragStart,
-  onDragEnd,
-  onDragHover,
-  onSiblingHover,
   onToggleCollapsed,
-  onRootDragLeave,
-  onRootDragOver,
-  onRootDrop,
+  onDndDragStart,
+  onDndDragOver,
+  onDndDragEnd,
+  onDndDragCancel,
 }: CategoryTreeSectionProps) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+  );
+
   return (
     <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-white/[0.03]">
       <header className="border-b border-gray-100 bg-gray-50/80 px-5 py-4 dark:border-white/[0.06] dark:bg-white/[0.02]">
@@ -79,72 +122,71 @@ export function CategoryTreeSection({
           Árvore de categorias
         </h3>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Arraste para borda superior/inferior para reordenar irmãos, ou no
-          centro de uma categoria para torná-la subcategoria. Use o ícone de
-          adicionar para nova subcategoria, ou o lápis para editar o nome.
+          Use o ícone ⋮ para arrastar. Solte na borda superior/inferior da linha
+          para reordenar irmãos, ou na faixa central para tornar subcategoria. O
+          ícone + cria subcategoria; o lápis edita o nome.
         </p>
       </header>
 
       <div className="space-y-4 p-5">
-        <div
-          className={`rounded-xl border border-dashed px-4 py-3 text-sm transition ${
-            hoveredParentId === "root" &&
-            draggingId !== null &&
-            canDropInto(null, draggingId)
-              ? "border-brand-300 bg-brand-50 text-brand-700 dark:border-brand-500/60 dark:bg-brand-500/10 dark:text-brand-300"
-              : "border-gray-300 bg-gray-50 text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400"
-          }`}
-          onDragLeave={onRootDragLeave}
-          onDragOver={onRootDragOver}
-          onDrop={onRootDrop}
+        <DndContext
+          id="category-tree-dnd"
+          sensors={sensors}
+          collisionDetection={pointerWithin}
+          onDragStart={onDndDragStart}
+          onDragOver={onDndDragOver}
+          onDragEnd={onDndDragEnd}
+          onDragCancel={onDndDragCancel}
         >
-          Solte aqui para mover para a raiz
-        </div>
+          <CategoryRootDropZone canDropInto={canDropInto} />
 
-        {tree.length === 0 ? (
-          <p className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500 dark:border-white/[0.08] dark:bg-gray-900 dark:text-gray-400">
-            Nenhuma categoria cadastrada ainda.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {tree.map((node) => (
-              <TreeNode
-                key={node.id}
-                node={node}
-                depth={0}
-                editingId={editingId}
-                editDraftName={editDraftName}
-                creatingChildUnderId={creatingChildUnderId}
-                createChildDraftName={createChildDraftName}
-                collapsedIds={collapsedIds}
-                draggingId={draggingId}
-                hoveredParentId={hoveredParentId}
-                hoveredSiblingDrop={hoveredSiblingDrop}
-                pendingAction={pendingAction}
-                canDropInto={canDropInto}
-                canMoveNode={canMoveNode}
-                getDropIntent={getDropIntent}
-                onEditDraftChange={onEditDraftChange}
-                onStartEdit={onStartEdit}
-                onSaveEdit={onSaveEdit}
-                onCancelEdit={onCancelEdit}
-                onCreateChildDraftChange={onCreateChildDraftChange}
-                onStartCreateChild={onStartCreateChild}
-                onSaveCreateChild={onSaveCreateChild}
-                onCancelCreateChild={onCancelCreateChild}
-                onDelete={onDelete}
-                onDrop={onDrop}
-                onReorderNode={onReorderNode}
-                onSiblingDrop={onSiblingDrop}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
-                onDragHover={onDragHover}
-                onSiblingHover={onSiblingHover}
-                onToggleCollapsed={onToggleCollapsed}
-              />
-            ))}
-          </ul>
-        )}
+          {tree.length === 0 ? (
+            <p className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500 dark:border-white/[0.08] dark:bg-gray-900 dark:text-gray-400">
+              Nenhuma categoria cadastrada ainda.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {tree.map((node) => (
+                <TreeNode
+                  key={node.id}
+                  node={node}
+                  depth={0}
+                  editingId={editingId}
+                  editDraftName={editDraftName}
+                  creatingChildUnderId={creatingChildUnderId}
+                  createChildDraftName={createChildDraftName}
+                  collapsedIds={collapsedIds}
+                  draggingId={draggingId}
+                  hoveredParentId={hoveredParentId}
+                  hoveredSiblingDrop={hoveredSiblingDrop}
+                  pendingAction={pendingAction}
+                  canDropInto={canDropInto}
+                  canMoveNode={canMoveNode}
+                  getDropZoneEnabled={getDropZoneEnabled}
+                  onEditDraftChange={onEditDraftChange}
+                  onStartEdit={onStartEdit}
+                  onSaveEdit={onSaveEdit}
+                  onCancelEdit={onCancelEdit}
+                  onCreateChildDraftChange={onCreateChildDraftChange}
+                  onStartCreateChild={onStartCreateChild}
+                  onSaveCreateChild={onSaveCreateChild}
+                  onCancelCreateChild={onCancelCreateChild}
+                  onDelete={onDelete}
+                  onReorderNode={onReorderNode}
+                  onToggleCollapsed={onToggleCollapsed}
+                />
+              ))}
+            </ul>
+          )}
+
+          <DragOverlay dropAnimation={null}>
+            {dragOverlayLabel ? (
+              <div className="max-w-sm rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm font-medium text-gray-800 shadow-xl dark:border-brand-500/40 dark:bg-gray-900 dark:text-white/90">
+                {dragOverlayLabel}
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       </div>
     </section>
   );

@@ -1,6 +1,11 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
+import type {
+  DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
+} from "@dnd-kit/core";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -13,12 +18,19 @@ import {
 } from "@/app/actions/categories";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
 
+import type { CategoryDropZone } from "./category-dnd-ids";
+import {
+  CATEGORY_DROP_ROOT,
+  parseCategoryDragId,
+  parseCategoryDropId,
+} from "./category-dnd-ids";
 import { CategoryTreeSection } from "./CategoryTreeSection";
 import type { CategoryTreeNode } from "./types";
 import {
   buildUpdatedTree,
   findNode,
   flattenTree,
+  getValidDropZones,
   insertNode,
   removeNode,
   reorderChildren,
@@ -47,6 +59,8 @@ export default function CategoriesManager({ initialTree }: Props) {
     targetId: number;
     position: "before" | "after";
   } | null>(null);
+  const [dragOverlayLabel, setDragOverlayLabel] = useState<string | null>(null);
+  const draggingIdRef = useRef<number | null>(null);
 
   const [pendingAction, setPendingAction] = useState(false);
 
@@ -67,27 +81,38 @@ export default function CategoriesManager({ initialTree }: Props) {
     [flatCategories],
   );
 
-  const canDropInto = (
-    targetParentId: number | null,
-    draggedId: number,
-  ): boolean => {
-    if (!Number.isFinite(draggedId)) {
-      return false;
-    }
-    if (targetParentId === draggedId) {
-      return false;
-    }
-    if (targetParentId !== null) {
-      const targetMeta = categoryMetaById.get(targetParentId);
-      if (!targetMeta) {
+  const canDropInto = useCallback(
+    (targetParentId: number | null, draggedId: number): boolean => {
+      if (!Number.isFinite(draggedId)) {
         return false;
       }
-      if (targetMeta.ancestorIds.includes(draggedId)) {
+      if (targetParentId === draggedId) {
         return false;
       }
-    }
-    return true;
-  };
+      if (targetParentId !== null) {
+        const targetMeta = categoryMetaById.get(targetParentId);
+        if (!targetMeta) {
+          return false;
+        }
+        if (targetMeta.ancestorIds.includes(draggedId)) {
+          return false;
+        }
+      }
+      return true;
+    },
+    [categoryMetaById],
+  );
+
+  const getDropZoneEnabled = useCallback(
+    (targetCategoryId: number, zone: CategoryDropZone) => {
+      const id = draggingIdRef.current ?? draggingId;
+      if (id === null) {
+        return false;
+      }
+      return getValidDropZones(tree, id, targetCategoryId, canDropInto)[zone];
+    },
+    [tree, draggingId, canDropInto],
+  );
 
   const handleDrop = async (
     draggedId: number,
@@ -118,39 +143,10 @@ export default function CategoriesManager({ initialTree }: Props) {
     } finally {
       setPendingAction(false);
       setDraggingId(null);
+      draggingIdRef.current = null;
       setHoveredParentId(null);
       setHoveredSiblingDrop(null);
     }
-  };
-
-  const getDropIntent = (
-    draggedId: number,
-    targetId: number,
-    clientY: number,
-    rowTop: number,
-    rowHeight: number,
-  ): "before" | "after" | "inside" | null => {
-    if (!Number.isFinite(draggedId) || draggedId === targetId) {
-      return null;
-    }
-    const draggedContext = siblingContext(tree, draggedId);
-    const targetContext = siblingContext(tree, targetId);
-    if (!draggedContext || !targetContext) {
-      return null;
-    }
-    const canDropAsChild = canDropInto(targetId, draggedId);
-    if (draggedContext.parentId !== targetContext.parentId) {
-      return canDropAsChild ? "inside" : null;
-    }
-    const relativeY = clientY - rowTop;
-    const edgeThreshold = Math.max(10, rowHeight * 0.28);
-    if (relativeY <= edgeThreshold) {
-      return "before";
-    }
-    if (relativeY >= rowHeight - edgeThreshold) {
-      return "after";
-    }
-    return canDropAsChild ? "inside" : null;
   };
 
   const handleSiblingDrop = async (
@@ -205,9 +201,123 @@ export default function CategoriesManager({ initialTree }: Props) {
     } finally {
       setPendingAction(false);
       setDraggingId(null);
+      draggingIdRef.current = null;
       setHoveredParentId(null);
       setHoveredSiblingDrop(null);
     }
+  };
+
+  const clearDragState = () => {
+    draggingIdRef.current = null;
+    setDraggingId(null);
+    setHoveredParentId(null);
+    setHoveredSiblingDrop(null);
+    setDragOverlayLabel(null);
+  };
+
+  const handleDndDragStart = (event: DragStartEvent) => {
+    const id = parseCategoryDragId(String(event.active.id));
+    draggingIdRef.current = id;
+    setDraggingId(id);
+    setHoveredSiblingDrop(null);
+    if (id !== null) {
+      const node = findNode(tree, id);
+      setDragOverlayLabel(node?.name ?? null);
+    } else {
+      setDragOverlayLabel(null);
+    }
+  };
+
+  const handleDndDragOver = (event: DragOverEvent) => {
+    const dragId =
+      draggingIdRef.current ?? parseCategoryDragId(String(event.active.id));
+    if (dragId === null) {
+      setHoveredParentId(null);
+      setHoveredSiblingDrop(null);
+      return;
+    }
+    const over = event.over;
+    if (!over) {
+      setHoveredParentId(null);
+      setHoveredSiblingDrop(null);
+      return;
+    }
+    const overId = String(over.id);
+    if (overId === CATEGORY_DROP_ROOT) {
+      if (canDropInto(null, dragId)) {
+        setHoveredParentId("root");
+        setHoveredSiblingDrop(null);
+      }
+      return;
+    }
+    const parsed = parseCategoryDropId(overId);
+    if (!parsed) {
+      setHoveredParentId(null);
+      setHoveredSiblingDrop(null);
+      return;
+    }
+    const { categoryId, zone } = parsed;
+    const zones = getValidDropZones(tree, dragId, categoryId, canDropInto);
+    if (zone === "before" && zones.before) {
+      setHoveredParentId(null);
+      setHoveredSiblingDrop({ targetId: categoryId, position: "before" });
+      return;
+    }
+    if (zone === "after" && zones.after) {
+      setHoveredParentId(null);
+      setHoveredSiblingDrop({ targetId: categoryId, position: "after" });
+      return;
+    }
+    if (zone === "inside" && zones.inside) {
+      setHoveredParentId(categoryId);
+      setHoveredSiblingDrop(null);
+      return;
+    }
+    setHoveredParentId(null);
+    setHoveredSiblingDrop(null);
+  };
+
+  const handleDndDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    const dragId = parseCategoryDragId(String(active.id));
+    clearDragState();
+
+    if (dragId === null || !over) {
+      return;
+    }
+
+    const overId = String(over.id);
+    if (overId === CATEGORY_DROP_ROOT) {
+      void handleDrop(dragId, null);
+      return;
+    }
+
+    const parsed = parseCategoryDropId(overId);
+    if (!parsed) {
+      return;
+    }
+
+    const { categoryId, zone } = parsed;
+    if (categoryId === dragId) {
+      return;
+    }
+
+    const zones = getValidDropZones(tree, dragId, categoryId, canDropInto);
+    if (zone === "before" && zones.before) {
+      void handleSiblingDrop(dragId, categoryId, "before");
+      return;
+    }
+    if (zone === "after" && zones.after) {
+      void handleSiblingDrop(dragId, categoryId, "after");
+      return;
+    }
+    if (zone === "inside" && zones.inside) {
+      void handleDrop(dragId, categoryId);
+    }
+  };
+
+  const handleDndDragCancel = () => {
+    clearDragState();
   };
 
   const canMoveNode = (categoryId: number, direction: "up" | "down") => {
@@ -443,7 +553,8 @@ export default function CategoriesManager({ initialTree }: Props) {
         pendingAction={pendingAction}
         canDropInto={canDropInto}
         canMoveNode={canMoveNode}
-        getDropIntent={getDropIntent}
+        getDropZoneEnabled={getDropZoneEnabled}
+        dragOverlayLabel={dragOverlayLabel}
         creatingChildUnderId={creatingChildUnderId}
         createChildDraftName={createChildDraftName}
         onEditDraftChange={setEditDraftName}
@@ -455,65 +566,14 @@ export default function CategoriesManager({ initialTree }: Props) {
         onSaveCreateChild={handleSaveCreateChild}
         onCancelCreateChild={handleCancelCreateChild}
         onDelete={handleDeleteCategory}
-        onDrop={(draggedId, parentId) => {
-          void handleDrop(draggedId, parentId);
-        }}
         onReorderNode={(categoryId, direction) => {
           void reorderCategoryById(categoryId, direction);
         }}
-        onSiblingDrop={(draggedId, targetId, position) => {
-          void handleSiblingDrop(draggedId, targetId, position);
-        }}
-        onDragStart={(id) => {
-          setDraggingId(id);
-          setHoveredSiblingDrop(null);
-        }}
-        onDragEnd={() => {
-          setDraggingId(null);
-          setHoveredParentId(null);
-          setHoveredSiblingDrop(null);
-        }}
-        onDragHover={(targetId) => {
-          setHoveredParentId(targetId);
-        }}
-        onSiblingHover={(targetId, position) => {
-          if (targetId === null || position === null) {
-            setHoveredSiblingDrop(null);
-            return;
-          }
-          setHoveredSiblingDrop({ targetId, position });
-        }}
         onToggleCollapsed={toggleCollapsed}
-        onRootDragLeave={() => {
-          if (hoveredParentId === "root") {
-            setHoveredParentId(null);
-          }
-        }}
-        onRootDragOver={(event) => {
-          const draggedId =
-            draggingId ??
-            Number(event.dataTransfer.getData("text/category-id"));
-          if (!Number.isFinite(draggedId)) {
-            return;
-          }
-          if (!canDropInto(null, draggedId)) {
-            return;
-          }
-          event.preventDefault();
-          setHoveredParentId("root");
-          setHoveredSiblingDrop(null);
-        }}
-        onRootDrop={(event) => {
-          event.preventDefault();
-          const draggedId =
-            draggingId ??
-            Number(event.dataTransfer.getData("text/category-id"));
-          if (!Number.isFinite(draggedId)) {
-            return;
-          }
-          setHoveredParentId(null);
-          void handleDrop(draggedId, null);
-        }}
+        onDndDragStart={handleDndDragStart}
+        onDndDragOver={handleDndDragOver}
+        onDndDragEnd={handleDndDragEnd}
+        onDndDragCancel={handleDndDragCancel}
       />
     </div>
   );

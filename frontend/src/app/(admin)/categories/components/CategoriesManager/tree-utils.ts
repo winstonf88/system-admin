@@ -161,3 +161,33 @@ export function siblingContext(
   }
   return null;
 }
+
+export type CategoryDropZoneKind = "before" | "after" | "inside";
+
+export function getValidDropZones(
+  tree: CategoryTreeNode[],
+  draggedId: number,
+  targetId: number,
+  canDropInto: (targetParentId: number | null, draggedId: number) => boolean,
+): Record<CategoryDropZoneKind, boolean> {
+  if (draggedId === targetId) {
+    return { before: false, after: false, inside: false };
+  }
+  const draggedContext = siblingContext(tree, draggedId);
+  const targetContext = siblingContext(tree, targetId);
+  if (!draggedContext || !targetContext) {
+    return { before: false, after: false, inside: false };
+  }
+  if (draggedContext.parentId !== targetContext.parentId) {
+    return {
+      before: false,
+      after: false,
+      inside: canDropInto(targetId, draggedId),
+    };
+  }
+  return {
+    before: true,
+    after: true,
+    inside: canDropInto(targetId, draggedId),
+  };
+}
