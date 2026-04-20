@@ -30,6 +30,17 @@ class ProductImageRead(BaseModel):
     url: str
 
 
+class ProductImageOrderUpdate(BaseModel):
+    image_ids: list[int] = Field(min_length=1)
+
+    @field_validator("image_ids")
+    @classmethod
+    def unique_image_ids(cls, v: list[int]) -> list[int]:
+        if len(set(v)) != len(v):
+            raise ValueError("image_ids must not contain duplicates.")
+        return v
+
+
 class ProductBase(BaseModel):
     name: str = Field(min_length=1, max_length=180)
     description: str | None = None

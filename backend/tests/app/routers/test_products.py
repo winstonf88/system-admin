@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.models import ProductCategory
+from app.models import ProductCategory, ProductImage
 
 from tests.app.models.factories import AUTH_TENANT_ONE, CategoryFactory, ProductFactory, seed_two_tenant_users
 
@@ -181,3 +181,61 @@ async def test_upload_rejects_more_than_ten_images_per_product(
     )
     assert rejected.status_code == 400
     assert "No m\u00e1ximo 10 imagens" in rejected.json()["detail"]
+
+
+async def test_reorder_product_images_updates_primary_url_and_order(
+    client, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    await seed_two_tenant_users(session_maker)
+    async with session_maker() as session:
+        category = CategoryFactory.build(tenant_id=1, name="Acessórios", parent_id=None)
+        product = ProductFactory.build(
+            tenant_id=1,
+            name="Boné",
+            description=None,
+            image_url=None,
+        )
+        session.add_all([category, product])
+        await session.flush()
+        session.add(
+            ProductCategory(
+                product_id=product.id,
+                tenant_id=1,
+                category_id=category.id,
+            )
+        )
+        image_a = ProductImage(
+            tenant_id=1,
+            product_id=product.id,
+            url="/uploads/products/a.png",
+            sort_order=0,
+        )
+        image_b = ProductImage(
+            tenant_id=1,
+            product_id=product.id,
+            url="/uploads/products/b.png",
+            sort_order=1,
+        )
+        session.add_all([image_a, image_b])
+        await session.commit()
+        product_id = product.id
+        first_id = image_a.id
+        second_id = image_b.id
+
+    reordered = await client.put(
+        f"/api/products/{product_id}/images/order",
+        auth=AUTH_TENANT_ONE,
+        json={"image_ids": [second_id, first_id]},
+    )
+    assert reordered.status_code == 200
+    body = reordered.json()
+    assert [img["id"] for img in body["images"]] == [second_id, first_id]
+    assert body["image_url"] == "/uploads/products/b.png"
+
+    invalid = await client.put(
+        f"/api/products/{product_id}/images/order",
+        auth=AUTH_TENANT_ONE,
+        json={"image_ids": [first_id]},
+    )
+    assert invalid.status_code == 400
+    assert "nova ordem" in invalid.json()["detail"].lower()

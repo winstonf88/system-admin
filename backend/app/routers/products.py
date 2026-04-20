@@ -11,6 +11,7 @@ from app.dependencies import TenantContext, get_db, get_tenant_context
 from app.models import Category, Product, ProductCategory, ProductImage, ProductVariation
 from app.schemas import (
     ProductCreate,
+    ProductImageOrderUpdate,
     ProductImageRead,
     ProductRead,
     ProductUpdate,
@@ -282,3 +283,33 @@ class ProductView:
         await self.db.commit()
         _delete_upload_file_if_safe(url)
         await self._sync_product_primary_image_url(product_id)
+
+    @router.put("/{product_id}/images/order", response_model=ProductRead)
+    async def reorder_product_images(
+        self,
+        product_id: int,
+        payload: ProductImageOrderUpdate,
+    ) -> ProductRead:
+        product = await self._get_product_or_404(product_id)
+        current_ids = [img.id for img in sorted(product.images, key=lambda x: x.sort_order)]
+        requested_ids = payload.image_ids
+        if set(requested_ids) != set(current_ids) or len(requested_ids) != len(current_ids):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A nova ordem deve conter exatamente as imagens atuais do produto.",
+            )
+
+        by_id = {img.id: img for img in product.images}
+        offset = len(requested_ids)
+        for idx, image_id in enumerate(requested_ids):
+            by_id[image_id].sort_order = idx + offset
+
+        await self.db.flush()
+
+        for idx, image_id in enumerate(requested_ids):
+            by_id[image_id].sort_order = idx
+
+        await self.db.commit()
+        await self._sync_product_primary_image_url(product_id)
+        updated = await self._get_product_or_404(product_id)
+        return self._product_to_read(updated)
