@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.routers import auth_router, categories_router, products_router, tenant_router, users_router
 from app.core.config import get_settings
-from app.core.database import check_db_connection, engine
+from app.core.database import check_db_connection, engine, migrate_legacy_product_images
 from app.core.logging import configure_logging
 from app.models import Base
 
@@ -22,6 +22,7 @@ async def lifespan(_: FastAPI):
     await check_db_connection()
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
+        await migrate_legacy_product_images(connection)
     yield
 
 

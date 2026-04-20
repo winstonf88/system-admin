@@ -6,12 +6,18 @@ export type ProductVariationRow = {
   quantity: number;
 };
 
+/** Mirrors backend ProductImageRead */
+export type ProductImageRow = {
+  id: number;
+  url: string;
+};
+
 export type ProductRow = {
   id: number;
   name: string;
   description: string | null;
-  category_id: number;
-  image_url: string | null;
+  category_ids: number[];
+  images: ProductImageRow[];
   variations: ProductVariationRow[];
 };
 

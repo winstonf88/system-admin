@@ -9,6 +9,5 @@ class ProductFactory(factory.Factory):
 
     name = factory.Sequence(lambda n: f"Product {n}")
     description = None
-    category_id = factory.Sequence(lambda n: n + 1)
     tenant_id = factory.Sequence(lambda n: n + 1)
     image_url = None

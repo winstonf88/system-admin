@@ -39,8 +39,7 @@ export type CreateProductResult = { ok: true; id: number } | { ok: false; error:
 export async function createProductAction(input: {
   name: string;
   description: string | null;
-  category_id: number;
-  image_url: string | null;
+  category_ids: number[];
   variations: VariationPayload[];
 }): Promise<CreateProductResult> {
   const res = await fetchBackendAuthenticated("/api/products/", {
@@ -49,8 +48,7 @@ export async function createProductAction(input: {
     body: JSON.stringify({
       name: input.name.trim(),
       description: input.description?.trim() || null,
-      category_id: input.category_id,
-      image_url: input.image_url,
+      category_ids: input.category_ids,
       variations: input.variations.map((v) => ({
         size: v.size?.trim() || null,
         color: v.color?.trim() || null,
@@ -74,8 +72,7 @@ export async function updateProductAction(
   input: {
     name: string;
     description: string | null;
-    category_id: number;
-    image_url: string | null;
+    category_ids: number[];
     variations: VariationPayload[];
   },
 ): Promise<ProductActionResult> {
@@ -85,8 +82,7 @@ export async function updateProductAction(
     body: JSON.stringify({
       name: input.name.trim(),
       description: input.description?.trim() || null,
-      category_id: input.category_id,
-      image_url: input.image_url,
+      category_ids: input.category_ids,
       variations: input.variations.map((v) => ({
         size: v.size?.trim() || null,
         color: v.color?.trim() || null,
@@ -104,8 +100,11 @@ export async function updateProductAction(
   return { ok: true };
 }
 
-export async function deleteProductAction(productId: number): Promise<ProductActionResult> {
-  const res = await fetchBackendAuthenticated(`/api/products/${productId}`, {
+export async function deleteProductImageAction(
+  productId: number,
+  imageId: number,
+): Promise<ProductActionResult> {
+  const res = await fetchBackendAuthenticated(`/api/products/${productId}/images/${imageId}`, {
     method: "DELETE",
   });
   if (res === null) {
@@ -115,22 +114,13 @@ export async function deleteProductAction(productId: number): Promise<ProductAct
     return { ok: false, error: await errorMessage(res) };
   }
   revalidatePath("/products");
+  revalidatePath(`/products/${productId}/edit`);
   return { ok: true };
 }
 
-export async function uploadProductImageAction(
-  productId: number,
-  formData: FormData,
-): Promise<ProductActionResult> {
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error: "Selecione um arquivo de imagem." };
-  }
-  const outbound = new FormData();
-  outbound.append("file", file);
-  const res = await fetchBackendAuthenticated(`/api/products/${productId}/upload`, {
-    method: "POST",
-    body: outbound,
+export async function deleteProductAction(productId: number): Promise<ProductActionResult> {
+  const res = await fetchBackendAuthenticated(`/api/products/${productId}`, {
+    method: "DELETE",
   });
   if (res === null) {
     return { ok: false, error: "Não autenticado. Entre novamente." };

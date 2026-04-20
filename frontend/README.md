@@ -20,6 +20,12 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Component placement
+
+- Put reusable UI in `src/components`.
+- Keep route-specific components colocated with their route, for example `src/app/(admin)/products/components`.
+- Keep route-local tests next to those route-specific components.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

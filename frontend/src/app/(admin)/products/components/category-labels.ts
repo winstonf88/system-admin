@@ -1,4 +1,11 @@
-import type { CategoryOption } from "@/components/products/product-types";
+import type { CategoryOption } from "@/app/(admin)/products/components/product-types";
+
+export function formatProductCategories(categories: CategoryOption[], categoryIds: number[]): string {
+  if (categoryIds.length === 0) {
+    return "—";
+  }
+  return categoryIds.map((id) => categoryOptionLabel(categories, id)).join(", ");
+}
 
 export function categoryOptionLabel(categories: CategoryOption[], categoryId: number): string {
   const byId = new Map(categories.map((c) => [c.id, c]));

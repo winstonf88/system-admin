@@ -11,8 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { categoryOptionLabel } from "@/components/products/category-labels";
-import type { CategoryOption, ProductRow } from "@/components/products/product-types";
+import { formatProductCategories } from "@/app/(admin)/products/components/category-labels";
+import type { CategoryOption, ProductRow } from "@/app/(admin)/products/components/product-types";
 import { backendPublicUrl } from "@/lib/api-public";
 import { useModal } from "@/hooks/useModal";
 import Link from "next/link";
@@ -105,7 +105,7 @@ export default function ProductsList({ products, categories }: Props) {
                       isHeader
                       className="px-5 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
                     >
-                      Categoria
+                      Categorias
                     </TableCell>
                     <TableCell
                       isHeader
@@ -123,7 +123,8 @@ export default function ProductsList({ products, categories }: Props) {
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {products.map((product) => {
-                    const img = backendPublicUrl(product.image_url);
+                    const thumb = product.images[0]?.url;
+                    const img = backendPublicUrl(thumb);
                     return (
                       <TableRow key={product.id}>
                         <TableCell className="px-5 py-4">
@@ -140,7 +141,7 @@ export default function ProductsList({ products, categories }: Props) {
                           {product.name}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
-                          {categoryOptionLabel(categories, product.category_id)}
+                          {formatProductCategories(categories, product.category_ids)}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
                           {product.variations.length}

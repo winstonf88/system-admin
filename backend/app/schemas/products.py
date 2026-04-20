@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class ProductVariationBase(BaseModel):
@@ -23,11 +23,25 @@ class ProductVariationRead(ProductVariationBase):
     id: int
 
 
+class ProductImageRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    url: str
+
+
 class ProductBase(BaseModel):
     name: str = Field(min_length=1, max_length=180)
     description: str | None = None
-    category_id: int
+    category_ids: list[int] = Field(min_length=1)
     image_url: str | None = None
+
+    @field_validator("category_ids")
+    @classmethod
+    def unique_category_ids(cls, v: list[int]) -> list[int]:
+        if len(set(v)) != len(v):
+            raise ValueError("category_ids must not contain duplicates.")
+        return v
 
 
 class ProductCreate(ProductBase):
@@ -37,9 +51,18 @@ class ProductCreate(ProductBase):
 class ProductUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=180)
     description: str | None = None
-    category_id: int | None = None
+    category_ids: list[int] | None = None
     image_url: str | None = None
     variations: list[ProductVariationCreate] | None = None
+
+    @field_validator("category_ids")
+    @classmethod
+    def category_ids_not_empty_when_set(cls, v: list[int] | None) -> list[int] | None:
+        if v is not None and len(v) == 0:
+            raise ValueError("At least one category is required.")
+        if v is not None and len(set(v)) != len(v):
+            raise ValueError("category_ids must not contain duplicates.")
+        return v
 
 
 class ProductRead(BaseModel):
@@ -48,8 +71,9 @@ class ProductRead(BaseModel):
     id: int
     name: str
     description: str | None
-    category_id: int
+    category_ids: list[int]
     image_url: str | None
+    images: list[ProductImageRead] = Field(default_factory=list)
     variations: list[ProductVariationRead] = Field(default_factory=list)
 
 

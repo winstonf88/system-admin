@@ -34,4 +34,9 @@ class Category(Base):
         back_populates="parent",
         cascade="all, delete-orphan",
     )
-    products: Mapped[list["Product"]] = relationship("Product", back_populates="category")
+    product_links: Mapped[list["ProductCategory"]] = relationship(
+        "ProductCategory",
+        back_populates="category",
+        cascade="all, delete-orphan",
+        overlaps="category_links,product",
+    )

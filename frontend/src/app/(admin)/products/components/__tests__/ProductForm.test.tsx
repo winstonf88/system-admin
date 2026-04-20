@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { CategoryOption, ProductRow } from "@/components/products/product-types";
+import type { CategoryOption, ProductRow } from "@/app/(admin)/products/components/product-types";
 
 const push = vi.fn();
 const refresh = vi.fn();
@@ -31,13 +31,16 @@ vi.mock("next/link", () => ({
 
 const createProductAction = vi.fn();
 const updateProductAction = vi.fn();
-const uploadProductImageAction = vi.fn();
 const createCategoryAction = vi.fn();
 
 vi.mock("@/app/actions/products", () => ({
   createProductAction: (...a: unknown[]) => createProductAction(...a),
   updateProductAction: (...a: unknown[]) => updateProductAction(...a),
-  uploadProductImageAction: (...a: unknown[]) => uploadProductImageAction(...a),
+  deleteProductImageAction: vi.fn().mockResolvedValue({ ok: true }),
+}));
+
+vi.mock("@/lib/upload-product-image", () => ({
+  uploadProductImageWithProgress: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
 vi.mock("@/app/actions/categories", () => ({
@@ -55,8 +58,8 @@ describe("ProductForm", () => {
     id: 5,
     name: "Boné",
     description: "Um boné",
-    category_id: 1,
-    image_url: "/uploads/bone.png",
+    category_ids: [1],
+    images: [{ id: 1, url: "/uploads/bone.png" }],
     variations: [{ id: 10, size: null, color: "Azul", quantity: 4 }],
   };
 
@@ -65,7 +68,6 @@ describe("ProductForm", () => {
     refresh.mockReset();
     createProductAction.mockReset();
     updateProductAction.mockReset();
-    uploadProductImageAction.mockReset();
     createCategoryAction.mockReset();
   });
 
@@ -85,9 +87,8 @@ describe("ProductForm", () => {
       expect(createProductAction).toHaveBeenCalledWith(
         expect.objectContaining({
           name: "Novo item",
-          category_id: 1,
+          category_ids: [1],
           description: null,
-          image_url: null,
           variations: [
             expect.objectContaining({
               size: "Único",
@@ -98,7 +99,6 @@ describe("ProductForm", () => {
         }),
       );
     });
-    expect(uploadProductImageAction).not.toHaveBeenCalled();
     expect(push).toHaveBeenCalledWith("/products");
     expect(refresh).toHaveBeenCalled();
   });
@@ -122,8 +122,7 @@ describe("ProductForm", () => {
         5,
         expect.objectContaining({
           name: "Boné atualizado",
-          category_id: 1,
-          image_url: "/uploads/bone.png",
+          category_ids: [1],
         }),
       );
     });
@@ -161,8 +160,7 @@ describe("ProductForm", () => {
         ).not.toBeInTheDocument();
       });
 
-      const categorySelect = screen.getByLabelText(/^Categoria$/i) as HTMLSelectElement;
-      expect(categorySelect.value).toBe("99");
+      expect(screen.getByRole("checkbox", { name: /Calçados/i })).toBeChecked();
 
       await user.type(screen.getByLabelText(/^Nome$/i), "Tênis");
       await user.clear(screen.getByPlaceholderText("ex.: M"));
@@ -206,8 +204,7 @@ describe("ProductForm", () => {
         });
       });
 
-      const categorySelect = screen.getByLabelText(/^Categoria$/i) as HTMLSelectElement;
-      expect(categorySelect.value).toBe("2");
+      expect(screen.getByRole("checkbox", { name: /Sub/i })).toBeChecked();
     });
 
     it("shows validation when category name is empty", async () => {

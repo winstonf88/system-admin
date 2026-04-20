@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
-import ProductForm from "@/components/products/ProductForm";
-import type { CategoryOption } from "@/components/products/product-types";
+import ProductForm from "@/app/(admin)/products/components/ProductForm";
+import type { CategoryOption } from "@/app/(admin)/products/components/product-types";
 import { fetchBackendAuthenticated } from "@/lib/backend-server-fetch";
 
 export const metadata: Metadata = {

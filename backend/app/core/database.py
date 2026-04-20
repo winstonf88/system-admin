@@ -31,6 +31,22 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
+async def migrate_legacy_product_images(connection) -> None:
+    """Copy legacy ``products.image_url`` into ``product_images`` when missing (idempotent)."""
+    await connection.execute(
+        text("""
+        INSERT INTO product_images (tenant_id, product_id, url, sort_order)
+        SELECT tenant_id, id, image_url, 0
+        FROM products
+        WHERE image_url IS NOT NULL
+        AND NOT EXISTS (
+            SELECT 1 FROM product_images pi
+            WHERE pi.product_id = products.id AND pi.tenant_id = products.tenant_id
+        )
+        """)
+    )
+
+
 async def check_db_connection() -> None:
     try:
         async with engine.connect() as connection:

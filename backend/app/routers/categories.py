@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import TenantContext, get_db, get_tenant_context
-from app.models import Category, Product
+from app.models import Category, ProductCategory
 from app.schemas import CategoryCreate, CategoryRead, CategoryTreeRead, CategoryUpdate
 
 router = APIRouter(prefix="/api/categories", tags=["categories"])
@@ -146,10 +146,10 @@ class CategoryView:
             )
 
         has_products = await self.db.scalar(
-            select(Product.id)
+            select(ProductCategory.product_id)
             .where(
-                Product.category_id == category_id,
-                Product.tenant_id == self.tenant_context.tenant_id,
+                ProductCategory.category_id == category_id,
+                ProductCategory.tenant_id == self.tenant_context.tenant_id,
             )
             .limit(1)
         )

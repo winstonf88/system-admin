@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import type { CategoryOption } from "@/components/products/product-types";
+import type { CategoryOption } from "@/app/(admin)/products/components/product-types";
 import { fetchBackendAuthenticated } from "@/lib/backend-server-fetch";
 
 async function errorMessage(res: Response): Promise<string> {

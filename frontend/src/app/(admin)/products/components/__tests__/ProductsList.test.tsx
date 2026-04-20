@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { CategoryOption, ProductRow } from "@/components/products/product-types";
+import type { CategoryOption, ProductRow } from "@/app/(admin)/products/components/product-types";
 
 const refresh = vi.fn();
 
@@ -46,8 +46,8 @@ describe("ProductsList", () => {
     id: 1,
     name: "Camisa básica",
     description: null,
-    category_id: 11,
-    image_url: null,
+    category_ids: [11],
+    images: [],
     variations: [
       { id: 1, size: "M", color: "Preto", quantity: 3 },
       { id: 2, size: "G", color: "Preto", quantity: 1 },
