@@ -118,6 +118,26 @@ export async function deleteProductImageAction(
   return { ok: true };
 }
 
+export async function reorderProductImagesAction(
+  productId: number,
+  imageIds: number[],
+): Promise<ProductActionResult> {
+  const res = await fetchBackendAuthenticated(`/api/products/${productId}/images/order`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image_ids: imageIds }),
+  });
+  if (res === null) {
+    return { ok: false, error: "Não autenticado. Entre novamente." };
+  }
+  if (!res.ok) {
+    return { ok: false, error: await errorMessage(res) };
+  }
+  revalidatePath("/products");
+  revalidatePath(`/products/${productId}/edit`);
+  return { ok: true };
+}
+
 export async function deleteProductAction(productId: number): Promise<ProductActionResult> {
   const res = await fetchBackendAuthenticated(`/api/products/${productId}`, {
     method: "DELETE",

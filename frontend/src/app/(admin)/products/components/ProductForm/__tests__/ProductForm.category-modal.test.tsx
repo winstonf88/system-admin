@@ -36,6 +36,7 @@ vi.mock("@/app/actions/products", () => ({
   createProductAction: (...args: unknown[]) => createProductAction(...args),
   updateProductAction: vi.fn(),
   deleteProductImageAction: vi.fn().mockResolvedValue({ ok: true }),
+  reorderProductImagesAction: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
 vi.mock("@/lib/upload-product-image", () => ({

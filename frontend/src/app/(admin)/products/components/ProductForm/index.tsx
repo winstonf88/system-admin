@@ -4,6 +4,7 @@ import { createCategoryAction } from "@/app/actions/categories";
 import {
   createProductAction,
   deleteProductImageAction,
+  reorderProductImagesAction,
   updateProductAction,
 } from "@/app/actions/products";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
@@ -30,6 +31,7 @@ import {
   MAX_PRODUCT_IMAGES,
   MAX_PRODUCT_IMAGE_BYTES,
   type PendingFileItem,
+  type SavedImageUrl,
   type UploadProgressItem,
   type VariationDraft,
 } from "./form-types";
@@ -39,6 +41,17 @@ type Props = {
   mode: "create" | "edit";
   product?: ProductRow;
 };
+
+function toSavedImageUrls(product?: ProductRow): SavedImageUrl[] {
+  const urls: SavedImageUrl[] = [];
+  for (const image of product?.images ?? []) {
+    const src = backendPublicUrl(image.url);
+    if (src) {
+      urls.push({ id: image.id, src });
+    }
+  }
+  return urls;
+}
 
 export default function ProductForm({ categories, mode, product }: Props) {
   const router = useRouter();
@@ -76,8 +89,10 @@ export default function ProductForm({ categories, mode, product }: Props) {
     return firstCategoryId != null ? [firstCategoryId] : [];
   });
   const [pendingFiles, setPendingFiles] = useState<PendingFileItem[]>([]);
+  const [savedImageOrderIds, setSavedImageOrderIds] = useState<number[]>([]);
   const [uploadProgress, setUploadProgress] = useState<UploadProgressItem[] | null>(null);
   const [submitPhase, setSubmitPhase] = useState<"idle" | "saving" | "uploading">("idle");
+  const [reorderingSavedImages, setReorderingSavedImages] = useState(false);
   const [variationRows, setVariationRows] = useState<VariationDraft[]>(() => {
     if (product?.variations?.length) {
       return product.variations.map((variation) => ({
@@ -155,18 +170,19 @@ export default function ProductForm({ categories, mode, product }: Props) {
     }
   };
 
+  const savedImageUrlsBase = useMemo(() => toSavedImageUrls(product), [product]);
   const savedImageUrls = useMemo(() => {
-    const urls: { id: number; src: string }[] = [];
-    for (const image of product?.images ?? []) {
-      const src = backendPublicUrl(image.url);
-      if (src) {
-        urls.push({ id: image.id, src });
-      }
+    if (savedImageOrderIds.length !== savedImageUrlsBase.length) {
+      return savedImageUrlsBase;
     }
-    return urls;
-  }, [product?.images]);
+    const byId = new Map(savedImageUrlsBase.map((image) => [image.id, image]));
+    const ordered = savedImageOrderIds
+      .map((imageId) => byId.get(imageId))
+      .filter((image): image is SavedImageUrl => image !== undefined);
+    return ordered.length === savedImageUrlsBase.length ? ordered : savedImageUrlsBase;
+  }, [savedImageOrderIds, savedImageUrlsBase]);
 
-  const busy = submitPhase !== "idle";
+  const busy = submitPhase !== "idle" || reorderingSavedImages;
   const imageSlotsLeft = Math.max(0, MAX_PRODUCT_IMAGES - savedImageUrls.length - pendingFiles.length);
 
   const onImageDrop = useCallback(
@@ -266,6 +282,66 @@ export default function ProductForm({ categories, mode, product }: Props) {
     setUploadProgress(null);
     setPendingFiles([]);
   };
+
+  const reorderSavedImages = useCallback(
+    (orderedImageIds: number[]) => {
+      if (orderedImageIds.length !== savedImageUrls.length) {
+        return;
+      }
+      const byId = new Map(savedImageUrls.map((image) => [image.id, image]));
+      const nextOrder = orderedImageIds
+        .map((imageId) => byId.get(imageId))
+        .filter((image): image is SavedImageUrl => image !== undefined);
+      if (nextOrder.length !== savedImageUrls.length) {
+        return;
+      }
+      const unchanged = nextOrder.every((image, idx) => image.id === savedImageUrls[idx]?.id);
+      if (unchanged) {
+        return;
+      }
+
+      setImageUploadError(null);
+      const previousOrderIds = savedImageUrls.map((image) => image.id);
+      setSavedImageOrderIds(orderedImageIds);
+
+      if (!product || mode !== "edit") {
+        return;
+      }
+
+      setReorderingSavedImages(true);
+      void (async () => {
+        try {
+          const response = await reorderProductImagesAction(product.id, orderedImageIds);
+          if (!response.ok) {
+            setSavedImageOrderIds(previousOrderIds);
+            setImageUploadError(response.error);
+            return;
+          }
+          router.refresh();
+        } finally {
+          setReorderingSavedImages(false);
+        }
+      })();
+    },
+    [mode, product, router, savedImageUrls],
+  );
+
+  const reorderPendingFiles = useCallback((orderedPendingIds: string[]) => {
+    setPendingFiles((prev) => {
+      if (orderedPendingIds.length !== prev.length) {
+        return prev;
+      }
+      const byId = new Map(prev.map((pendingFile) => [pendingFile.id, pendingFile]));
+      const nextOrder = orderedPendingIds
+        .map((pendingId) => byId.get(pendingId))
+        .filter((pendingFile): pendingFile is PendingFileItem => pendingFile !== undefined);
+      if (nextOrder.length !== prev.length) {
+        return prev;
+      }
+      const unchanged = nextOrder.every((pendingFile, idx) => pendingFile.id === prev[idx]?.id);
+      return unchanged ? prev : nextOrder;
+    });
+  }, []);
 
   const addVariation = () => {
     setVariationRows((rows) => [
@@ -492,6 +568,8 @@ export default function ProductForm({ categories, mode, product }: Props) {
             getRootProps={getRootProps}
             getInputProps={getInputProps}
             onOpenLightbox={openImageLightbox}
+            onReorderSavedImages={reorderSavedImages}
+            onReorderPendingFiles={reorderPendingFiles}
             onRemoveSavedImage={(imageId) => {
               void removeSavedImage(imageId);
             }}
