@@ -55,7 +55,9 @@ export default function EditProductPageClient({ productId }: Props) {
   if (product === null && productStatus === null) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-white/[0.05] dark:bg-white/[0.03]">
-        <p className="text-gray-700 dark:text-gray-300">Carregando produto...</p>
+        <p className="text-gray-700 dark:text-gray-300">
+          Carregando produto...
+        </p>
       </div>
     );
   }
@@ -73,7 +75,9 @@ export default function EditProductPageClient({ productId }: Props) {
   if (productStatus === 404) {
     return (
       <div className="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900/40 dark:bg-red-950/30">
-        <p className="text-red-800 dark:text-red-200">Produto não encontrado.</p>
+        <p className="text-red-800 dark:text-red-200">
+          Produto não encontrado.
+        </p>
       </div>
     );
   }
@@ -92,7 +96,8 @@ export default function EditProductPageClient({ productId }: Props) {
     return (
       <div className="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900/40 dark:bg-red-950/30">
         <p className="text-red-800 dark:text-red-200">
-          Não foi possível carregar as categorias (HTTP {categoriesStatus ?? 500}).
+          Não foi possível carregar as categorias (HTTP{" "}
+          {categoriesStatus ?? 500}).
         </p>
       </div>
     );

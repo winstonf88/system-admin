@@ -1,6 +1,4 @@
-import type {
-  CategoryOption,
-} from "@/app/(admin)/products/components/product-types";
+import type { CategoryOption } from "@/app/(admin)/products/components/product-types";
 import type { CategoryTreeNode } from "@/app/(admin)/categories/components/CategoriesManager/types";
 import { apiRequest, type ApiResult } from "@/lib/api-client/core";
 
@@ -20,7 +18,9 @@ export async function getCategories(): Promise<ApiResult<CategoryOption[]>> {
   return apiRequest<CategoryOption[]>("/api/categories");
 }
 
-export async function getCategoriesTree(): Promise<ApiResult<CategoryTreeNode[]>> {
+export async function getCategoriesTree(): Promise<
+  ApiResult<CategoryTreeNode[]>
+> {
   return apiRequest<CategoryTreeNode[]>("/api/categories/tree");
 }
 
@@ -46,11 +46,14 @@ export async function updateCategory(
     parent_id?: number | null;
   },
 ): Promise<CreateCategoryResult> {
-  const result = await apiRequest<CategoryOption>(`/api/categories/${categoryId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
+  const result = await apiRequest<CategoryOption>(
+    `/api/categories/${categoryId}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+  );
   if (!result.ok) {
     return { ok: false, error: result.error };
   }

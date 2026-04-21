@@ -6,13 +6,14 @@ vi.mock("@/components/common/PageBreadCrumb", () => ({
   default: () => null,
 }));
 
-const { toastSuccess, toastError, toastDismiss, moveCategory } =
-  vi.hoisted(() => ({
+const { toastSuccess, toastError, toastDismiss, moveCategory } = vi.hoisted(
+  () => ({
     toastSuccess: vi.fn(),
     toastError: vi.fn(),
     toastDismiss: vi.fn(),
     moveCategory: vi.fn(),
-  }));
+  }),
+);
 
 vi.mock("sonner", () => ({
   toast: {

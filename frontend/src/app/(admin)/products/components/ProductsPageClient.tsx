@@ -1,17 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import ProductsList from "@/app/(admin)/products/components/ProductsList";
-import type {
-  CategoryOption,
-  ProductRow,
-} from "@/app/(admin)/products/components/product-types";
-import {
-  getProductCategories,
-  getProducts,
-} from "@/lib/api-client/products";
+import { getProductCategories, getProducts } from "@/lib/api-client/products";
 
 export default function ProductsPageClient() {
   const searchParams = useSearchParams();
@@ -23,52 +16,25 @@ export default function ProductsPageClient() {
       ? parsedCategoryId
       : null;
 
-  const [products, setProducts] = useState<ProductRow[] | null>(null);
-  const [categories, setCategories] = useState<CategoryOption[]>([]);
-  const [productsStatus, setProductsStatus] = useState<number | null>(null);
+  const productsQuery = useQuery({
+    queryKey: ["products", nameFilter, categoryId],
+    queryFn: () => getProducts({ name: nameFilter, categoryId }),
+    placeholderData: keepPreviousData,
+  });
 
-  useEffect(() => {
-    let active = true;
-    setProducts(null);
-    setProductsStatus(null);
+  const categoriesQuery = useQuery({
+    queryKey: ["product-categories"],
+    queryFn: getProductCategories,
+    staleTime: 5 * 60 * 1000,
+  });
 
-    void (async () => {
-      const [productsResult, categoriesResult] = await Promise.all([
-        getProducts({ name: nameFilter, categoryId }),
-        getProductCategories(),
-      ]);
-      if (!active) {
-        return;
-      }
-      if (productsResult.ok) {
-        setProducts(productsResult.data);
-      } else {
-        setProductsStatus(productsResult.status);
-      }
-      if (categoriesResult.ok) {
-        setCategories(categoriesResult.data);
-      } else {
-        setCategories([]);
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [nameFilter, categoryId]);
-
-  const listKey = useMemo(
-    () => `${nameFilter}::${categoryId ?? "none"}`,
-    [nameFilter, categoryId],
-  );
-
-  if (products === null && productsStatus === null) {
-    return (
-      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-white/[0.05] dark:bg-white/[0.03]">
-        <p className="text-gray-700 dark:text-gray-300">Carregando produtos...</p>
-      </div>
-    );
-  }
+  const products = productsQuery.data?.ok ? productsQuery.data.data : [];
+  const categories = categoriesQuery.data?.ok ? categoriesQuery.data.data : [];
+  const productsStatus =
+    productsQuery.data && !productsQuery.data.ok
+      ? productsQuery.data.status
+      : null;
+  const listKey = `${nameFilter}::${categoryId ?? "none"}`;
 
   if (productsStatus === 401) {
     return (
@@ -80,8 +46,8 @@ export default function ProductsPageClient() {
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-white/[0.05] dark:bg-white/[0.03]">
           <p className="text-gray-700 dark:text-gray-300">
-            Sua sessão não inclui credenciais de API. Saia e entre novamente para
-            ver os produtos.
+            Sua sessão não inclui credenciais de API. Saia e entre novamente
+            para ver os produtos.
           </p>
         </div>
       </>
@@ -108,10 +74,11 @@ export default function ProductsPageClient() {
   return (
     <ProductsList
       key={listKey}
-      products={products ?? []}
+      products={products}
       categories={categories}
       initialNameFilter={nameFilter}
       initialCategoryFilterId={categoryId}
+      isLoading={productsQuery.isFetching}
     />
   );
 }

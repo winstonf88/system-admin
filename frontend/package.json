@@ -24,6 +24,7 @@
     "@fullcalendar/timegrid": "^6.1.20",
     "@react-jvectormap/core": "^1.0.4",
     "@react-jvectormap/world": "^1.1.2",
+    "@tanstack/react-query": "^5.99.2",
     "apexcharts": "^5.10.6",
     "flatpickr": "^4.6.13",
     "next": "16.2.4",

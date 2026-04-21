@@ -1,6 +1,9 @@
 import { NextRequest } from "next/server";
 
-import { bodyInitFromRequest, proxyToBackend } from "@/app/api/_utils/backend-proxy";
+import {
+  bodyInitFromRequest,
+  proxyToBackend,
+} from "@/app/api/_utils/backend-proxy";
 
 export async function PUT(req: NextRequest) {
   const { body, contentType } = await bodyInitFromRequest(req);

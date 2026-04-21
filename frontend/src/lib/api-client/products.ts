@@ -46,11 +46,15 @@ export async function getProducts(input: {
   return apiRequest<ProductRow[]>(`/api/products${query ? `?${query}` : ""}`);
 }
 
-export async function getProduct(productId: number): Promise<ApiResult<ProductRow>> {
+export async function getProduct(
+  productId: number,
+): Promise<ApiResult<ProductRow>> {
   return apiRequest<ProductRow>(`/api/products/${productId}`);
 }
 
-export async function getProductCategories(): Promise<ApiResult<CategoryOption[]>> {
+export async function getProductCategories(): Promise<
+  ApiResult<CategoryOption[]>
+> {
   return apiRequest<CategoryOption[]>("/api/categories");
 }
 

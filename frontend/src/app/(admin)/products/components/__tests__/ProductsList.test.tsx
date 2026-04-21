@@ -75,7 +75,9 @@ describe("ProductsList", () => {
     render(<ProductsList products={[product]} categories={categories} />);
 
     expect(screen.getByText("Camisa básica")).toBeInTheDocument();
-    expect(screen.getAllByText("Vestuário › Camisetas").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Vestuário › Camisetas").length).toBeGreaterThan(
+      0,
+    );
     expect(screen.getByText("2")).toBeInTheDocument();
 
     const edit = screen.getByRole("link", { name: "Editar" });

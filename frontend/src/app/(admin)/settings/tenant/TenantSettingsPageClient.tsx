@@ -52,8 +52,8 @@ export default function TenantSettingsPageClient() {
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-white/[0.05] dark:bg-white/[0.03]">
           <p className="text-gray-700 dark:text-gray-300">
-            Sua sessão não inclui credenciais de API. Saia e entre novamente para
-            editar a organização.
+            Sua sessão não inclui credenciais de API. Saia e entre novamente
+            para editar a organização.
           </p>
         </div>
       </>

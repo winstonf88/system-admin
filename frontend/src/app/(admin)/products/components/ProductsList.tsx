@@ -31,6 +31,7 @@ type Props = {
   categories: CategoryOption[];
   initialNameFilter?: string;
   initialCategoryFilterId?: number | null;
+  isLoading?: boolean;
 };
 
 const modalInner =
@@ -41,6 +42,7 @@ export default function ProductsList({
   categories,
   initialNameFilter = "",
   initialCategoryFilterId = null,
+  isLoading = false,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -62,7 +64,8 @@ export default function ProductsList({
   useEffect(() => {
     setRows(products);
   }, [products]);
-  const hasActiveFilters = nameFilter.trim().length > 0 || categoryFilterId !== "";
+  const hasActiveFilters =
+    nameFilter.trim().length > 0 || categoryFilterId !== "";
 
   const applyFilters = useCallback(() => {
     const params = new URLSearchParams();
@@ -175,114 +178,157 @@ export default function ProductsList({
             {hasActiveFilters ? " encontrado(s) para os filtros atuais" : ""}
           </p>
         </div>
-        {rows.length === 0 ? (
-          <p className="px-5 py-10 text-center text-gray-500 text-theme-sm dark:text-gray-400">
-            {hasActiveFilters ? (
-              "Nenhum produto encontrado com os filtros atuais."
+        <div className="relative">
+          <div
+            className={
+              isLoading
+                ? "pointer-events-none select-none opacity-70 blur-[1px] transition"
+                : "transition"
+            }
+          >
+            {rows.length === 0 ? (
+              <p className="px-5 py-10 text-center text-gray-500 text-theme-sm dark:text-gray-400">
+                {hasActiveFilters ? (
+                  "Nenhum produto encontrado com os filtros atuais."
+                ) : (
+                  <>
+                    Nenhum produto cadastrado.{" "}
+                    <Link
+                      href="/products/new"
+                      className="font-medium text-brand-500 hover:text-brand-600"
+                    >
+                      Criar o primeiro
+                    </Link>
+                  </>
+                )}
+              </p>
             ) : (
-              <>
-                Nenhum produto cadastrado.{" "}
-                <Link
-                  href="/products/new"
-                  className="font-medium text-brand-500 hover:text-brand-600"
-                >
-                  Criar o primeiro
-                </Link>
-              </>
-            )}
-          </p>
-        ) : (
-          <div className="max-w-full overflow-x-auto">
-            <div className="min-w-[880px]">
-              <Table>
-                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-                  <TableRow>
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
-                    >
-                      Imagem
-                    </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
-                    >
-                      Nome
-                    </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
-                    >
-                      Categorias
-                    </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
-                    >
-                      Variações
-                    </TableCell>
-                    <TableCell
-                      isHeader
-                      className="px-5 py-3 text-end font-medium text-gray-500 text-theme-xs dark:text-gray-400"
-                    >
-                      Ações
-                    </TableCell>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                  {rows.map((product) => {
-                    const thumb = product.images[0]?.url;
-                    const img = backendPublicUrl(thumb);
-                    return (
-                      <TableRow key={product.id}>
-                        <TableCell className="px-5 py-4">
-                          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-gray-100 bg-gray-50 dark:border-white/[0.06] dark:bg-white/[0.04]">
-                            {img ? (
-                              // eslint-disable-next-line @next/next/no-img-element -- dynamic backend URL
-                              <img
-                                src={img}
-                                alt=""
-                                className="max-h-full max-w-full object-contain"
-                              />
-                            ) : (
-                              <span className="text-xs text-gray-400">—</span>
-                            )}
-                          </div>
+              <div className="max-w-full overflow-x-auto">
+                <div className="min-w-[880px]">
+                  <Table>
+                    <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                      <TableRow>
+                        <TableCell
+                          isHeader
+                          className="px-5 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
+                        >
+                          Imagem
                         </TableCell>
-                        <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-800 dark:text-white/90">
-                          {product.name}
+                        <TableCell
+                          isHeader
+                          className="px-5 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
+                        >
+                          Nome
                         </TableCell>
-                        <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
-                          {formatProductCategories(categories, product.category_ids)}
+                        <TableCell
+                          isHeader
+                          className="px-5 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
+                        >
+                          Categorias
                         </TableCell>
-                        <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
-                          {product.variations.length}
+                        <TableCell
+                          isHeader
+                          className="px-5 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
+                        >
+                          Variações
                         </TableCell>
-                        <TableCell className="px-5 py-4 text-end">
-                          <div className="flex justify-end gap-2">
-                            <Link
-                              href={`/products/${product.id}/edit`}
-                              className="inline-flex items-center justify-center gap-1 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]"
-                            >
-                              Editar
-                            </Link>
-                            <button
-                              type="button"
-                              onClick={() => openDelete(product)}
-                              className="inline-flex items-center justify-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 shadow-theme-xs hover:bg-red-50 dark:border-red-900/50 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-950/30"
-                            >
-                              Excluir
-                            </button>
-                          </div>
+                        <TableCell
+                          isHeader
+                          className="px-5 py-3 text-end font-medium text-gray-500 text-theme-xs dark:text-gray-400"
+                        >
+                          Ações
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+                      {rows.map((product) => {
+                        const thumb = product.images[0]?.url;
+                        const img = backendPublicUrl(thumb);
+                        return (
+                          <TableRow key={product.id}>
+                            <TableCell className="px-5 py-4">
+                              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-gray-100 bg-gray-50 dark:border-white/[0.06] dark:bg-white/[0.04]">
+                                {img ? (
+                                  // eslint-disable-next-line @next/next/no-img-element -- dynamic backend URL
+                                  <img
+                                    src={img}
+                                    alt=""
+                                    className="max-h-full max-w-full object-contain"
+                                  />
+                                ) : (
+                                  <span className="text-xs text-gray-400">
+                                    —
+                                  </span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-800 dark:text-white/90">
+                              {product.name}
+                            </TableCell>
+                            <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
+                              {formatProductCategories(
+                                categories,
+                                product.category_ids,
+                              )}
+                            </TableCell>
+                            <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
+                              {product.variations.length}
+                            </TableCell>
+                            <TableCell className="px-5 py-4 text-end">
+                              <div className="flex justify-end gap-2">
+                                <Link
+                                  href={`/products/${product.id}/edit`}
+                                  className="inline-flex items-center justify-center gap-1 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]"
+                                >
+                                  Editar
+                                </Link>
+                                <button
+                                  type="button"
+                                  onClick={() => openDelete(product)}
+                                  className="inline-flex items-center justify-center gap-1 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 shadow-theme-xs hover:bg-red-50 dark:border-red-900/50 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-950/30"
+                                >
+                                  Excluir
+                                </button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+          {isLoading ? (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/45 dark:bg-gray-900/45">
+              <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white/90 px-3 py-2 text-sm font-medium text-gray-700 shadow-sm dark:border-white/[0.08] dark:bg-gray-900/90 dark:text-gray-200">
+                <svg
+                  className="size-4 animate-spin text-current"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  aria-hidden
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Carregando...
+              </div>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <Modal
