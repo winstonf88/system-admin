@@ -46,6 +46,14 @@ type Props = {
   product?: ProductRow;
 };
 
+function createClientId(): string {
+  const randomUUID = globalThis.crypto?.randomUUID;
+  if (typeof randomUUID === "function") {
+    return randomUUID.call(globalThis.crypto);
+  }
+  return `tmp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 function toSavedImageUrls(product?: ProductRow): SavedImageUrl[] {
   const urls: SavedImageUrl[] = [];
   for (const image of product?.images ?? []) {
@@ -118,7 +126,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
         quantity: variation.quantity,
       }));
     }
-    return [{ key: crypto.randomUUID(), size: "", color: "", quantity: 0 }];
+    return [{ key: createClientId(), size: "", color: "", quantity: 0 }];
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -236,7 +244,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
             );
             break;
           }
-          next.push({ id: crypto.randomUUID(), file });
+          next.push({ id: createClientId(), file });
           addedThisBatch += 1;
         }
         return next;
@@ -390,7 +398,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
   const addVariation = () => {
     setVariationRows((rows) => [
       ...rows,
-      { key: crypto.randomUUID(), size: "", color: "", quantity: 0 },
+      { key: createClientId(), size: "", color: "", quantity: 0 },
     ]);
   };
 

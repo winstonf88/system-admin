@@ -19,7 +19,8 @@ function allowedDevOriginsFromEnv(): string[] {
     const t = part.trim();
     if (!t) continue;
     try {
-      out.push(t.includes("://") ? new URL(t).hostname : t);
+      // Next expects host-style entries, and preserving an explicit port matters.
+      out.push(t.includes("://") ? new URL(t).host : t);
     } catch {
       out.push(t);
     }
@@ -32,25 +33,40 @@ function isIpv4NonInternal(addr: os.NetworkInterfaceInfo): boolean {
   return addr.family === "IPv4" || addr.family === 4;
 }
 
-/** Hostnames the browser may send on `Origin` when you open dev over LAN. */
-function localLanIpv4Hostnames(): string[] {
+/** Host entries the browser may send on `Origin` when opening dev over LAN. */
+function localLanIpv4Hosts(port: number): string[] {
   const hosts = new Set<string>();
-  for (const addrs of Object.values(os.networkInterfaces())) {
-    if (!addrs) continue;
-    for (const a of addrs) {
-      if (!isIpv4NonInternal(a) || !a.address) continue;
-      hosts.add(a.address);
+  try {
+    for (const addrs of Object.values(os.networkInterfaces())) {
+      if (!addrs) continue;
+      for (const a of addrs) {
+        if (!isIpv4NonInternal(a) || !a.address) continue;
+        hosts.add(a.address);
+        hosts.add(`${a.address}:${port}`);
+      }
     }
+  } catch {
+    // Some environments can fail to enumerate network interfaces; keep static fallbacks.
   }
   return [...hosts];
 }
 
-const isNextDevCli = process.argv.some((arg) => arg === "dev");
+const devPort = Number(process.env.PORT ?? "3000");
+const staticDevOriginHosts = [
+  "localhost",
+  `localhost:${devPort}`,
+  "127.0.0.1",
+  `127.0.0.1:${devPort}`,
+  // Current LAN host explicitly added to avoid HMR origin blocking.
+  "192.168.0.228",
+  "192.168.0.228:3000",
+];
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: [
+    ...staticDevOriginHosts,
     ...allowedDevOriginsFromEnv(),
-    ...(isNextDevCli ? localLanIpv4Hostnames() : []),
+    ...localLanIpv4Hosts(devPort),
   ],
   experimental: {
     serverActions: {
