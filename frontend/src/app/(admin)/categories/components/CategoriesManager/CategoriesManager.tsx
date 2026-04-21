@@ -6,16 +6,15 @@ import type {
   DragOverEvent,
   DragStartEvent,
 } from "@dnd-kit/core";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import {
-  createCategoryAction,
-  deleteCategoryAction,
-  moveCategoryAction,
-  reorderCategorySiblingsAction,
-  updateCategoryAction,
-} from "@/app/actions/categories";
+  createCategory,
+  deleteCategory,
+  moveCategory,
+  reorderCategorySiblings,
+  updateCategory,
+} from "@/lib/api-client/categories";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
 
 import type { CategoryDropZone } from "./category-dnd-ids";
@@ -42,7 +41,6 @@ type Props = {
 };
 
 export default function CategoriesManager({ initialTree }: Props) {
-  const router = useRouter();
   const [tree, setTree] = useState(initialTree);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDraftName, setEditDraftName] = useState("");
@@ -131,7 +129,7 @@ export default function CategoriesManager({ initialTree }: Props) {
     toast.dismiss();
     setPendingAction(true);
     try {
-      const result = await moveCategoryAction(draggedId, targetParentId);
+      const result = await moveCategory(draggedId, targetParentId);
       if (!result.ok) {
         toast.error(result.error, { duration: 5000 });
         return;
@@ -140,7 +138,6 @@ export default function CategoriesManager({ initialTree }: Props) {
         buildUpdatedTree(current, draggedId, targetParentId),
       );
       toast.success("Categoria movida com sucesso.", { duration: 3000 });
-      router.refresh();
     } finally {
       setPendingAction(false);
       setDraggingId(null);
@@ -186,7 +183,7 @@ export default function CategoriesManager({ initialTree }: Props) {
     toast.dismiss();
     setPendingAction(true);
     try {
-      const result = await reorderCategorySiblingsAction({
+      const result = await reorderCategorySiblings({
         parent_id: targetContext.parentId,
         ordered_ids: orderedIds,
       });
@@ -198,7 +195,6 @@ export default function CategoriesManager({ initialTree }: Props) {
         reorderChildren(current, targetContext.parentId, orderedIds),
       );
       toast.success("Ordem atualizada com sucesso.", { duration: 3000 });
-      router.refresh();
     } finally {
       setPendingAction(false);
       setDraggingId(null);
@@ -377,7 +373,7 @@ export default function CategoriesManager({ initialTree }: Props) {
     toast.dismiss();
     setPendingAction(true);
     try {
-      const result = await createCategoryAction({
+      const result = await createCategory({
         name: trimmed,
         parent_id: null,
       });
@@ -395,7 +391,6 @@ export default function CategoriesManager({ initialTree }: Props) {
       setCreatingRoot(false);
       setCreateChildDraftName("");
       toast.success("Categoria criada com sucesso.", { duration: 3000 });
-      router.refresh();
     } finally {
       setPendingAction(false);
     }
@@ -411,7 +406,7 @@ export default function CategoriesManager({ initialTree }: Props) {
     toast.dismiss();
     setPendingAction(true);
     try {
-      const result = await createCategoryAction({
+      const result = await createCategory({
         name: trimmed,
         parent_id: parentId,
       });
@@ -429,7 +424,6 @@ export default function CategoriesManager({ initialTree }: Props) {
       setCreatingChildUnderId(null);
       setCreateChildDraftName("");
       toast.success("Subcategoria criada com sucesso.", { duration: 3000 });
-      router.refresh();
     } finally {
       setPendingAction(false);
     }
@@ -461,7 +455,7 @@ export default function CategoriesManager({ initialTree }: Props) {
     toast.dismiss();
     setPendingAction(true);
     try {
-      const result = await updateCategoryAction(categoryId, {
+      const result = await updateCategory(categoryId, {
         name: trimmed,
       });
       if (!result.ok) {
@@ -482,7 +476,6 @@ export default function CategoriesManager({ initialTree }: Props) {
       setEditingId(null);
       setEditDraftName("");
       toast.success("Categoria atualizada com sucesso.", { duration: 3000 });
-      router.refresh();
     } finally {
       setPendingAction(false);
     }
@@ -503,7 +496,7 @@ export default function CategoriesManager({ initialTree }: Props) {
     toast.dismiss();
     setPendingAction(true);
     try {
-      const result = await deleteCategoryAction(categoryId);
+      const result = await deleteCategory(categoryId);
       if (!result.ok) {
         toast.error(result.error, { duration: 5000 });
         return;
@@ -518,7 +511,6 @@ export default function CategoriesManager({ initialTree }: Props) {
         setCreateChildDraftName("");
       }
       toast.success("Categoria excluída com sucesso.", { duration: 3000 });
-      router.refresh();
     } finally {
       setPendingAction(false);
     }

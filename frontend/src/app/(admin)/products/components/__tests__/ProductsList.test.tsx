@@ -8,10 +8,12 @@ import type {
   ProductRow,
 } from "@/app/(admin)/products/components/product-types";
 
-const refresh = vi.fn();
+const replace = vi.fn();
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh }),
+  useRouter: () => ({ replace }),
+  usePathname: () => "/products",
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("next/link", () => ({
@@ -31,10 +33,10 @@ vi.mock("next/link", () => ({
   },
 }));
 
-const deleteProductAction = vi.fn();
+const deleteProduct = vi.fn();
 
-vi.mock("@/app/actions/products", () => ({
-  deleteProductAction: (...a: unknown[]) => deleteProductAction(...a),
+vi.mock("@/lib/api-client/products", () => ({
+  deleteProduct: (...a: unknown[]) => deleteProduct(...a),
 }));
 
 import ProductsList from "../ProductsList";
@@ -58,8 +60,8 @@ describe("ProductsList", () => {
   };
 
   beforeEach(() => {
-    refresh.mockReset();
-    deleteProductAction.mockReset();
+    replace.mockReset();
+    deleteProduct.mockReset();
   });
 
   it("shows empty state with link to create when there are no products", () => {
@@ -73,16 +75,16 @@ describe("ProductsList", () => {
     render(<ProductsList products={[product]} categories={categories} />);
 
     expect(screen.getByText("Camisa básica")).toBeInTheDocument();
-    expect(screen.getByText("Vestuário › Camisetas")).toBeInTheDocument();
+    expect(screen.getAllByText("Vestuário › Camisetas").length).toBeGreaterThan(0);
     expect(screen.getByText("2")).toBeInTheDocument();
 
     const edit = screen.getByRole("link", { name: "Editar" });
     expect(edit).toHaveAttribute("href", "/products/1/edit");
   });
 
-  it("opens delete modal, calls deleteProductAction on confirm, and refreshes", async () => {
+  it("opens delete modal, calls deleteProduct on confirm, and removes row", async () => {
     const user = userEvent.setup();
-    deleteProductAction.mockResolvedValue({ ok: true });
+    deleteProduct.mockResolvedValue({ ok: true });
 
     render(<ProductsList products={[product]} categories={categories} />);
 
@@ -102,14 +104,14 @@ describe("ProductsList", () => {
     await user.click(confirmDelete as HTMLButtonElement);
 
     await waitFor(() => {
-      expect(deleteProductAction).toHaveBeenCalledWith(1);
+      expect(deleteProduct).toHaveBeenCalledWith(1);
     });
-    expect(refresh).toHaveBeenCalled();
+    expect(screen.queryByText("Camisa básica")).not.toBeInTheDocument();
   });
 
   it("shows delete error when delete fails", async () => {
     const user = userEvent.setup();
-    deleteProductAction.mockResolvedValue({
+    deleteProduct.mockResolvedValue({
       ok: false,
       error: "Sem permissão.",
     });
@@ -123,7 +125,7 @@ describe("ProductsList", () => {
     await user.click(confirmDelete as HTMLButtonElement);
 
     expect(await screen.findByText("Sem permissão.")).toBeInTheDocument();
-    expect(refresh).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it("links Novo produto to /products/new", () => {

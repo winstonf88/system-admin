@@ -4,20 +4,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { UserRow } from "@/components/users/user-types";
 
-const refresh = vi.fn();
+const createUser = vi.fn();
+const deleteUser = vi.fn();
+const getUsers = vi.fn();
+const updateUser = vi.fn();
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh }),
-}));
-
-const createUserAction = vi.fn();
-const deleteUserAction = vi.fn();
-const updateUserAction = vi.fn();
-
-vi.mock("@/app/actions/users", () => ({
-  createUserAction: (...a: unknown[]) => createUserAction(...a),
-  deleteUserAction: (...a: unknown[]) => deleteUserAction(...a),
-  updateUserAction: (...a: unknown[]) => updateUserAction(...a),
+vi.mock("@/lib/api-client/users", () => ({
+  createUser: (...a: unknown[]) => createUser(...a),
+  deleteUser: (...a: unknown[]) => deleteUser(...a),
+  getUsers: (...a: unknown[]) => getUsers(...a),
+  updateUser: (...a: unknown[]) => updateUser(...a),
 }));
 
 import UsersManagement from "../UsersManagement";
@@ -41,10 +37,10 @@ describe("UsersManagement", () => {
   ];
 
   beforeEach(() => {
-    refresh.mockReset();
-    createUserAction.mockReset();
-    deleteUserAction.mockReset();
-    updateUserAction.mockReset();
+    createUser.mockReset();
+    deleteUser.mockReset();
+    getUsers.mockReset();
+    updateUser.mockReset();
   });
 
   it("disables delete for the current user row", () => {
@@ -63,9 +59,10 @@ describe("UsersManagement", () => {
     expect(otherDelete).not.toBeDisabled();
   });
 
-  it("creates a user and refreshes on success", async () => {
+  it("creates a user and refetches on success", async () => {
     const user = userEvent.setup();
-    createUserAction.mockResolvedValue({ ok: true });
+    createUser.mockResolvedValue({ ok: true });
+    getUsers.mockResolvedValue({ ok: true, data: users });
 
     render(<UsersManagement users={users} currentUserId={1} />);
     await user.click(screen.getByRole("button", { name: "Adicionar usuário" }));
@@ -79,7 +76,7 @@ describe("UsersManagement", () => {
     await user.click(screen.getByRole("button", { name: "Criar usuário" }));
 
     await waitFor(() => {
-      expect(createUserAction).toHaveBeenCalledWith({
+      expect(createUser).toHaveBeenCalledWith({
         email: "new@test.co",
         password: "password12",
         first_name: "",
@@ -87,12 +84,12 @@ describe("UsersManagement", () => {
         is_active: true,
       });
     });
-    expect(refresh).toHaveBeenCalled();
+    expect(getUsers).toHaveBeenCalled();
   });
 
   it("deletes another user when confirmed", async () => {
     const user = userEvent.setup();
-    deleteUserAction.mockResolvedValue({ ok: true });
+    deleteUser.mockResolvedValue({ ok: true });
 
     render(<UsersManagement users={users} currentUserId={1} />);
     const table = screen.getByRole("table");
@@ -108,8 +105,8 @@ describe("UsersManagement", () => {
     await user.click(confirmDelete as HTMLButtonElement);
 
     await waitFor(() => {
-      expect(deleteUserAction).toHaveBeenCalledWith(2);
+      expect(deleteUser).toHaveBeenCalledWith(2);
     });
-    expect(refresh).toHaveBeenCalled();
+    expect(screen.queryByText("other@test.co")).not.toBeInTheDocument();
   });
 });

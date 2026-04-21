@@ -15,11 +15,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useModal } from "@/hooks/useModal";
-import { createUserAction, deleteUserAction } from "@/app/actions/users";
+import { createUser, deleteUser, getUsers } from "@/lib/api-client/users";
 import UserEditModal from "@/components/users/UserEditModal";
 import type { UserRow } from "@/components/users/user-types";
-import { useRouter } from "next/navigation";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 type Props = {
   users: UserRow[];
@@ -38,11 +37,11 @@ const modalInner =
   "no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11";
 
 export default function UsersManagement({ users, currentUserId }: Props) {
-  const router = useRouter();
   const createModal = useModal();
   const editModal = useModal();
   const deleteModal = useModal();
 
+  const [rows, setRows] = useState<UserRow[]>(users);
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [deleting, setDeleting] = useState<UserRow | null>(null);
 
@@ -55,6 +54,17 @@ export default function UsersManagement({ users, currentUserId }: Props) {
   const [createFirst, setCreateFirst] = useState("");
   const [createLast, setCreateLast] = useState("");
   const [createActive, setCreateActive] = useState(true);
+
+  useEffect(() => {
+    setRows(users);
+  }, [users]);
+
+  const reloadUsers = useCallback(async () => {
+    const result = await getUsers();
+    if (result.ok) {
+      setRows(result.data);
+    }
+  }, []);
 
   const openCreate = useCallback(() => {
     setCreateError(null);
@@ -88,7 +98,7 @@ export default function UsersManagement({ users, currentUserId }: Props) {
     setCreateError(null);
     setPending(true);
     try {
-      const r = await createUserAction({
+      const r = await createUser({
         email: createEmail,
         password: createPassword,
         first_name: createFirst,
@@ -97,7 +107,7 @@ export default function UsersManagement({ users, currentUserId }: Props) {
       });
       if (r.ok) {
         createModal.closeModal();
-        router.refresh();
+        await reloadUsers();
       } else {
         setCreateError(r.error);
       }
@@ -113,11 +123,11 @@ export default function UsersManagement({ users, currentUserId }: Props) {
     setDeleteError(null);
     setPending(true);
     try {
-      const r = await deleteUserAction(deleting.id);
+      const r = await deleteUser(deleting.id);
       if (r.ok) {
         deleteModal.closeModal();
         setDeleting(null);
-        router.refresh();
+        setRows((prev) => prev.filter((user) => user.id !== deleting.id));
       } else {
         setDeleteError(r.error);
       }
@@ -139,7 +149,7 @@ export default function UsersManagement({ users, currentUserId }: Props) {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
-        {users.length === 0 ? (
+        {rows.length === 0 ? (
           <p className="px-5 py-10 text-center text-gray-500 text-theme-sm dark:text-gray-400">
             Nenhum usuário encontrado para esta organização. Adicione um usuário
             para começar.
@@ -177,7 +187,7 @@ export default function UsersManagement({ users, currentUserId }: Props) {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                  {users.map((user) => (
+                  {rows.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-800 dark:text-white/90">
                         {displayName(user)}
@@ -329,7 +339,9 @@ export default function UsersManagement({ users, currentUserId }: Props) {
           editModal.closeModal();
           setEditing(null);
         }}
-        onSaved={() => router.refresh()}
+        onSaved={() => {
+          void reloadUsers();
+        }}
       />
 
       <Modal

@@ -1,6 +1,6 @@
 "use client";
 
-import { updateUserAction } from "@/app/actions/users";
+import { updateUser } from "@/lib/api-client/users";
 import Button from "@/components/ui/button/Button";
 import Switch from "@/components/form/switch/Switch";
 import Input from "@/components/form/input/InputField";
@@ -57,7 +57,7 @@ export default function UserEditModal({
     setEditError(null);
     setPending(true);
     try {
-      const r = await updateUserAction(user.id, {
+      const r = await updateUser(user.id, {
         email: editEmail,
         password: editPassword,
         first_name: editFirst,

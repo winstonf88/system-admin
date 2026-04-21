@@ -6,10 +6,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CategoryOption } from "@/app/(admin)/products/components/product-types";
 
 const push = vi.fn();
-const refresh = vi.fn();
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push, refresh }),
+  useRouter: () => ({ push, replace: vi.fn() }),
 }));
 
 vi.mock("next/link", () => ({
@@ -29,22 +28,22 @@ vi.mock("next/link", () => ({
   },
 }));
 
-const createProductAction = vi.fn();
-const createCategoryAction = vi.fn();
+const createProduct = vi.fn();
+const createCategory = vi.fn();
 
-vi.mock("@/app/actions/products", () => ({
-  createProductAction: (...args: unknown[]) => createProductAction(...args),
-  updateProductAction: vi.fn(),
-  deleteProductImageAction: vi.fn().mockResolvedValue({ ok: true }),
-  reorderProductImagesAction: vi.fn().mockResolvedValue({ ok: true }),
+vi.mock("@/lib/api-client/products", () => ({
+  createProduct: (...args: unknown[]) => createProduct(...args),
+  updateProduct: vi.fn(),
+  deleteProductImage: vi.fn().mockResolvedValue({ ok: true }),
+  reorderProductImages: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
 vi.mock("@/lib/upload-product-image", () => ({
   uploadProductImageWithProgress: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
-vi.mock("@/app/actions/categories", () => ({
-  createCategoryAction: (...args: unknown[]) => createCategoryAction(...args),
+vi.mock("@/lib/api-client/categories", () => ({
+  createCategory: (...args: unknown[]) => createCategory(...args),
 }));
 
 import ProductForm from "../index";
@@ -56,18 +55,17 @@ describe("ProductForm category modal flow", () => {
 
   beforeEach(() => {
     push.mockReset();
-    refresh.mockReset();
-    createCategoryAction.mockReset();
-    createProductAction.mockReset();
+    createCategory.mockReset();
+    createProduct.mockReset();
   });
 
   it("opens with empty categories and creates a category, then allows submit", async () => {
     const user = userEvent.setup();
-    createCategoryAction.mockResolvedValue({
+    createCategory.mockResolvedValue({
       ok: true,
       category: { id: 99, name: "Calçados", parent_id: null },
     });
-    createProductAction.mockResolvedValue({ ok: true, id: 1 });
+    createProduct.mockResolvedValue({ ok: true, id: 1 });
 
     render(<ProductForm categories={[]} mode="create" />);
 
@@ -81,7 +79,7 @@ describe("ProductForm category modal flow", () => {
     );
 
     await waitFor(() => {
-      expect(createCategoryAction).toHaveBeenCalledWith({
+      expect(createCategory).toHaveBeenCalledWith({
         name: "Calçados",
         parent_id: null,
       });
@@ -102,13 +100,13 @@ describe("ProductForm category modal flow", () => {
     await user.click(screen.getByRole("button", { name: "Criar produto" }));
 
     await waitFor(() => {
-      expect(createProductAction).toHaveBeenCalled();
+      expect(createProduct).toHaveBeenCalled();
     });
   });
 
   it("opens from Nova categoria when categories already exist", async () => {
     const user = userEvent.setup();
-    createCategoryAction.mockResolvedValue({
+    createCategory.mockResolvedValue({
       ok: true,
       category: { id: 2, name: "Sub", parent_id: 1 },
     });
@@ -131,7 +129,7 @@ describe("ProductForm category modal flow", () => {
     );
 
     await waitFor(() => {
-      expect(createCategoryAction).toHaveBeenCalledWith({
+      expect(createCategory).toHaveBeenCalledWith({
         name: "Sub",
         parent_id: null,
       });
@@ -152,12 +150,12 @@ describe("ProductForm category modal flow", () => {
     expect(
       await screen.findByText("Informe o nome da categoria."),
     ).toBeInTheDocument();
-    expect(createCategoryAction).not.toHaveBeenCalled();
+    expect(createCategory).not.toHaveBeenCalled();
   });
 
   it("shows API error when category creation fails", async () => {
     const user = userEvent.setup();
-    createCategoryAction.mockResolvedValue({
+    createCategory.mockResolvedValue({
       ok: false,
       error: "Nome já existe.",
     });

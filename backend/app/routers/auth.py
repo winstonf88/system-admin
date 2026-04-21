@@ -14,6 +14,7 @@ async def auth_session(
     db: AsyncSession = Depends(get_db),
     _: TenantContext = Depends(get_tenant_context),
 ) -> AuthSessionRead:
+    """Current user from Basic auth. Next.js validates sign-in with GET + Basic (not a browser POST)."""
     tenant = await db.get(Tenant, user.tenant_id)
     assert tenant is not None
     return AuthSessionRead(

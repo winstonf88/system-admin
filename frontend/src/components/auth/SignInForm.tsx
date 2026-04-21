@@ -31,6 +31,7 @@ export default function SignInForm({ redirectTo }: { redirectTo?: string }) {
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
@@ -41,6 +42,10 @@ export default function SignInForm({ redirectTo }: { redirectTo?: string }) {
       }
       router.push(sanitizeRedirect(redirectTo));
       router.refresh();
+    } catch {
+      setError(
+        "Não foi possível contactar o servidor. Confirme a rede e, em dev por IP, reinicie `pnpm dev` após atualizar dependências.",
+      );
     } finally {
       setLoading(false);
     }
@@ -132,26 +137,30 @@ export default function SignInForm({ redirectTo }: { redirectTo?: string }) {
                   <Label>
                     Senha <span className="text-error-500">*</span>{" "}
                   </Label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Digite sua senha"
-                      autoComplete="current-password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    <span
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
-                    >
-                      {showPassword ? (
-                        <EyeIcon className="fill-gray-500 dark:fill-gray-400" />
-                      ) : (
-                        <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400" />
-                      )}
-                    </span>
-                  </div>
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Digite sua senha"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    suffix={
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        className="absolute z-30 flex h-11 w-11 items-center justify-center cursor-pointer right-0 top-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white/80"
+                        aria-label={
+                          showPassword ? "Ocultar senha" : "Mostrar senha"
+                        }
+                      >
+                        {showPassword ? (
+                          <EyeIcon className="fill-current" />
+                        ) : (
+                          <EyeCloseIcon className="fill-current" />
+                        )}
+                      </button>
+                    }
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">

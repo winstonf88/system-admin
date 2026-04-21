@@ -1,12 +1,5 @@
 "use client";
 
-import { createCategoryAction } from "@/app/actions/categories";
-import {
-  createProductAction,
-  deleteProductImageAction,
-  reorderProductImagesAction,
-  updateProductAction,
-} from "@/app/actions/products";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
 import Button from "@/components/ui/button/Button";
 import { useModal } from "@/hooks/useModal";
@@ -17,6 +10,13 @@ import type {
 import { sortedCategorySelectOptions } from "@/app/(admin)/products/components/category-labels";
 import { backendPublicUrl } from "@/lib/api-public";
 import { uploadProductImageWithProgress } from "@/lib/upload-product-image";
+import {
+  deleteProductImage,
+  reorderProductImages,
+  createProduct,
+  updateProduct,
+} from "@/lib/api-client/products";
+import { createCategory as createCategoryFromApi } from "@/lib/api-client/categories";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -98,7 +98,9 @@ export default function ProductForm({ categories, mode, product }: Props) {
     },
   );
   const [pendingFiles, setPendingFiles] = useState<PendingFileItem[]>([]);
-  const [savedImageOrderIds, setSavedImageOrderIds] = useState<number[]>([]);
+  const [savedImages, setSavedImages] = useState<SavedImageUrl[]>(() =>
+    toSavedImageUrls(product),
+  );
   const [uploadProgress, setUploadProgress] = useState<
     UploadProgressItem[] | null
   >(null);
@@ -160,6 +162,10 @@ export default function ProductForm({ categories, mode, product }: Props) {
     };
   }, [pendingObjectUrls]);
 
+  useEffect(() => {
+    setSavedImages(toSavedImageUrls(product));
+  }, [product]);
+
   const categoryOptions = sortedCategorySelectOptions(categoryList);
 
   const handleCreateCategory = async () => {
@@ -171,7 +177,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
     setCategoryCreateError(null);
     setCreatingCategory(true);
     try {
-      const response = await createCategoryAction({
+      const response = await createCategoryFromApi({
         name: trimmedName,
         parent_id:
           newCategoryParentId === "" ? null : Number(newCategoryParentId),
@@ -187,33 +193,15 @@ export default function ProductForm({ categories, mode, product }: Props) {
       setError(null);
       setImageUploadError(null);
       closeCategoryModal();
-      router.refresh();
     } finally {
       setCreatingCategory(false);
     }
   };
 
-  const savedImageUrlsBase = useMemo(
-    () => toSavedImageUrls(product),
-    [product],
-  );
-  const savedImageUrls = useMemo(() => {
-    if (savedImageOrderIds.length !== savedImageUrlsBase.length) {
-      return savedImageUrlsBase;
-    }
-    const byId = new Map(savedImageUrlsBase.map((image) => [image.id, image]));
-    const ordered = savedImageOrderIds
-      .map((imageId) => byId.get(imageId))
-      .filter((image): image is SavedImageUrl => image !== undefined);
-    return ordered.length === savedImageUrlsBase.length
-      ? ordered
-      : savedImageUrlsBase;
-  }, [savedImageOrderIds, savedImageUrlsBase]);
-
   const busy = submitPhase !== "idle" || reorderingSavedImages;
   const imageSlotsLeft = Math.max(
     0,
-    MAX_PRODUCT_IMAGES - savedImageUrls.length - pendingFiles.length,
+    MAX_PRODUCT_IMAGES - savedImages.length - pendingFiles.length,
   );
 
   const onImageDrop = useCallback(
@@ -228,7 +216,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
         let addedThisBatch = 0;
         for (const file of acceptedFiles) {
           const slotsLeft =
-            MAX_PRODUCT_IMAGES - savedImageUrls.length - next.length;
+            MAX_PRODUCT_IMAGES - savedImages.length - next.length;
           if (slotsLeft <= 0) {
             setImageUploadError(
               `Este produto já tem ${MAX_PRODUCT_IMAGES} imagens ou você atingiu o limite ao adicionar novas.`,
@@ -253,7 +241,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
         return next;
       });
     },
-    [savedImageUrls.length],
+    [savedImages.length],
   );
 
   const onImageDropRejected = useCallback((rejections: FileRejection[]) => {
@@ -302,12 +290,12 @@ export default function ProductForm({ categories, mode, product }: Props) {
     setImageUploadError(null);
     setDeletingImageId(imageId);
     try {
-      const response = await deleteProductImageAction(product.id, imageId);
+      const response = await deleteProductImage(product.id, imageId);
       if (!response.ok) {
         setImageUploadError(response.error);
         return;
       }
-      router.refresh();
+      setSavedImages((prev) => prev.filter((image) => image.id !== imageId));
     } finally {
       setDeletingImageId(null);
     }
@@ -329,26 +317,26 @@ export default function ProductForm({ categories, mode, product }: Props) {
 
   const reorderSavedImages = useCallback(
     (orderedImageIds: number[]) => {
-      if (orderedImageIds.length !== savedImageUrls.length) {
+      if (orderedImageIds.length !== savedImages.length) {
         return;
       }
-      const byId = new Map(savedImageUrls.map((image) => [image.id, image]));
+      const byId = new Map(savedImages.map((image) => [image.id, image]));
       const nextOrder = orderedImageIds
         .map((imageId) => byId.get(imageId))
         .filter((image): image is SavedImageUrl => image !== undefined);
-      if (nextOrder.length !== savedImageUrls.length) {
+      if (nextOrder.length !== savedImages.length) {
         return;
       }
       const unchanged = nextOrder.every(
-        (image, idx) => image.id === savedImageUrls[idx]?.id,
+        (image, idx) => image.id === savedImages[idx]?.id,
       );
       if (unchanged) {
         return;
       }
 
       setImageUploadError(null);
-      const previousOrderIds = savedImageUrls.map((image) => image.id);
-      setSavedImageOrderIds(orderedImageIds);
+      const previousSavedImages = savedImages;
+      setSavedImages(nextOrder);
 
       if (!product || mode !== "edit") {
         return;
@@ -357,22 +345,21 @@ export default function ProductForm({ categories, mode, product }: Props) {
       setReorderingSavedImages(true);
       void (async () => {
         try {
-          const response = await reorderProductImagesAction(
+          const response = await reorderProductImages(
             product.id,
             orderedImageIds,
           );
           if (!response.ok) {
-            setSavedImageOrderIds(previousOrderIds);
+            setSavedImages(previousSavedImages);
             setImageUploadError(response.error);
             return;
           }
-          router.refresh();
         } finally {
           setReorderingSavedImages(false);
         }
       })();
     },
-    [mode, product, router, savedImageUrls],
+    [mode, product, savedImages],
   );
 
   const reorderPendingFiles = useCallback((orderedPendingIds: string[]) => {
@@ -525,7 +512,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
       }
     }
 
-    const savedCount = mode === "edit" ? savedImageUrls.length : 0;
+    const savedCount = mode === "edit" ? savedImages.length : 0;
     if (savedCount + pendingFiles.length > MAX_PRODUCT_IMAGES) {
       setImageUploadError(
         `No máximo ${MAX_PRODUCT_IMAGES} imagens por produto.`,
@@ -538,7 +525,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
 
     try {
       if (mode === "create") {
-        const response = await createProductAction({
+        const response = await createProduct({
           name,
           description: description.trim() || null,
           category_ids: selectedCategoryIds,
@@ -552,18 +539,16 @@ export default function ProductForm({ categories, mode, product }: Props) {
           const uploaded = await runImageUploads(response.id, filesSnapshot);
           if (!uploaded) {
             router.replace(`/products/${response.id}/edit`);
-            router.refresh();
             return;
           }
           setPendingFiles([]);
         }
         router.push("/products");
-        router.refresh();
         return;
       }
 
       if (product) {
-        const response = await updateProductAction(product.id, {
+        const response = await updateProduct(product.id, {
           name,
           description: description.trim() || null,
           category_ids: selectedCategoryIds,
@@ -581,7 +566,6 @@ export default function ProductForm({ categories, mode, product }: Props) {
           setPendingFiles([]);
         }
         router.push("/products");
-        router.refresh();
       }
     } finally {
       setSubmitPhase("idle");
@@ -657,7 +641,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
             imageSlotsLeft={imageSlotsLeft}
             imageUploadError={imageUploadError}
             isDragActive={isDragActive}
-            savedImageUrls={savedImageUrls}
+            savedImageUrls={savedImages}
             pendingFiles={pendingFiles}
             pendingObjectUrls={pendingObjectUrls}
             uploadProgress={uploadProgress}

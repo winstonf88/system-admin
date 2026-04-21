@@ -13,10 +13,6 @@ import {
 
 import UserDropdown from "../UserDropdown";
 
-vi.mock("@/app/actions/users", () => ({
-  updateUserAction: vi.fn(),
-}));
-
 vi.mock("@/components/users/UserEditModal", () => ({
   default: () => null,
 }));

@@ -128,22 +128,26 @@ export default function SignUpForm() {
                   <Label>
                     Senha<span className="text-error-500">*</span>
                   </Label>
-                  <div className="relative">
-                    <Input
-                      placeholder="Digite sua senha"
-                      type={showPassword ? "text" : "password"}
-                    />
-                    <span
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
-                    >
-                      {showPassword ? (
-                        <EyeIcon className="fill-gray-500 dark:fill-gray-400" />
-                      ) : (
-                        <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400" />
-                      )}
-                    </span>
-                  </div>
+                  <Input
+                    placeholder="Digite sua senha"
+                    type={showPassword ? "text" : "password"}
+                    suffix={
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        className="absolute z-30 flex h-11 w-11 items-center justify-center cursor-pointer right-0 top-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white/80"
+                        aria-label={
+                          showPassword ? "Ocultar senha" : "Mostrar senha"
+                        }
+                      >
+                        {showPassword ? (
+                          <EyeIcon className="fill-current" />
+                        ) : (
+                          <EyeCloseIcon className="fill-current" />
+                        )}
+                      </button>
+                    }
+                  />
                 </div>
                 {/* <!-- Checkbox --> */}
                 <div className="flex items-center gap-3">

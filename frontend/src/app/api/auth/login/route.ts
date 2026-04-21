@@ -42,10 +42,19 @@ export async function POST(request: Request) {
   }
 
   const basic = Buffer.from(`${email}:${password}`).toString("base64");
-  const res = await fetch(`${getBackendBaseUrl()}/api/auth/session`, {
+  const sessionUrl = `${getBackendBaseUrl()}/api/auth/session`;
+  // Login is validated with a server-side GET + Basic auth (not a browser POST to FastAPI).
+  if (process.env.NODE_ENV === "development") {
+    console.info("[auth/login] GET", sessionUrl);
+  }
+  const res = await fetch(sessionUrl, {
+    method: "GET",
     headers: { Authorization: `Basic ${basic}` },
     cache: "no-store",
   });
+  if (process.env.NODE_ENV === "development") {
+    console.info("[auth/login] backend response status:", res.status);
+  }
 
   if (res.status === 401) {
     return NextResponse.json(

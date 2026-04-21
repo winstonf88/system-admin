@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { UserRow } from "@/components/users/user-types";
 
-const updateUserAction = vi.fn();
+const updateUser = vi.fn();
 
-vi.mock("@/app/actions/users", () => ({
-  updateUserAction: (...a: unknown[]) => updateUserAction(...a),
+vi.mock("@/lib/api-client/users", () => ({
+  updateUser: (...a: unknown[]) => updateUser(...a),
 }));
 
 import UserEditModal from "../UserEditModal";
@@ -25,14 +25,14 @@ describe("UserEditModal", () => {
   const onSaved = vi.fn();
 
   beforeEach(() => {
-    updateUserAction.mockReset();
+    updateUser.mockReset();
     onClose.mockReset();
     onSaved.mockReset();
   });
 
   it("submits update and closes on success", async () => {
     const u = userEvent.setup();
-    updateUserAction.mockResolvedValue({ ok: true });
+    updateUser.mockResolvedValue({ ok: true });
 
     render(
       <UserEditModal
@@ -56,7 +56,7 @@ describe("UserEditModal", () => {
     );
 
     await waitFor(() => {
-      expect(updateUserAction).toHaveBeenCalledWith(
+      expect(updateUser).toHaveBeenCalledWith(
         3,
         expect.objectContaining({
           email: "updated@test.co",
@@ -70,7 +70,7 @@ describe("UserEditModal", () => {
 
   it("shows error when update fails", async () => {
     const u = userEvent.setup();
-    updateUserAction.mockResolvedValue({
+    updateUser.mockResolvedValue({
       ok: false,
       error: "E-mail inválido.",
     });

@@ -54,6 +54,17 @@ describe("SignInForm", () => {
     fetchSpy.mockClear();
   });
 
+  it("toggles password visibility when the eye control is clicked", async () => {
+    const user = userEvent.setup();
+    render(<SignInForm />);
+    const passwordInput = screen.getByPlaceholderText("Digite sua senha");
+    expect(passwordInput).toHaveAttribute("type", "password");
+    await user.click(screen.getByRole("button", { name: "Mostrar senha" }));
+    expect(passwordInput).toHaveAttribute("type", "text");
+    await user.click(screen.getByRole("button", { name: "Ocultar senha" }));
+    expect(passwordInput).toHaveAttribute("type", "password");
+  });
+
   it("shows server error when login fails", async () => {
     const user = userEvent.setup();
     fetchSpy.mockResolvedValue(

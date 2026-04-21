@@ -2,22 +2,16 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const refresh = vi.fn();
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh }),
-}));
-
 vi.mock("@/components/common/PageBreadCrumb", () => ({
   default: () => null,
 }));
 
-const { toastSuccess, toastError, toastDismiss, moveCategoryAction } =
+const { toastSuccess, toastError, toastDismiss, moveCategory } =
   vi.hoisted(() => ({
     toastSuccess: vi.fn(),
     toastError: vi.fn(),
     toastDismiss: vi.fn(),
-    moveCategoryAction: vi.fn(),
+    moveCategory: vi.fn(),
   }));
 
 vi.mock("sonner", () => ({
@@ -28,15 +22,15 @@ vi.mock("sonner", () => ({
   },
 }));
 
-vi.mock("@/app/actions/categories", () => ({
-  createCategoryAction: vi.fn().mockResolvedValue({
+vi.mock("@/lib/api-client/categories", () => ({
+  createCategory: vi.fn().mockResolvedValue({
     ok: true,
     category: { id: 99, name: "x", parent_id: null },
   }),
-  deleteCategoryAction: vi.fn().mockResolvedValue({ ok: true }),
-  moveCategoryAction,
-  reorderCategorySiblingsAction: vi.fn().mockResolvedValue({ ok: true }),
-  updateCategoryAction: vi.fn().mockResolvedValue({
+  deleteCategory: vi.fn().mockResolvedValue({ ok: true }),
+  moveCategory,
+  reorderCategorySiblings: vi.fn().mockResolvedValue({ ok: true }),
+  updateCategory: vi.fn().mockResolvedValue({
     ok: true,
     category: { id: 1, name: "x", parent_id: null },
   }),
@@ -98,12 +92,11 @@ describe("CategoriesManager toasts", () => {
   ];
 
   beforeEach(() => {
-    refresh.mockReset();
     toastSuccess.mockReset();
     toastError.mockReset();
     toastDismiss.mockReset();
-    moveCategoryAction.mockReset();
-    moveCategoryAction.mockResolvedValue({ ok: true });
+    moveCategory.mockReset();
+    moveCategory.mockResolvedValue({ ok: true });
   });
 
   it("dismisses existing toasts then shows success toast when move succeeds", async () => {
@@ -119,11 +112,10 @@ describe("CategoriesManager toasts", () => {
       );
     });
     expect(toastDismiss).toHaveBeenCalled();
-    expect(refresh).toHaveBeenCalled();
   });
 
   it("shows error toast when move fails", async () => {
-    moveCategoryAction.mockResolvedValue({
+    moveCategory.mockResolvedValue({
       ok: false,
       error: "Falha na API",
     });

@@ -3,9 +3,8 @@
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
-import { updateTenantAction } from "@/app/actions/tenant";
+import { updateTenant } from "@/lib/api-client/tenant";
 import { AUTH_SESSION_REFRESH_EVENT } from "@/lib/auth-session";
-import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 export type TenantSettings = {
@@ -17,7 +16,6 @@ export default function TenantSettingsForm({
 }: {
   initial: TenantSettings;
 }) {
-  const router = useRouter();
   const [name, setName] = useState(initial.name);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,13 +25,12 @@ export default function TenantSettingsForm({
     setError("");
     setLoading(true);
     try {
-      const result = await updateTenantAction({ name });
+      const result = await updateTenant({ name });
       if (!result.ok) {
         setError(result.error);
         return;
       }
       window.dispatchEvent(new Event(AUTH_SESSION_REFRESH_EVENT));
-      router.refresh();
     } finally {
       setLoading(false);
     }

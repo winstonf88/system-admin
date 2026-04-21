@@ -9,10 +9,9 @@ import type {
 } from "@/app/(admin)/products/components/product-types";
 
 const push = vi.fn();
-const refresh = vi.fn();
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push, refresh }),
+  useRouter: () => ({ push, replace: vi.fn() }),
 }));
 
 vi.mock("next/link", () => ({
@@ -32,22 +31,22 @@ vi.mock("next/link", () => ({
   },
 }));
 
-const createProductAction = vi.fn();
-const updateProductAction = vi.fn();
+const createProduct = vi.fn();
+const updateProduct = vi.fn();
 
-vi.mock("@/app/actions/products", () => ({
-  createProductAction: (...args: unknown[]) => createProductAction(...args),
-  updateProductAction: (...args: unknown[]) => updateProductAction(...args),
-  deleteProductImageAction: vi.fn().mockResolvedValue({ ok: true }),
-  reorderProductImagesAction: vi.fn().mockResolvedValue({ ok: true }),
+vi.mock("@/lib/api-client/products", () => ({
+  createProduct: (...args: unknown[]) => createProduct(...args),
+  updateProduct: (...args: unknown[]) => updateProduct(...args),
+  deleteProductImage: vi.fn().mockResolvedValue({ ok: true }),
+  reorderProductImages: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
 vi.mock("@/lib/upload-product-image", () => ({
   uploadProductImageWithProgress: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
-vi.mock("@/app/actions/categories", () => ({
-  createCategoryAction: vi.fn(),
+vi.mock("@/lib/api-client/categories", () => ({
+  createCategory: vi.fn(),
 }));
 
 import ProductForm from "../index";
@@ -68,14 +67,13 @@ describe("ProductForm submit flow", () => {
 
   beforeEach(() => {
     push.mockReset();
-    refresh.mockReset();
-    createProductAction.mockReset();
-    updateProductAction.mockReset();
+    createProduct.mockReset();
+    updateProduct.mockReset();
   });
 
   it("creates a product and navigates to /products on success", async () => {
     const user = userEvent.setup();
-    createProductAction.mockResolvedValue({ ok: true, id: 42 });
+    createProduct.mockResolvedValue({ ok: true, id: 42 });
 
     render(<ProductForm categories={baseCategories} mode="create" />);
 
@@ -86,7 +84,7 @@ describe("ProductForm submit flow", () => {
     await user.click(screen.getByRole("button", { name: "Criar produto" }));
 
     await waitFor(() => {
-      expect(createProductAction).toHaveBeenCalledWith(
+      expect(createProduct).toHaveBeenCalledWith(
         expect.objectContaining({
           name: "Novo item",
           category_ids: [1],
@@ -102,12 +100,11 @@ describe("ProductForm submit flow", () => {
       );
     });
     expect(push).toHaveBeenCalledWith("/products");
-    expect(refresh).toHaveBeenCalled();
   });
 
   it("updates a product on success", async () => {
     const user = userEvent.setup();
-    updateProductAction.mockResolvedValue({ ok: true });
+    updateProduct.mockResolvedValue({ ok: true });
 
     render(
       <ProductForm
@@ -124,7 +121,7 @@ describe("ProductForm submit flow", () => {
     await user.click(screen.getByRole("button", { name: "Salvar alterações" }));
 
     await waitFor(() => {
-      expect(updateProductAction).toHaveBeenCalledWith(
+      expect(updateProduct).toHaveBeenCalledWith(
         5,
         expect.objectContaining({
           name: "Boné atualizado",
@@ -133,6 +130,5 @@ describe("ProductForm submit flow", () => {
       );
     });
     expect(push).toHaveBeenCalledWith("/products");
-    expect(refresh).toHaveBeenCalled();
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { deleteProductAction } from "@/app/actions/products";
+import { deleteProduct } from "@/lib/api-client/products";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
 import Input from "@/components/form/input/InputField";
 import Button from "@/components/ui/button/Button";
@@ -24,13 +24,13 @@ import { backendPublicUrl } from "@/lib/api-public";
 import { useModal } from "@/hooks/useModal";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 type Props = {
   products: ProductRow[];
   categories: CategoryOption[];
-  initialNameFilter: string;
-  initialCategoryFilterId: number | null;
+  initialNameFilter?: string;
+  initialCategoryFilterId?: number | null;
 };
 
 const modalInner =
@@ -39,8 +39,8 @@ const modalInner =
 export default function ProductsList({
   products,
   categories,
-  initialNameFilter,
-  initialCategoryFilterId,
+  initialNameFilter = "",
+  initialCategoryFilterId = null,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -49,6 +49,7 @@ export default function ProductsList({
   const [deleting, setDeleting] = useState<ProductRow | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [rows, setRows] = useState<ProductRow[]>(products);
   const [nameFilter, setNameFilter] = useState(initialNameFilter);
   const [categoryFilterId, setCategoryFilterId] = useState<number | "">(
     initialCategoryFilterId ?? "",
@@ -58,6 +59,9 @@ export default function ProductsList({
     () => sortedCategorySelectOptions(categories),
     [categories],
   );
+  useEffect(() => {
+    setRows(products);
+  }, [products]);
   const hasActiveFilters = nameFilter.trim().length > 0 || categoryFilterId !== "";
 
   const applyFilters = useCallback(() => {
@@ -92,11 +96,11 @@ export default function ProductsList({
     setDeleteError(null);
     setPending(true);
     try {
-      const r = await deleteProductAction(deleting.id);
+      const r = await deleteProduct(deleting.id);
       if (r.ok) {
         deleteModal.closeModal();
         setDeleting(null);
-        router.refresh();
+        setRows((prev) => prev.filter((product) => product.id !== deleting.id));
       } else {
         setDeleteError(r.error);
       }
@@ -167,11 +171,11 @@ export default function ProductsList({
             </button>
           </form>
           <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            {products.length} produto{products.length === 1 ? "" : "s"}
+            {rows.length} produto{rows.length === 1 ? "" : "s"}
             {hasActiveFilters ? " encontrado(s) para os filtros atuais" : ""}
           </p>
         </div>
-        {products.length === 0 ? (
+        {rows.length === 0 ? (
           <p className="px-5 py-10 text-center text-gray-500 text-theme-sm dark:text-gray-400">
             {hasActiveFilters ? (
               "Nenhum produto encontrado com os filtros atuais."
@@ -226,7 +230,7 @@ export default function ProductsList({
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                  {products.map((product) => {
+                  {rows.map((product) => {
                     const thumb = product.images[0]?.url;
                     const img = backendPublicUrl(thumb);
                     return (
