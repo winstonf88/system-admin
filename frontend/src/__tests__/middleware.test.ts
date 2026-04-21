@@ -30,7 +30,9 @@ describe("middleware", () => {
   it("redirects signed-in users away from signin", () => {
     const res = middleware(request("/signin", `${AUTH_SESSION_COOKIE}=1`));
     expect(res.status).toBe(307);
-    expect(res.headers.get("location")).toBe("http://localhost:3000/");
+    expect(res.headers.get("location")).toBe(
+      "http://localhost:3000/products",
+    );
   });
 
   it("allows authenticated access to admin routes", () => {

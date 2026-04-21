@@ -88,7 +88,7 @@ describe("SignInForm", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it("redirects to home after successful login", async () => {
+  it("redirects to products list after successful login", async () => {
     const user = userEvent.setup();
     fetchSpy.mockResolvedValue(
       new Response(JSON.stringify({ ok: true }), {
@@ -109,7 +109,7 @@ describe("SignInForm", () => {
     await user.click(screen.getByRole("button", { name: "Entrar" }));
 
     await waitFor(() => {
-      expect(push).toHaveBeenCalledWith("/");
+      expect(push).toHaveBeenCalledWith("/products");
     });
     expect(refresh).toHaveBeenCalled();
   });
@@ -126,7 +126,7 @@ describe("SignInForm", () => {
     await user.click(screen.getByRole("button", { name: "Entrar" }));
 
     await waitFor(() => {
-      expect(push).toHaveBeenCalledWith("/");
+      expect(push).toHaveBeenCalledWith("/products");
     });
   });
 });

@@ -7,9 +7,15 @@ import { EyeCloseIcon, EyeIcon } from "@/icons";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
+const DEFAULT_POST_LOGIN_REDIRECT = "/products";
+
 function sanitizeRedirect(path: string | undefined): string {
-  if (!path || !path.startsWith("/") || path.startsWith("//")) return "/";
-  if (path === "/signin" || path === "/signup") return "/";
+  if (!path || !path.startsWith("/") || path.startsWith("//")) {
+    return DEFAULT_POST_LOGIN_REDIRECT;
+  }
+  if (path === "/signin" || path === "/signup") {
+    return DEFAULT_POST_LOGIN_REDIRECT;
+  }
   return path;
 }
 
