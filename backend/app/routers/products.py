@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi_utils.cbv import cbv
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -145,8 +145,12 @@ class ProductView:
         return self._product_to_read(created)
 
     @router.get("/", response_model=list[ProductRead])
-    async def list_products(self) -> list[ProductRead]:
-        result = await self.db.execute(
+    async def list_products(
+        self,
+        name: str | None = Query(default=None, min_length=1),
+        category_id: int | None = Query(default=None, ge=1),
+    ) -> list[ProductRead]:
+        query = (
             select(Product)
             .options(
                 selectinload(Product.variations),
@@ -156,6 +160,14 @@ class ProductView:
             .where(Product.tenant_id == self.tenant_context.tenant_id)
             .order_by(Product.name.asc())
         )
+        if name is not None and name.strip():
+            query = query.where(Product.name.ilike(f"%{name.strip()}%"))
+        if category_id is not None:
+            query = query.where(
+                Product.category_links.any(ProductCategory.category_id == category_id)
+            )
+
+        result = await self.db.execute(query)
         products = list(result.scalars().all())
         return [self._product_to_read(p) for p in products]
 

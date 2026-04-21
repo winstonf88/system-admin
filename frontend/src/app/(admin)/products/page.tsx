@@ -14,9 +14,43 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function ProductsPage() {
+type SearchParams = {
+  name?: string | string[];
+  category_id?: string | string[];
+};
+
+type Props = {
+  searchParams?: SearchParams | Promise<SearchParams>;
+};
+
+export default async function ProductsPage({ searchParams }: Props) {
+  const resolvedSearchParams = (await Promise.resolve(searchParams)) ?? {};
+  const nameValue = Array.isArray(resolvedSearchParams.name)
+    ? resolvedSearchParams.name[0]
+    : resolvedSearchParams.name;
+  const categoryIdValue = Array.isArray(resolvedSearchParams.category_id)
+    ? resolvedSearchParams.category_id[0]
+    : resolvedSearchParams.category_id;
+  const initialNameFilter = nameValue?.trim() ?? "";
+  const parsedCategoryId = categoryIdValue ? Number(categoryIdValue) : NaN;
+  const initialCategoryFilterId =
+    Number.isInteger(parsedCategoryId) && parsedCategoryId > 0
+      ? parsedCategoryId
+      : null;
+
+  const productsPathParams = new URLSearchParams();
+  if (initialNameFilter.length > 0) {
+    productsPathParams.set("name", initialNameFilter);
+  }
+  if (initialCategoryFilterId !== null) {
+    productsPathParams.set("category_id", String(initialCategoryFilterId));
+  }
+  const productsPath = `/api/products/${
+    productsPathParams.size > 0 ? `?${productsPathParams.toString()}` : ""
+  }`;
+
   const [productsRes, categoriesRes] = await Promise.all([
-    fetchBackendAuthenticated("/api/products/"),
+    fetchBackendAuthenticated(productsPath),
     fetchBackendAuthenticated("/api/categories/"),
   ]);
 
@@ -61,5 +95,12 @@ export default async function ProductsPage() {
     categories = (await categoriesRes.json()) as CategoryOption[];
   }
 
-  return <ProductsList products={products} categories={categories} />;
+  return (
+    <ProductsList
+      products={products}
+      categories={categories}
+      initialNameFilter={initialNameFilter}
+      initialCategoryFilterId={initialCategoryFilterId}
+    />
+  );
 }

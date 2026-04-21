@@ -2,6 +2,7 @@
 
 import { deleteProductAction } from "@/app/actions/products";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
+import Input from "@/components/form/input/InputField";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
 import {
@@ -11,7 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatProductCategories } from "@/app/(admin)/products/components/category-labels";
+import {
+  formatProductCategories,
+  sortedCategorySelectOptions,
+} from "@/app/(admin)/products/components/category-labels";
 import type {
   CategoryOption,
   ProductRow,
@@ -19,23 +23,58 @@ import type {
 import { backendPublicUrl } from "@/lib/api-public";
 import { useModal } from "@/hooks/useModal";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import React, { useCallback, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import React, { useCallback, useMemo, useState } from "react";
 
 type Props = {
   products: ProductRow[];
   categories: CategoryOption[];
+  initialNameFilter: string;
+  initialCategoryFilterId: number | null;
 };
 
 const modalInner =
   "no-scrollbar relative w-full max-w-[520px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11";
 
-export default function ProductsList({ products, categories }: Props) {
+export default function ProductsList({
+  products,
+  categories,
+  initialNameFilter,
+  initialCategoryFilterId,
+}: Props) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const deleteModal = useModal();
   const [deleting, setDeleting] = useState<ProductRow | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [nameFilter, setNameFilter] = useState(initialNameFilter);
+  const [categoryFilterId, setCategoryFilterId] = useState<number | "">(
+    initialCategoryFilterId ?? "",
+  );
+
+  const categoryOptions = useMemo(
+    () => sortedCategorySelectOptions(categories),
+    [categories],
+  );
+  const hasActiveFilters = nameFilter.trim().length > 0 || categoryFilterId !== "";
+
+  const applyFilters = useCallback(() => {
+    const params = new URLSearchParams();
+    if (nameFilter.trim().length > 0) {
+      params.set("name", nameFilter.trim());
+    }
+    if (categoryFilterId !== "") {
+      params.set("category_id", String(categoryFilterId));
+    }
+    const query = params.toString();
+    const currentQuery = searchParams.toString();
+    if (query === currentQuery) {
+      return;
+    }
+    router.replace(query.length > 0 ? `${pathname}?${query}` : pathname);
+  }, [categoryFilterId, nameFilter, pathname, router, searchParams]);
 
   const openDelete = useCallback(
     (p: ProductRow) => {
@@ -79,15 +118,74 @@ export default function ProductsList({ products, categories }: Props) {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+        <div className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white px-5 py-4 dark:border-white/[0.05] dark:from-gray-900/80 dark:to-gray-900/20">
+          <form
+            className="grid grid-cols-1 gap-3 lg:grid-cols-[1.4fr_1fr_auto_auto]"
+            onSubmit={(e) => {
+              e.preventDefault();
+              applyFilters();
+            }}
+          >
+            <Input
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+              placeholder="Buscar por nome"
+              aria-label="Filtrar por nome"
+            />
+            <select
+              className="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+              value={categoryFilterId === "" ? "" : String(categoryFilterId)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setCategoryFilterId(value === "" ? "" : Number(value));
+              }}
+              aria-label="Filtrar por categoria"
+            >
+              <option value="">Todas as categorias</option>
+              {categoryOptions.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="inline-flex h-11 items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white transition hover:bg-brand-600"
+            >
+              Filtrar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setNameFilter("");
+                setCategoryFilterId("");
+                router.replace(pathname);
+              }}
+              className="inline-flex h-11 items-center justify-center rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.04]"
+            >
+              Limpar
+            </button>
+          </form>
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            {products.length} produto{products.length === 1 ? "" : "s"}
+            {hasActiveFilters ? " encontrado(s) para os filtros atuais" : ""}
+          </p>
+        </div>
         {products.length === 0 ? (
           <p className="px-5 py-10 text-center text-gray-500 text-theme-sm dark:text-gray-400">
-            Nenhum produto cadastrado.{" "}
-            <Link
-              href="/products/new"
-              className="font-medium text-brand-500 hover:text-brand-600"
-            >
-              Criar o primeiro
-            </Link>
+            {hasActiveFilters ? (
+              "Nenhum produto encontrado com os filtros atuais."
+            ) : (
+              <>
+                Nenhum produto cadastrado.{" "}
+                <Link
+                  href="/products/new"
+                  className="font-medium text-brand-500 hover:text-brand-600"
+                >
+                  Criar o primeiro
+                </Link>
+              </>
+            )}
           </p>
         ) : (
           <div className="max-w-full overflow-x-auto">
@@ -151,10 +249,7 @@ export default function ProductsList({ products, categories }: Props) {
                           {product.name}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
-                          {formatProductCategories(
-                            categories,
-                            product.category_ids,
-                          )}
+                          {formatProductCategories(categories, product.category_ids)}
                         </TableCell>
                         <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
                           {product.variations.length}

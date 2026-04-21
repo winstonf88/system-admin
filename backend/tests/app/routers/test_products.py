@@ -154,6 +154,92 @@ async def test_create_product_returns_selected_categories_in_payload_ordered(
     assert body["variations"][0]["quantity"] == 7
 
 
+async def test_list_products_supports_name_and_category_filters(
+    client, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
+    await seed_two_tenant_users(session_maker)
+    async with session_maker() as session:
+        roupas = CategoryFactory.build(tenant_id=1, name="Roupas", parent_id=None)
+        calcados = CategoryFactory.build(tenant_id=1, name="Calçados", parent_id=None)
+        tenant2_cat = CategoryFactory.build(tenant_id=2, name="Roupas", parent_id=None)
+        session.add_all([roupas, calcados, tenant2_cat])
+        await session.flush()
+
+        camisa = ProductFactory.build(
+            tenant_id=1,
+            name="Camisa Polo",
+            description=None,
+            image_url=None,
+        )
+        tenis = ProductFactory.build(
+            tenant_id=1,
+            name="Tênis Corrida",
+            description=None,
+            image_url=None,
+        )
+        bone = ProductFactory.build(
+            tenant_id=1,
+            name="Boné Aba Reta",
+            description=None,
+            image_url=None,
+        )
+        tenant2_product = ProductFactory.build(
+            tenant_id=2,
+            name="Camisa Tenant 2",
+            description=None,
+            image_url=None,
+        )
+        session.add_all([camisa, tenis, bone, tenant2_product])
+        await session.flush()
+
+        session.add_all(
+            [
+                ProductCategory(
+                    product_id=camisa.id,
+                    tenant_id=1,
+                    category_id=roupas.id,
+                ),
+                ProductCategory(
+                    product_id=tenis.id,
+                    tenant_id=1,
+                    category_id=calcados.id,
+                ),
+                ProductCategory(
+                    product_id=bone.id,
+                    tenant_id=1,
+                    category_id=roupas.id,
+                ),
+                ProductCategory(
+                    product_id=tenant2_product.id,
+                    tenant_id=2,
+                    category_id=tenant2_cat.id,
+                ),
+            ]
+        )
+        await session.commit()
+
+    by_name = await client.get("/api/products/?name=camisa", auth=AUTH_TENANT_ONE)
+    assert by_name.status_code == 200
+    by_name_names = [p["name"] for p in by_name.json()]
+    assert by_name_names == ["Camisa Polo"]
+
+    by_category = await client.get(
+        f"/api/products/?category_id={roupas.id}",
+        auth=AUTH_TENANT_ONE,
+    )
+    assert by_category.status_code == 200
+    by_category_names = [p["name"] for p in by_category.json()]
+    assert by_category_names == ["Boné Aba Reta", "Camisa Polo"]
+
+    combined = await client.get(
+        f"/api/products/?name=bo&category_id={roupas.id}",
+        auth=AUTH_TENANT_ONE,
+    )
+    assert combined.status_code == 200
+    combined_names = [p["name"] for p in combined.json()]
+    assert combined_names == ["Boné Aba Reta"]
+
+
 async def test_upload_rejects_more_than_ten_images_per_product(
     client, session_maker: async_sessionmaker[AsyncSession]
 ) -> None:
