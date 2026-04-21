@@ -11,13 +11,15 @@ from sqlalchemy import select
 from app.core.config import get_settings
 from app.models import Category, ProductImage
 from app.routers.products.common import (
-    DESCRIPTION_SUGGESTION_LIMIT,
-    NAME_SUGGESTION_LIMIT,
     ProductAISuggestionOutput,
     ProductsService,
     get_products_service,
 )
 from app.schemas import ProductAISuggestionsResponse, ProductSuggestionField
+
+NAME_SUGGESTION_LIMIT = 10
+DESCRIPTION_SUGGESTION_LIMIT = 6
+
 
 router = APIRouter()
 
@@ -209,12 +211,12 @@ async def run_ai_suggestions(
     prompt = (
         "Analyze the product images and suggest values only for the requested fields.\n"
         f"requested_fields={requested_field_names}\n"
-        f"name_limit={NAME_SUGGESTION_LIMIT}\n"
-        f"description_limit={DESCRIPTION_SUGGESTION_LIMIT}\n"
+        f"name_suggestion_count={NAME_SUGGESTION_LIMIT}\n"
+        f"description_suggestion_count={DESCRIPTION_SUGGESTION_LIMIT}\n"
         f"available_categories={categories_context}\n"
         "Rules:\n"
-        "- If name is requested, return up to name_limit suggestions.\n"
-        "- If description is requested, return up to description_limit suggestions.\n"
+        "- If name is requested, return exactly name_suggestion_count suggestions.\n"
+        "- If description is requested, return exactly description_suggestion_count suggestions.\n"
         "- If category is requested, return category ids that make sense for the product.\n"
         "- Category ids must be chosen only from available_categories ids.\n"
         "- If a field is not requested, return an empty list for that field.\n"

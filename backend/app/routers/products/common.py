@@ -24,13 +24,10 @@ from app.schemas import (
     ProductVariationRead,
 )
 
+MAX_IMAGES_PER_PRODUCT = 10
+
 UPLOAD_DIR = Path("uploads/products")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-MAX_IMAGES_PER_PRODUCT = 10
-NAME_SUGGESTION_LIMIT = 10
-DESCRIPTION_SUGGESTION_LIMIT = 3
-
 
 class ProductAISuggestionOutput(BaseModel):
     name: list[str] = Field(default_factory=list)

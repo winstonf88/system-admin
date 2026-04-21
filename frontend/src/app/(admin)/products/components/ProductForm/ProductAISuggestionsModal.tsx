@@ -9,7 +9,9 @@ import type {
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const aiModalInner =
-  "no-scrollbar relative w-full max-w-[680px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-8";
+  "relative flex h-[680px] max-h-[85vh] w-full max-w-[680px] flex-col rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-8";
+const optionsListClass =
+  "no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto rounded-xl border border-gray-200 p-3 pr-2 dark:border-white/[0.08]";
 const FIELD_LABELS: Record<ProductSuggestionField, string> = {
   name: "Nome",
   description: "Descricao",
@@ -157,7 +159,7 @@ export function ProductAISuggestionsModal({
         </div>
 
         {!suggestions ? null : (
-          <div className="space-y-5 px-2">
+          <div className="flex min-h-0 flex-1 flex-col gap-5 px-2">
             {requestedFields.length > 1 && (
               <div
                 className="mb-1 flex flex-wrap gap-2"
@@ -187,11 +189,11 @@ export function ProductAISuggestionsModal({
             )}
 
             {activeField === "name" && requestedFields.includes("name") && (
-              <fieldset>
+              <fieldset className="flex min-h-0 h-full flex-col">
                 <legend className="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
                   Nome
                 </legend>
-                <div className="space-y-2">
+                <div className={optionsListClass}>
                   {suggestions.name.map((value) => (
                     <label
                       key={value}
@@ -217,11 +219,11 @@ export function ProductAISuggestionsModal({
 
             {activeField === "description" &&
               requestedFields.includes("description") && (
-                <fieldset>
+                <fieldset className="flex min-h-0 h-full flex-col">
                   <legend className="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
                     Descricao
                   </legend>
-                  <div className="space-y-2">
+                  <div className={optionsListClass}>
                     {suggestions.description.map((value) => (
                       <label
                         key={value}
@@ -247,7 +249,7 @@ export function ProductAISuggestionsModal({
 
             {activeField === "category" &&
               requestedFields.includes("category") && (
-                <fieldset>
+                <fieldset className="flex min-h-0 h-full flex-col">
                   <legend className="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
                     Categoria
                   </legend>
@@ -259,7 +261,7 @@ export function ProductAISuggestionsModal({
                     <div
                       role="group"
                       aria-label="Categorias sugeridas por IA"
-                      className="space-y-2"
+                      className={optionsListClass}
                     >
                       {suggestedCategoryOptions.map((option) => (
                         <label
