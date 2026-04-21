@@ -1,3 +1,5 @@
+from enum import Enum
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
@@ -90,3 +92,15 @@ class ProductRead(BaseModel):
 
 class UploadResponse(BaseModel):
     file_url: str
+
+
+class ProductSuggestionField(str, Enum):
+    NAME = "name"
+    DESCRIPTION = "description"
+    CATEGORY = "category"
+
+
+class ProductAISuggestionsResponse(BaseModel):
+    name: list[str] | None = None
+    description: list[str] | None = None
+    category: list[int] | None = None

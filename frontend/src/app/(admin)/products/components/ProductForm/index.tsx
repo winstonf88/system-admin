@@ -25,6 +25,7 @@ import { useDropzone, type FileRejection } from "react-dropzone";
 import { CreateCategoryModal } from "./CreateCategoryModal";
 import { ImageLightboxModal } from "./ImageLightboxModal";
 import { ProductBasicsSection } from "./ProductBasicsSection";
+import { ProductAISuggestionsController } from "./ProductAISuggestionsController";
 import { ProductImagesSection } from "./ProductImagesSection";
 import { ProductVariationsSection } from "./ProductVariationsSection";
 import {
@@ -652,30 +653,108 @@ export default function ProductForm({ categories, mode, product }: Props) {
             />
           </section>
 
-          <section className="mb-6 rounded-2xl border border-gray-200 bg-gray-50/55 p-4 dark:border-white/[0.08] dark:bg-white/[0.02]">
-            <div className="mb-4 flex items-center gap-2">
-              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-brand-500 px-2 text-xs font-semibold text-white">
-                2
-              </span>
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                Nome, categoria e descrição
-              </h3>
-            </div>
-            <ProductBasicsSection
-              categoryList={categoryList}
-              categoryOptions={categoryOptions}
-              name={name}
-              description={description}
-              selectedCategoryIds={selectedCategoryIds}
-              onNameChange={setName}
-              onDescriptionChange={setDescription}
-              onToggleCategory={toggleCategory}
-              onOpenCategoryModal={() => {
-                setCategoryCreateError(null);
-                openCategoryModal();
-              }}
-            />
-          </section>
+          <ProductAISuggestionsController
+            busy={busy}
+            categoryList={categoryList}
+            pendingFiles={pendingFiles.map((pendingFile) => pendingFile.file)}
+            savedImageIds={savedImages.map((image) => image.id)}
+            onError={setError}
+            onApply={(selected) => {
+              if (selected.name !== undefined) {
+                setName(selected.name);
+              }
+              if (selected.description !== undefined) {
+                setDescription(selected.description);
+              }
+              if (selected.categoryIds !== undefined) {
+                setSelectedCategoryIds(selected.categoryIds);
+              }
+            }}
+          >
+            {({ openSuggestions, aiBusy, loadingFields }) => (
+              <section className="mb-6 rounded-2xl border border-gray-200 bg-gray-50/55 p-4 dark:border-white/[0.08] dark:bg-white/[0.02]">
+                <div className="mb-4 flex items-center gap-2">
+                  <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-brand-500 px-2 text-xs font-semibold text-white">
+                    2
+                  </span>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                    Nome, categoria e descrição
+                  </h3>
+                  <button
+                    type="button"
+                    aria-label="Sugestao por IA para secao de nome, categoria e descricao"
+                    onClick={() => {
+                      void openSuggestions(["name", "description", "category"]);
+                    }}
+                    disabled={aiBusy}
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-300 text-gray-700 transition hover:border-gray-400 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.04]"
+                  >
+                    {loadingFields.length === 3 ? (
+                      <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden
+                        className="h-4 w-4 shrink-0 animate-spin"
+                        fill="none"
+                      >
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="9"
+                          className="opacity-25"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                        />
+                        <path
+                          d="M21 12a9 9 0 0 0-9-9"
+                          className="opacity-90"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        aria-hidden
+                        className="h-4 w-4 shrink-0"
+                      >
+                        <path d="M10 2.5a.75.75 0 0 1 .69.455l1.42 3.352 3.353 1.421a.75.75 0 0 1 0 1.382l-3.352 1.42-1.421 3.353a.75.75 0 0 1-1.382 0l-1.42-3.352-3.353-1.421a.75.75 0 0 1 0-1.382l3.352-1.42 1.421-3.353A.75.75 0 0 1 10 2.5Z" />
+                        <path d="M15.5 13.5a.75.75 0 0 1 .69.455l.489 1.155 1.155.49a.75.75 0 0 1 0 1.382l-1.155.489-.49 1.155a.75.75 0 0 1-1.382 0l-.489-1.155-1.155-.49a.75.75 0 0 1 0-1.382l1.155-.489.49-1.155a.75.75 0 0 1 .692-.455Z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                {loadingFields.length > 0 && (
+                  <p
+                    className="mb-3 text-xs font-medium text-brand-600 dark:text-brand-300"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    Gerando sugestões por IA...
+                  </p>
+                )}
+                <ProductBasicsSection
+                  categoryOptions={categoryOptions}
+                  name={name}
+                  description={description}
+                  selectedCategoryIds={selectedCategoryIds}
+                  onNameChange={setName}
+                  onDescriptionChange={setDescription}
+                  onToggleCategory={toggleCategory}
+                  onOpenCategoryModal={() => {
+                    setCategoryCreateError(null);
+                    openCategoryModal();
+                  }}
+                  onOpenAISuggestions={(field) => {
+                    void openSuggestions([field]);
+                  }}
+                  aiBusy={aiBusy}
+                  loadingFields={loadingFields}
+                />
+              </section>
+            )}
+          </ProductAISuggestionsController>
 
           <section className="rounded-2xl border border-gray-200 bg-gray-50/55 p-4 dark:border-white/[0.08] dark:bg-white/[0.02]">
             <div className="mb-4 flex items-center gap-2">

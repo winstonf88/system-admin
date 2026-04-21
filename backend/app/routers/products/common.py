@@ -1,8 +1,8 @@
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
-from fastapi_utils.cbv import cbv
+from fastapi import Depends, HTTPException, UploadFile, status
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -17,23 +17,28 @@ from app.models import (
 )
 from app.schemas import (
     ProductCreate,
-    ProductImageOrderUpdate,
     ProductImageRead,
     ProductRead,
     ProductUpdate,
+    ProductVariationCreate,
     ProductVariationRead,
-    UploadResponse,
 )
 
 UPLOAD_DIR = Path("uploads/products")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 MAX_IMAGES_PER_PRODUCT = 10
+NAME_SUGGESTION_LIMIT = 10
+DESCRIPTION_SUGGESTION_LIMIT = 3
 
-router = APIRouter(prefix="/api/products", tags=["products"])
+
+class ProductAISuggestionOutput(BaseModel):
+    name: list[str] = Field(default_factory=list)
+    description: list[str] = Field(default_factory=list)
+    category: list[int] = Field(default_factory=list)
 
 
-def _delete_upload_file_if_safe(url: str) -> None:
+def delete_upload_file_if_safe(url: str) -> None:
     if not url.startswith("/uploads/products/"):
         return
     relative = url.removeprefix("/uploads/")
@@ -42,12 +47,12 @@ def _delete_upload_file_if_safe(url: str) -> None:
         path.unlink()
 
 
-@cbv(router)
-class ProductView:
-    db: AsyncSession = Depends(get_db)
-    tenant_context: TenantContext = Depends(get_tenant_context)
+class ProductsService:
+    def __init__(self, db: AsyncSession, tenant_context: TenantContext) -> None:
+        self.db = db
+        self.tenant_context = tenant_context
 
-    def _product_to_read(self, product: Product) -> ProductRead:
+    def product_to_read(self, product: Product) -> ProductRead:
         category_ids = sorted({link.category_id for link in product.category_links})
         sorted_imgs = sorted(product.images, key=lambda x: x.sort_order)
         image_reads = [ProductImageRead.model_validate(i) for i in sorted_imgs]
@@ -64,7 +69,7 @@ class ProductView:
             ],
         )
 
-    async def _get_product_or_404(self, product_id: int) -> Product:
+    async def get_product_or_404(self, product_id: int) -> Product:
         result = await self.db.execute(
             select(Product)
             .options(
@@ -84,7 +89,7 @@ class ProductView:
             )
         return product
 
-    async def _validate_categories(self, category_ids: list[int]) -> None:
+    async def validate_categories(self, category_ids: list[int]) -> None:
         if not category_ids:
             return
         result = await self.db.execute(
@@ -101,7 +106,64 @@ class ProductView:
                 detail="Categoria não encontrada.",
             )
 
-    def _replace_variations(self, product: Product, payload_variations: list) -> None:
+    async def list_tenant_categories(self) -> list[Category]:
+        result = await self.db.execute(
+            select(Category)
+            .where(Category.tenant_id == self.tenant_context.tenant_id)
+            .order_by(
+                Category.parent_id.asc(),
+                Category.sort_order.asc(),
+                Category.name.asc(),
+                Category.id.asc(),
+            )
+        )
+        return list(result.scalars().all())
+
+    @staticmethod
+    def sanitize_text_suggestions(
+        values: list[str] | None,
+        *,
+        limit: int,
+    ) -> list[str]:
+        if not values:
+            return []
+        normalized: list[str] = []
+        seen: set[str] = set()
+        for raw in values:
+            item = raw.strip()
+            if not item:
+                continue
+            key = item.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            normalized.append(item)
+            if len(normalized) >= limit:
+                break
+        return normalized
+
+    @staticmethod
+    def sanitize_category_suggestions(
+        values: list[int] | None,
+        *,
+        allowed_category_ids: set[int],
+    ) -> list[int]:
+        if not values:
+            return []
+        normalized: list[int] = []
+        seen: set[int] = set()
+        for raw in values:
+            if raw in seen or raw not in allowed_category_ids:
+                continue
+            seen.add(raw)
+            normalized.append(raw)
+        return normalized
+
+    def replace_variations(
+        self,
+        product: Product,
+        payload_variations: list[ProductVariationCreate],
+    ) -> None:
         product.variations.clear()
         for variation in payload_variations:
             product.variations.append(
@@ -112,9 +174,8 @@ class ProductView:
                 )
             )
 
-    @router.post("/", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
     async def create_product(self, payload: ProductCreate) -> ProductRead:
-        await self._validate_categories(payload.category_ids)
+        await self.validate_categories(payload.category_ids)
 
         product = Product(
             tenant_id=self.tenant_context.tenant_id,
@@ -122,11 +183,11 @@ class ProductView:
             description=payload.description,
             image_url=payload.image_url,
         )
-        for cid in payload.category_ids:
+        for category_id in payload.category_ids:
             product.category_links.append(
                 ProductCategory(
                     tenant_id=self.tenant_context.tenant_id,
-                    category_id=cid,
+                    category_id=category_id,
                 )
             )
 
@@ -141,14 +202,49 @@ class ProductView:
 
         self.db.add(product)
         await self.db.commit()
-        created = await self._get_product_or_404(product.id)
-        return self._product_to_read(created)
+        created = await self.get_product_or_404(product.id)
+        return self.product_to_read(created)
 
-    @router.get("/", response_model=list[ProductRead])
+    async def update_product(
+        self, product_id: int, payload: ProductUpdate
+    ) -> ProductRead:
+        product = await self.get_product_or_404(product_id)
+
+        if (
+            "category_ids" in payload.model_fields_set
+            and payload.category_ids is not None
+        ):
+            await self.validate_categories(payload.category_ids)
+            product.category_links.clear()
+            for category_id in payload.category_ids:
+                product.category_links.append(
+                    ProductCategory(
+                        tenant_id=self.tenant_context.tenant_id,
+                        category_id=category_id,
+                    )
+                )
+
+        if "name" in payload.model_fields_set and payload.name is not None:
+            product.name = payload.name
+
+        if "description" in payload.model_fields_set:
+            product.description = payload.description
+
+        if "image_url" in payload.model_fields_set:
+            product.image_url = payload.image_url
+
+        if "variations" in payload.model_fields_set and payload.variations is not None:
+            self.replace_variations(product, payload.variations)
+
+        await self.db.commit()
+        updated = await self.get_product_or_404(product_id)
+        return self.product_to_read(updated)
+
     async def list_products(
         self,
-        name: str | None = Query(default=None, min_length=1),
-        category_id: int | None = Query(default=None, ge=1),
+        *,
+        name: str | None,
+        category_id: int | None,
     ) -> list[ProductRead]:
         query = (
             select(Product)
@@ -169,61 +265,17 @@ class ProductView:
 
         result = await self.db.execute(query)
         products = list(result.scalars().all())
-        return [self._product_to_read(p) for p in products]
+        return [self.product_to_read(product) for product in products]
 
-    @router.get("/{product_id}", response_model=ProductRead)
-    async def get_product(self, product_id: int) -> ProductRead:
-        product = await self._get_product_or_404(product_id)
-        return self._product_to_read(product)
-
-    @router.put("/{product_id}", response_model=ProductRead)
-    async def update_product(
-        self,
-        product_id: int,
-        payload: ProductUpdate,
-    ) -> ProductRead:
-        product = await self._get_product_or_404(product_id)
-
-        if (
-            "category_ids" in payload.model_fields_set
-            and payload.category_ids is not None
-        ):
-            await self._validate_categories(payload.category_ids)
-            product.category_links.clear()
-            for cid in payload.category_ids:
-                product.category_links.append(
-                    ProductCategory(
-                        tenant_id=self.tenant_context.tenant_id,
-                        category_id=cid,
-                    )
-                )
-
-        if "name" in payload.model_fields_set and payload.name is not None:
-            product.name = payload.name
-
-        if "description" in payload.model_fields_set:
-            product.description = payload.description
-
-        if "image_url" in payload.model_fields_set:
-            product.image_url = payload.image_url
-
-        if "variations" in payload.model_fields_set and payload.variations is not None:
-            self._replace_variations(product, payload.variations)
-
-        await self.db.commit()
-        updated = await self._get_product_or_404(product_id)
-        return self._product_to_read(updated)
-
-    @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
     async def delete_product(self, product_id: int) -> None:
-        product = await self._get_product_or_404(product_id)
-        for img in list(product.images):
-            _delete_upload_file_if_safe(img.url)
+        product = await self.get_product_or_404(product_id)
+        for image in list(product.images):
+            delete_upload_file_if_safe(image.url)
         await self.db.delete(product)
         await self.db.commit()
 
-    async def _image_row_count(self, product_id: int) -> int:
-        r = await self.db.execute(
+    async def image_row_count(self, product_id: int) -> int:
+        result = await self.db.execute(
             select(func.count())
             .select_from(ProductImage)
             .where(
@@ -231,12 +283,12 @@ class ProductView:
                 ProductImage.tenant_id == self.tenant_context.tenant_id,
             )
         )
-        return int(r.scalar_one() or 0)
+        return int(result.scalar_one() or 0)
 
-    async def _persist_legacy_image_row_if_needed(self, product: Product) -> None:
+    async def persist_legacy_image_row_if_needed(self, product: Product) -> None:
         if not product.image_url:
             return
-        if await self._image_row_count(product.id) > 0:
+        if await self.image_row_count(product.id) > 0:
             return
         self.db.add(
             ProductImage(
@@ -248,8 +300,8 @@ class ProductView:
         )
         await self.db.flush()
 
-    async def _sync_product_primary_image_url(self, product_id: int) -> None:
-        product = await self._get_product_or_404(product_id)
+    async def sync_product_primary_image_url(self, product_id: int) -> None:
+        product = await self.get_product_or_404(product_id)
         first = await self.db.execute(
             select(ProductImage.url)
             .where(
@@ -262,13 +314,8 @@ class ProductView:
         product.image_url = first.scalar_one_or_none()
         await self.db.commit()
 
-    @router.post("/{product_id}/upload", response_model=UploadResponse)
-    async def upload_product_file(
-        self,
-        product_id: int,
-        file: UploadFile = File(...),
-    ) -> UploadResponse:
-        product = await self._get_product_or_404(product_id)
+    async def upload_product_file(self, product_id: int, file: UploadFile) -> str:
+        product = await self.get_product_or_404(product_id)
 
         if not file.filename:
             raise HTTPException(
@@ -276,8 +323,8 @@ class ProductView:
                 detail="Falta o nome do arquivo no envio.",
             )
 
-        await self._persist_legacy_image_row_if_needed(product)
-        next_index = await self._image_row_count(product.id)
+        await self.persist_legacy_image_row_if_needed(product)
+        next_index = await self.image_row_count(product.id)
         if next_index >= MAX_IMAGES_PER_PRODUCT:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -300,15 +347,11 @@ class ProductView:
             )
         )
         await self.db.commit()
-        await self._sync_product_primary_image_url(product_id)
+        await self.sync_product_primary_image_url(product_id)
+        return file_url
 
-        return UploadResponse(file_url=file_url)
-
-    @router.delete(
-        "/{product_id}/images/{image_id}", status_code=status.HTTP_204_NO_CONTENT
-    )
     async def delete_product_image(self, product_id: int, image_id: int) -> None:
-        await self._get_product_or_404(product_id)
+        await self.get_product_or_404(product_id)
         result = await self.db.execute(
             select(ProductImage).where(
                 ProductImage.id == image_id,
@@ -324,20 +367,18 @@ class ProductView:
         url = row.url
         await self.db.delete(row)
         await self.db.commit()
-        _delete_upload_file_if_safe(url)
-        await self._sync_product_primary_image_url(product_id)
+        delete_upload_file_if_safe(url)
+        await self.sync_product_primary_image_url(product_id)
 
-    @router.put("/{product_id}/images/order", response_model=ProductRead)
     async def reorder_product_images(
         self,
         product_id: int,
-        payload: ProductImageOrderUpdate,
+        requested_ids: list[int],
     ) -> ProductRead:
-        product = await self._get_product_or_404(product_id)
+        product = await self.get_product_or_404(product_id)
         current_ids = [
             img.id for img in sorted(product.images, key=lambda x: x.sort_order)
         ]
-        requested_ids = payload.image_ids
         if set(requested_ids) != set(current_ids) or len(requested_ids) != len(
             current_ids
         ):
@@ -348,15 +389,22 @@ class ProductView:
 
         by_id = {img.id: img for img in product.images}
         offset = len(requested_ids)
-        for idx, image_id in enumerate(requested_ids):
-            by_id[image_id].sort_order = idx + offset
+        for index, image_id in enumerate(requested_ids):
+            by_id[image_id].sort_order = index + offset
 
         await self.db.flush()
 
-        for idx, image_id in enumerate(requested_ids):
-            by_id[image_id].sort_order = idx
+        for index, image_id in enumerate(requested_ids):
+            by_id[image_id].sort_order = index
 
         await self.db.commit()
-        await self._sync_product_primary_image_url(product_id)
-        updated = await self._get_product_or_404(product_id)
-        return self._product_to_read(updated)
+        await self.sync_product_primary_image_url(product_id)
+        updated = await self.get_product_or_404(product_id)
+        return self.product_to_read(updated)
+
+
+def get_products_service(
+    db: AsyncSession = Depends(get_db),
+    tenant_context: TenantContext = Depends(get_tenant_context),
+) -> ProductsService:
+    return ProductsService(db=db, tenant_context=tenant_context)

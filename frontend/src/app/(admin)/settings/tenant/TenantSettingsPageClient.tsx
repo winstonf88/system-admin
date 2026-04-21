@@ -1,6 +1,7 @@
 "use client";
 
 import TenantSettingsForm from "@/components/tenant/TenantSettingsForm";
+import AdminPageLoading from "@/app/(admin)/components/AdminPageLoading";
 import { getTenant } from "@/lib/api-client/tenant";
 import { useEffect, useState } from "react";
 
@@ -33,13 +34,7 @@ export default function TenantSettingsPageClient() {
   }, []);
 
   if (tenant === null && status === null) {
-    return (
-      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-white/[0.05] dark:bg-white/[0.03]">
-        <p className="text-gray-700 dark:text-gray-300">
-          Carregando configurações...
-        </p>
-      </div>
-    );
+    return <AdminPageLoading label="Carregando configurações..." />;
   }
 
   if (status === 401) {

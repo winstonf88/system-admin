@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import AdminPageLoading from "@/app/(admin)/components/AdminPageLoading";
 import UsersManagement from "@/components/users/UsersManagement";
 import type { UserRow } from "@/components/users/user-types";
 import { getAuthSession } from "@/lib/api-client/auth";
@@ -41,13 +42,7 @@ export default function UsersPageClient() {
   }, []);
 
   if (users === null && status === null) {
-    return (
-      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-white/[0.05] dark:bg-white/[0.03]">
-        <p className="text-gray-700 dark:text-gray-300">
-          Carregando usuários...
-        </p>
-      </div>
-    );
+    return <AdminPageLoading label="Carregando usuários..." />;
   }
 
   if (status === 401) {

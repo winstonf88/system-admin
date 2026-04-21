@@ -50,6 +50,12 @@ class Settings(BaseSettings):
     db_pool_recycle: int = Field(
         default=1800, validation_alias=AliasChoices("DB_POOL_RECYCLE")
     )
+    openai_api_key: str | None = Field(
+        default=None, validation_alias=AliasChoices("OPENAI_API_KEY")
+    )
+    openai_model: str = Field(
+        default="gpt-4o", validation_alias=AliasChoices("OPENAI_MODEL")
+    )
 
     @computed_field
     @property

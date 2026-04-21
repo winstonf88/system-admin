@@ -23,6 +23,15 @@ export type ProductActionResult = { ok: true } | { ok: false; error: string };
 export type CreateProductResult =
   | { ok: true; id: number }
   | { ok: false; error: string };
+export type ProductAISuggestions = {
+  name: string[];
+  description: string[];
+  category: number[];
+};
+export type ProductSuggestionField = "name" | "description" | "category";
+export type ProductAISuggestionResult =
+  | { ok: true; suggestions: ProductAISuggestions }
+  | { ok: false; error: string };
 
 function asActionResult<T>(result: ApiResult<T>): ProductActionResult {
   if (!result.ok) {
@@ -137,4 +146,40 @@ export async function reorderProductImages(
       body: JSON.stringify({ image_ids: imageIds }),
     }),
   );
+}
+
+export async function suggestProductFields(input: {
+  files: File[];
+  productImageIds: number[];
+  fields: ProductSuggestionField[];
+}): Promise<ProductAISuggestionResult> {
+  const formData = new FormData();
+  for (const field of input.fields) {
+    formData.append("fields", field);
+  }
+  for (const file of input.files) {
+    formData.append("files", file);
+  }
+  for (const imageId of input.productImageIds) {
+    formData.append("product_image_ids", String(imageId));
+  }
+  const result = await apiRequest<{
+    name?: string[] | null;
+    description?: string[] | null;
+    category?: number[] | null;
+  }>("/api/products/ai-suggestions", {
+    method: "POST",
+    body: formData,
+  });
+  if (!result.ok) {
+    return { ok: false, error: result.error };
+  }
+  return {
+    ok: true,
+    suggestions: {
+      name: result.data.name ?? [],
+      description: result.data.description ?? [],
+      category: result.data.category ?? [],
+    },
+  };
 }

@@ -17,6 +17,8 @@ dependencies = [
     "psycopg[binary]>=3.2.0",
     "sqlalchemy>=2.0.0",
     "uvicorn[standard]>=0.32.0",
+    "agno>=2.5.17",
+    "openai>=2.32.0",
 ]
 
 [project.scripts]

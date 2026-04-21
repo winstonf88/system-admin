@@ -1,6 +1,7 @@
 "use client";
 
 import ProductForm from "@/app/(admin)/products/components/ProductForm";
+import AdminPageLoading from "@/app/(admin)/components/AdminPageLoading";
 import type {
   CategoryOption,
   ProductRow,
@@ -53,13 +54,7 @@ export default function EditProductPageClient({ productId }: Props) {
   }, [productId]);
 
   if (product === null && productStatus === null) {
-    return (
-      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-white/[0.05] dark:bg-white/[0.03]">
-        <p className="text-gray-700 dark:text-gray-300">
-          Carregando produto...
-        </p>
-      </div>
-    );
+    return <AdminPageLoading label="Carregando produto..." />;
   }
 
   if (productStatus === 401 || categoriesStatus === 401) {

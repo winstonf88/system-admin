@@ -1,6 +1,7 @@
 "use client";
 
 import ProductForm from "@/app/(admin)/products/components/ProductForm";
+import AdminPageLoading from "@/app/(admin)/components/AdminPageLoading";
 import { getProductCategories } from "@/lib/api-client/products";
 import { useEffect, useState } from "react";
 import type { CategoryOption } from "@/app/(admin)/products/components/product-types";
@@ -30,13 +31,7 @@ export default function NewProductPageClient() {
   }, []);
 
   if (categories === null && status === null) {
-    return (
-      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-white/[0.05] dark:bg-white/[0.03]">
-        <p className="text-gray-700 dark:text-gray-300">
-          Carregando categorias...
-        </p>
-      </div>
-    );
+    return <AdminPageLoading label="Carregando categorias..." />;
   }
 
   if (status === 401) {
