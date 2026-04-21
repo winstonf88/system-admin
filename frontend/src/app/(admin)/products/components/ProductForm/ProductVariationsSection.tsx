@@ -21,7 +21,7 @@ export function ProductVariationsSection({
   onUpdateVariation,
 }: Props) {
   return (
-    <div className="mt-8 border-t border-gray-100 pt-6 dark:border-white/[0.05]">
+    <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-lg font-medium text-gray-800 dark:text-white/90">
           Variações

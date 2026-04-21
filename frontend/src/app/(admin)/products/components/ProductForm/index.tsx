@@ -619,50 +619,80 @@ export default function ProductForm({ categories, mode, product }: Props) {
             </div>
           )}
 
-          <ProductBasicsSection
-            categoryList={categoryList}
-            categoryOptions={categoryOptions}
-            name={name}
-            description={description}
-            selectedCategoryIds={selectedCategoryIds}
-            onNameChange={setName}
-            onDescriptionChange={setDescription}
-            onToggleCategory={toggleCategory}
-            onOpenCategoryModal={() => {
-              setCategoryCreateError(null);
-              openCategoryModal();
-            }}
-          />
+          <section className="mb-6 rounded-2xl border border-gray-200 bg-gray-50/55 p-4 dark:border-white/[0.08] dark:bg-white/[0.02]">
+            <div className="mb-3 flex items-center gap-2">
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-brand-500 px-2 text-xs font-semibold text-white">
+                1
+              </span>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                Imagens
+              </h3>
+            </div>
+            <ProductImagesSection
+              mode={mode}
+              busy={busy}
+              deletingImageId={deletingImageId}
+              imageSlotsLeft={imageSlotsLeft}
+              imageUploadError={imageUploadError}
+              isDragActive={isDragActive}
+              savedImageUrls={savedImages}
+              pendingFiles={pendingFiles}
+              pendingObjectUrls={pendingObjectUrls}
+              uploadProgress={uploadProgress}
+              getRootProps={getRootProps}
+              getInputProps={getInputProps}
+              onOpenLightbox={openImageLightbox}
+              onReorderSavedImages={reorderSavedImages}
+              onReorderPendingFiles={reorderPendingFiles}
+              onRemoveSavedImage={(imageId) => {
+                void removeSavedImage(imageId);
+              }}
+              onRemovePendingFile={removePendingFile}
+              onClearPendingImages={clearPendingImages}
+            />
+          </section>
 
-          <ProductImagesSection
-            mode={mode}
-            busy={busy}
-            deletingImageId={deletingImageId}
-            imageSlotsLeft={imageSlotsLeft}
-            imageUploadError={imageUploadError}
-            isDragActive={isDragActive}
-            savedImageUrls={savedImages}
-            pendingFiles={pendingFiles}
-            pendingObjectUrls={pendingObjectUrls}
-            uploadProgress={uploadProgress}
-            getRootProps={getRootProps}
-            getInputProps={getInputProps}
-            onOpenLightbox={openImageLightbox}
-            onReorderSavedImages={reorderSavedImages}
-            onReorderPendingFiles={reorderPendingFiles}
-            onRemoveSavedImage={(imageId) => {
-              void removeSavedImage(imageId);
-            }}
-            onRemovePendingFile={removePendingFile}
-            onClearPendingImages={clearPendingImages}
-          />
+          <section className="mb-6 rounded-2xl border border-gray-200 bg-gray-50/55 p-4 dark:border-white/[0.08] dark:bg-white/[0.02]">
+            <div className="mb-4 flex items-center gap-2">
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-brand-500 px-2 text-xs font-semibold text-white">
+                2
+              </span>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                Nome, categoria e descrição
+              </h3>
+            </div>
+            <ProductBasicsSection
+              categoryList={categoryList}
+              categoryOptions={categoryOptions}
+              name={name}
+              description={description}
+              selectedCategoryIds={selectedCategoryIds}
+              onNameChange={setName}
+              onDescriptionChange={setDescription}
+              onToggleCategory={toggleCategory}
+              onOpenCategoryModal={() => {
+                setCategoryCreateError(null);
+                openCategoryModal();
+              }}
+            />
+          </section>
 
-          <ProductVariationsSection
-            variationRows={variationRows}
-            onAddVariation={addVariation}
-            onRemoveVariation={removeVariation}
-            onUpdateVariation={updateVariation}
-          />
+          <section className="rounded-2xl border border-gray-200 bg-gray-50/55 p-4 dark:border-white/[0.08] dark:bg-white/[0.02]">
+            <div className="mb-4 flex items-center gap-2">
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-brand-500 px-2 text-xs font-semibold text-white">
+                3
+              </span>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                Variações
+              </h3>
+            </div>
+            <ProductVariationsSection
+              variationRows={variationRows}
+              onAddVariation={addVariation}
+              onRemoveVariation={removeVariation}
+              onUpdateVariation={updateVariation}
+            />
+          </section>
 
           <div className="mt-8 flex flex-wrap justify-end gap-3 border-t border-gray-100 pt-6 dark:border-white/[0.05]">
             <Link
