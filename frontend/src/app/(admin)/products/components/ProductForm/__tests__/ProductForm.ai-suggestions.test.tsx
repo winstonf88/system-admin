@@ -10,6 +10,7 @@ import type {
 
 const push = vi.fn();
 const suggestProductFields = vi.fn();
+const toastError = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace: vi.fn() }),
@@ -40,6 +41,12 @@ vi.mock("@/lib/api-client/products", () => ({
   suggestProductFields: (...args: unknown[]) => suggestProductFields(...args),
 }));
 
+vi.mock("sonner", () => ({
+  toast: {
+    error: (...args: unknown[]) => toastError(...args),
+  },
+}));
+
 vi.mock("@/lib/upload-product-image", () => ({
   uploadProductImageWithProgress: vi.fn().mockResolvedValue({ ok: true }),
 }));
@@ -68,6 +75,7 @@ describe("ProductForm AI suggestions behavior", () => {
   beforeEach(() => {
     push.mockReset();
     suggestProductFields.mockReset();
+    toastError.mockReset();
   });
 
   it("requests all fields, refreshes active tab, and applies selected suggestions", async () => {
@@ -131,11 +139,13 @@ describe("ProductForm AI suggestions behavior", () => {
     await user.click(screen.getByRole("tab", { name: "Categoria" }));
 
     const categoryGroup = screen.getByRole("group", {
-      name: "Sugestoes de categoria por IA",
+      name: "Categorias sugeridas por IA",
     });
-    expect(
-      within(categoryGroup).getByRole("checkbox", { name: "Roupas" }),
-    ).toBeChecked();
+    const roupasSuggestion = within(categoryGroup).getByRole("checkbox", {
+      name: "Roupas",
+    });
+    await user.click(roupasSuggestion);
+    expect(roupasSuggestion).toBeChecked();
 
     await user.click(screen.getByRole("button", { name: "Salvar/atualizar" }));
 
@@ -192,6 +202,40 @@ describe("ProductForm AI suggestions behavior", () => {
       productImageIds: [101],
       fields: ["name"],
     });
+  });
+
+  it("opens modal with available fields when one requested field is empty", async () => {
+    const user = userEvent.setup();
+    suggestProductFields.mockResolvedValue({
+      ok: true,
+      suggestions: {
+        name: ["Nome IA único"],
+        description: ["Descricao IA única"],
+        category: [],
+      },
+    });
+
+    render(
+      <ProductForm
+        categories={categories}
+        mode="edit"
+        product={productWithImage}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Sugestao por IA para secao de nome, categoria e descricao",
+      }),
+    );
+
+    await screen.findByRole("heading", { name: "Sugestoes por IA" });
+    expect(screen.getByRole("tab", { name: "Nome" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Descricao" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("tab", { name: "Categoria" }),
+    ).not.toBeInTheDocument();
+    expect(toastError).not.toHaveBeenCalled();
   });
 
   it("shows validation error when trying AI suggestions without any image", async () => {
@@ -261,11 +305,12 @@ describe("ProductForm AI suggestions behavior", () => {
       screen.getByRole("button", { name: "Sugestao por IA para categorias" }),
     );
 
-    expect(
-      await screen.findByText(
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith(
         "A IA não retornou sugestões para o campo solicitado. Tente novamente com outras imagens.",
-      ),
-    ).toBeInTheDocument();
+        { duration: 5000 },
+      );
+    });
     expect(
       screen.queryByRole("heading", { name: "Sugestoes por IA" }),
     ).not.toBeInTheDocument();

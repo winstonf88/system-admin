@@ -165,6 +165,8 @@ async def suggest_product_fields(
             allowed_category_ids={category.id for category in tenant_categories},
         )
 
+    from pprint import pprint
+    pprint(response_payload)
     return ProductAISuggestionsResponse(**response_payload)
 
 

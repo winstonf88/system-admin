@@ -5,6 +5,7 @@ import type {
 } from "@/lib/api-client/products";
 import { suggestProductFields } from "@/lib/api-client/products";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { ProductAISuggestionsModal } from "./ProductAISuggestionsModal";
 
@@ -80,13 +81,15 @@ export function ProductAISuggestionsController({
         onError(response.error);
         return null;
       }
-      for (const field of uniqueFields) {
-        if (response.suggestions[field].length === 0) {
-          onError(
-            "A IA não retornou sugestões para o campo solicitado. Tente novamente com outras imagens.",
-          );
-          return null;
-        }
+      const emptyFields = uniqueFields.filter(
+        (field) => response.suggestions[field].length === 0,
+      );
+      if (emptyFields.length === uniqueFields.length) {
+        toast.error(
+          "A IA não retornou sugestões para o campo solicitado. Tente novamente com outras imagens.",
+          { duration: 5000 },
+        );
+        return null;
       }
       return response.suggestions;
     } finally {
@@ -101,7 +104,13 @@ export function ProductAISuggestionsController({
     if (!fresh) {
       return;
     }
-    setRequestedFields(uniqueFields);
+    const fieldsWithSuggestions = uniqueFields.filter(
+      (field) => fresh[field].length > 0,
+    );
+    if (fieldsWithSuggestions.length === 0) {
+      return;
+    }
+    setRequestedFields(fieldsWithSuggestions);
     setAiSuggestions(fresh);
     setAiSuggestionsModalOpen(true);
   };
