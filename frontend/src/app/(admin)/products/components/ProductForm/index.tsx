@@ -65,6 +65,32 @@ function toSavedImageUrls(product?: ProductRow): SavedImageUrl[] {
   return urls;
 }
 
+const priceFormatter = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function formatPriceDigitsAsCurrencyInput(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  if (!digits) {
+    return "";
+  }
+  const numeric = Number(digits) / 100;
+  return priceFormatter.format(numeric);
+}
+
+function parsePriceInput(value: string): number | null {
+  const digits = value.replace(/\D/g, "");
+  if (!digits) {
+    return null;
+  }
+  const parsed = Number(digits) / 100;
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null;
+  }
+  return Number(parsed.toFixed(2));
+}
+
 export default function ProductForm({ categories, mode, product }: Props) {
   const router = useRouter();
   const {
@@ -96,6 +122,9 @@ export default function ProductForm({ categories, mode, product }: Props) {
   const [creatingCategory, setCreatingCategory] = useState(false);
 
   const [name, setName] = useState(product?.name ?? "");
+  const [price, setPrice] = useState(
+    product?.price != null ? priceFormatter.format(product.price) : "0,00",
+  );
   const [description, setDescription] = useState(product?.description ?? "");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>(
     () => {
@@ -427,6 +456,10 @@ export default function ProductForm({ categories, mode, product }: Props) {
     });
   };
 
+  const handlePriceChange = (rawValue: string) => {
+    setPrice(formatPriceDigitsAsCurrencyInput(rawValue));
+  };
+
   const runImageUploads = async (
     productId: number,
     files: PendingFileItem[],
@@ -503,6 +536,11 @@ export default function ProductForm({ categories, mode, product }: Props) {
       setError("Selecione pelo menos uma categoria.");
       return;
     }
+    const parsedPrice = parsePriceInput(price);
+    if (parsedPrice === null) {
+      setError("Informe um preço válido (maior ou igual a zero).");
+      return;
+    }
 
     const variations = buildVariations(variationRows);
     for (const variation of variations) {
@@ -536,6 +574,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
       if (mode === "create") {
         const response = await createProduct({
           name,
+          price: parsedPrice,
           description: description.trim() || null,
           category_ids: selectedCategoryIds,
           variations,
@@ -559,6 +598,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
       if (product) {
         const response = await updateProduct(product.id, {
           name,
+          price: parsedPrice,
           description: description.trim() || null,
           category_ids: selectedCategoryIds,
           variations,
@@ -666,7 +706,6 @@ export default function ProductForm({ categories, mode, product }: Props) {
             categoryList={categoryList}
             pendingFiles={pendingFiles.map((pendingFile) => pendingFile.file)}
             savedImageIds={savedImages.map((image) => image.id)}
-            onError={setError}
             onApply={(selected) => {
               if (selected.name !== undefined) {
                 setName(selected.name);
@@ -686,7 +725,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
                     2
                   </span>
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                    Nome, categoria e descrição
+                    Detalhes do Produto
                   </h3>
                   <button
                     type="button"
@@ -745,9 +784,11 @@ export default function ProductForm({ categories, mode, product }: Props) {
                 <ProductBasicsSection
                   categoryOptions={categoryOptions}
                   name={name}
+                  price={price}
                   description={description}
                   selectedCategoryIds={selectedCategoryIds}
                   onNameChange={setName}
+                  onPriceChange={handlePriceChange}
                   onDescriptionChange={setDescription}
                   onToggleCategory={toggleCategory}
                   onOpenCategoryModal={() => {

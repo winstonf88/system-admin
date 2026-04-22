@@ -37,6 +37,11 @@ type Props = {
 const modalInner =
   "no-scrollbar relative w-full max-w-[520px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11";
 
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
+
 export default function ProductsList({
   products,
   categories,
@@ -224,6 +229,12 @@ export default function ProductsList({
                           isHeader
                           className="px-5 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
                         >
+                          Preço
+                        </TableCell>
+                        <TableCell
+                          isHeader
+                          className="px-5 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
+                        >
                           Categorias
                         </TableCell>
                         <TableCell
@@ -264,6 +275,9 @@ export default function ProductsList({
                             </TableCell>
                             <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-800 dark:text-white/90">
                               {product.name}
+                            </TableCell>
+                            <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
+                              {currencyFormatter.format(product.price)}
                             </TableCell>
                             <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
                               {formatProductCategories(

@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
-from app.routers.products.common import ProductAISuggestionOutput, ProductsService
+from app.routers.products.common import ProductsService
+from app.schemas import ProductAISuggestionOutput
 from app.routers.products.create_product import router as create_product_router
 from app.routers.products.delete_product import router as delete_product_router
 from app.routers.products.delete_product_image import (

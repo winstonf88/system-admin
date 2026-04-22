@@ -18,6 +18,7 @@ from app.core.database import (
     engine,
     migrate_category_sort_order,
     migrate_legacy_product_images,
+    migrate_product_price_column,
 )
 from app.core.logging import configure_logging
 from app.models import Base
@@ -34,6 +35,7 @@ async def lifespan(_: FastAPI):
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
         await migrate_category_sort_order(connection)
+        await migrate_product_price_column(connection)
         await migrate_legacy_product_images(connection)
     yield
 

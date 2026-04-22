@@ -59,6 +59,7 @@ describe("ProductForm submit flow", () => {
   const sampleProduct: ProductRow = {
     id: 5,
     name: "Boné",
+    price: 39.9,
     description: "Um boné",
     category_ids: [1],
     images: [{ id: 1, url: "/uploads/bone.png" }],
@@ -77,7 +78,15 @@ describe("ProductForm submit flow", () => {
 
     render(<ProductForm categories={baseCategories} mode="create" />);
 
-    await user.type(screen.getByLabelText(/Nome/i), "Novo item");
+    await user.type(
+      screen.getByRole("textbox", { name: /^Nome$/i }),
+      "Novo item",
+    );
+    await user.clear(screen.getByRole("textbox", { name: /^Preço$/i }));
+    await user.type(screen.getByRole("textbox", { name: /^Preço$/i }), "5990");
+    expect(screen.getByRole("textbox", { name: /^Preço$/i })).toHaveValue(
+      "59,90",
+    );
     await user.clear(screen.getByPlaceholderText("ex.: M"));
     await user.type(screen.getByPlaceholderText("ex.: M"), "Único");
 
@@ -87,6 +96,7 @@ describe("ProductForm submit flow", () => {
       expect(createProduct).toHaveBeenCalledWith(
         expect.objectContaining({
           name: "Novo item",
+          price: 59.9,
           category_ids: [1],
           description: null,
           variations: [
@@ -114,7 +124,10 @@ describe("ProductForm submit flow", () => {
       />,
     );
 
-    const nameInput = screen.getByLabelText(/Nome/i);
+    expect(screen.getByRole("textbox", { name: /^Preço$/i })).toHaveValue(
+      "39,90",
+    );
+    const nameInput = screen.getByRole("textbox", { name: /^Nome$/i });
     await user.clear(nameInput);
     await user.type(nameInput, "Boné atualizado");
 
@@ -125,6 +138,7 @@ describe("ProductForm submit flow", () => {
         5,
         expect.objectContaining({
           name: "Boné atualizado",
+          price: 39.9,
           category_ids: [1],
         }),
       );

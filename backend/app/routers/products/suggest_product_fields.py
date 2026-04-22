@@ -11,11 +11,14 @@ from sqlalchemy import select
 from app.core.config import get_settings
 from app.models import Category, ProductImage
 from app.routers.products.common import (
-    ProductAISuggestionOutput,
     ProductsService,
     get_products_service,
 )
-from app.schemas import ProductAISuggestionsResponse, ProductSuggestionField
+from app.schemas import (
+    ProductAISuggestionOutput,
+    ProductAISuggestionsResponse,
+    ProductSuggestionField,
+)
 
 NAME_SUGGESTION_LIMIT = 10
 DESCRIPTION_SUGGESTION_LIMIT = 6
@@ -165,8 +168,6 @@ async def suggest_product_fields(
             allowed_category_ids={category.id for category in tenant_categories},
         )
 
-    from pprint import pprint
-    pprint(response_payload)
     return ProductAISuggestionsResponse(**response_payload)
 
 

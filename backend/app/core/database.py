@@ -92,6 +92,20 @@ async def migrate_category_sort_order(connection) -> None:
         )
 
 
+async def migrate_product_price_column(connection) -> None:
+    """Add and initialize ``products.price`` if it does not exist."""
+
+    has_price = await connection.run_sync(
+        lambda sync_connection: _has_column(sync_connection, "products", "price")
+    )
+    if has_price:
+        return
+
+    await connection.execute(
+        text("ALTER TABLE products ADD COLUMN price FLOAT NOT NULL DEFAULT 0")
+    )
+
+
 async def check_db_connection() -> None:
     try:
         async with engine.connect() as connection:

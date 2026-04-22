@@ -66,6 +66,7 @@ describe("ProductForm AI suggestions behavior", () => {
   const productWithImage: ProductRow = {
     id: 55,
     name: "Produto original",
+    price: 49.9,
     description: "Descrição original",
     category_ids: [1],
     images: [{ id: 101, url: "/uploads/sample.png" }],
@@ -238,7 +239,7 @@ describe("ProductForm AI suggestions behavior", () => {
     expect(toastError).not.toHaveBeenCalled();
   });
 
-  it("shows validation error when trying AI suggestions without any image", async () => {
+  it("shows validation toast when trying AI suggestions without any image", async () => {
     const user = userEvent.setup();
 
     render(<ProductForm categories={categories} mode="create" />);
@@ -247,15 +248,16 @@ describe("ProductForm AI suggestions behavior", () => {
       screen.getByRole("button", { name: "Sugestao por IA para nome" }),
     );
 
-    expect(
-      await screen.findByText(
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith(
         "Adicione ao menos uma imagem para gerar sugestões por IA.",
-      ),
-    ).toBeInTheDocument();
+        { duration: 5000 },
+      );
+    });
     expect(suggestProductFields).not.toHaveBeenCalled();
   });
 
-  it("shows API errors from suggestion endpoint", async () => {
+  it("shows API error toast from suggestion endpoint", async () => {
     const user = userEvent.setup();
     suggestProductFields.mockResolvedValue({
       ok: false,
@@ -274,9 +276,11 @@ describe("ProductForm AI suggestions behavior", () => {
       screen.getByRole("button", { name: "Sugestao por IA para descricao" }),
     );
 
-    expect(
-      await screen.findByText("Serviço de IA indisponível."),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith("Serviço de IA indisponível.", {
+        duration: 5000,
+      });
+    });
     expect(
       screen.queryByRole("heading", { name: "Sugestoes por IA" }),
     ).not.toBeInTheDocument();

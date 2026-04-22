@@ -45,6 +45,7 @@ class ProductImageOrderUpdate(BaseModel):
 
 class ProductBase(BaseModel):
     name: str = Field(min_length=1, max_length=180)
+    price: float = Field(default=0, ge=0)
     description: str | None = None
     category_ids: list[int] = Field(min_length=1)
     image_url: str | None = None
@@ -63,6 +64,7 @@ class ProductCreate(ProductBase):
 
 class ProductUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=180)
+    price: float | None = Field(default=None, ge=0)
     description: str | None = None
     category_ids: list[int] | None = None
     image_url: str | None = None
@@ -83,6 +85,7 @@ class ProductRead(BaseModel):
 
     id: int
     name: str
+    price: float
     description: str | None
     category_ids: list[int]
     image_url: str | None
@@ -104,3 +107,9 @@ class ProductAISuggestionsResponse(BaseModel):
     name: list[str] | None = None
     description: list[str] | None = None
     category: list[int] | None = None
+
+
+class ProductAISuggestionOutput(BaseModel):
+    name: list[str] = Field(default_factory=list)
+    description: list[str] = Field(default_factory=list)
+    category: list[int] = Field(default_factory=list)

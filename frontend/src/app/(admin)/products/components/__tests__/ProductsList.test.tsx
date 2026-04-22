@@ -50,6 +50,7 @@ describe("ProductsList", () => {
   const product: ProductRow = {
     id: 1,
     name: "Camisa básica",
+    price: 79.9,
     description: null,
     category_ids: [11],
     images: [],
@@ -75,6 +76,7 @@ describe("ProductsList", () => {
     render(<ProductsList products={[product]} categories={categories} />);
 
     expect(screen.getByText("Camisa básica")).toBeInTheDocument();
+    expect(screen.getByText(/79,90/)).toBeInTheDocument();
     expect(screen.getAllByText("Vestuário › Camisetas").length).toBeGreaterThan(
       0,
     );

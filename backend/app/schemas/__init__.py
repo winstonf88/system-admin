@@ -8,6 +8,7 @@ from app.schemas.categories import (
     CategoryUpdate,
 )
 from app.schemas.products import (
+    ProductAISuggestionOutput,
     ProductAISuggestionsResponse,
     ProductCreate,
     ProductImageOrderUpdate,
@@ -33,6 +34,7 @@ __all__ = [
     "CategoryTreeRead",
     "CategoryUpdate",
     "ProductCreate",
+    "ProductAISuggestionOutput",
     "ProductAISuggestionsResponse",
     "ProductImageOrderUpdate",
     "ProductImageRead",

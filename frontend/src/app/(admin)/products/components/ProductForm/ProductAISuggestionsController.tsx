@@ -21,7 +21,6 @@ type Props = {
   pendingFiles: File[];
   savedImageIds: number[];
   onApply: (selected: SelectedSuggestions) => void;
-  onError: (message: string | null) => void;
   children: (controls: {
     openSuggestions: (fields: ProductSuggestionField[]) => Promise<void>;
     aiBusy: boolean;
@@ -35,7 +34,6 @@ export function ProductAISuggestionsController({
   pendingFiles,
   savedImageIds,
   onApply,
-  onError,
   children,
 }: Props) {
   const [loadingAISuggestions, setLoadingAISuggestions] = useState(false);
@@ -59,16 +57,19 @@ export function ProductAISuggestionsController({
       return null;
     }
     if (pendingFiles.length === 0 && savedImageIds.length === 0) {
-      onError("Adicione ao menos uma imagem para gerar sugestões por IA.");
+      toast.error("Adicione ao menos uma imagem para gerar sugestões por IA.", {
+        duration: 5000,
+      });
       return null;
     }
 
-    onError(null);
     setLoadingAISuggestions(true);
     try {
       const uniqueFields = Array.from(new Set(fields));
       if (uniqueFields.length === 0) {
-        onError("Selecione ao menos um campo para sugerir.");
+        toast.error("Selecione ao menos um campo para sugerir.", {
+          duration: 5000,
+        });
         return null;
       }
       setLoadingFields(uniqueFields);
@@ -78,7 +79,7 @@ export function ProductAISuggestionsController({
         fields: uniqueFields,
       });
       if (!response.ok) {
-        onError(response.error);
+        toast.error(response.error, { duration: 5000 });
         return null;
       }
       const emptyFields = uniqueFields.filter(

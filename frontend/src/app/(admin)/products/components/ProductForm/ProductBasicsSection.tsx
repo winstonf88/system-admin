@@ -47,9 +47,11 @@ function LoadingSpinner({ className }: { className?: string }) {
 type Props = {
   categoryOptions: CategorySelectOption[];
   name: string;
+  price: string;
   description: string;
   selectedCategoryIds: number[];
   onNameChange: (value: string) => void;
+  onPriceChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onToggleCategory: (categoryId: number) => void;
   onOpenCategoryModal: () => void;
@@ -61,9 +63,11 @@ type Props = {
 export function ProductBasicsSection({
   categoryOptions,
   name,
+  price,
   description,
   selectedCategoryIds,
   onNameChange,
+  onPriceChange,
   onDescriptionChange,
   onToggleCategory,
   onOpenCategoryModal,
@@ -105,6 +109,23 @@ export function ProductBasicsSection({
             </button>
           }
         />
+      </div>
+      <div className="col-span-2 lg:col-span-1">
+        <Label htmlFor="product-price">Preço</Label>
+        <div className="relative">
+          <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">
+            R$
+          </span>
+          <Input
+            id="product-price"
+            type="text"
+            value={price}
+            onChange={(e) => onPriceChange(e.target.value)}
+            required
+            placeholder="0,00"
+            className="pl-11"
+          />
+        </div>
       </div>
       <div className="col-span-2 lg:col-span-1">
         <div className="flex flex-wrap items-center justify-between gap-2">

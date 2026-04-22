@@ -142,6 +142,7 @@ async def test_create_product_returns_selected_categories_in_payload_ordered(
         auth=AUTH_TENANT_ONE,
         json={
             "name": "Camisa",
+            "price": 129.9,
             "description": "Produto com duas categorias",
             "category_ids": [cat_b.id, cat_a.id],
             "image_url": None,
@@ -151,6 +152,7 @@ async def test_create_product_returns_selected_categories_in_payload_ordered(
     assert created.status_code == 201
     body = created.json()
     assert body["name"] == "Camisa"
+    assert body["price"] == 129.9
     # API normalizes to sorted category ids to keep payload deterministic.
     assert body["category_ids"] == sorted([cat_b.id, cat_a.id])
     assert body["variations"][0]["quantity"] == 7
@@ -453,7 +455,7 @@ async def test_ai_suggestions_applies_limits(
     assert response.status_code == 200
     body = response.json()
     assert len(body["name"]) == 10
-    assert len(body["description"]) == 3
+    assert len(body["description"]) == 6
     assert "category" not in body
 
 

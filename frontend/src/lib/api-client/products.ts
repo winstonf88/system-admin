@@ -12,6 +12,7 @@ export type VariationPayload = {
 
 type CreateProductPayload = {
   name: string;
+  price: number;
   description: string | null;
   category_ids: number[];
   variations: VariationPayload[];
@@ -72,6 +73,7 @@ export async function createProduct(
 ): Promise<CreateProductResult> {
   const payload = {
     name: input.name.trim(),
+    price: Number(input.price.toFixed(2)),
     description: input.description?.trim() || null,
     category_ids: input.category_ids,
     variations: input.variations.map((variation) => ({
@@ -97,6 +99,7 @@ export async function updateProduct(
 ): Promise<ProductActionResult> {
   const payload = {
     name: input.name.trim(),
+    price: Number(input.price.toFixed(2)),
     description: input.description?.trim() || null,
     category_ids: input.category_ids,
     variations: input.variations.map((variation) => ({

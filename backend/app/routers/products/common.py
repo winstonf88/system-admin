@@ -2,7 +2,6 @@ import uuid
 from pathlib import Path
 
 from fastapi import Depends, HTTPException, UploadFile, status
-from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -29,11 +28,6 @@ MAX_IMAGES_PER_PRODUCT = 10
 UPLOAD_DIR = Path("uploads/products")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-class ProductAISuggestionOutput(BaseModel):
-    name: list[str] = Field(default_factory=list)
-    description: list[str] = Field(default_factory=list)
-    category: list[int] = Field(default_factory=list)
-
 
 def delete_upload_file_if_safe(url: str) -> None:
     if not url.startswith("/uploads/products/"):
@@ -57,6 +51,7 @@ class ProductsService:
         return ProductRead(
             id=product.id,
             name=product.name,
+            price=product.price,
             description=product.description,
             image_url=primary_url,
             images=image_reads,
@@ -177,6 +172,7 @@ class ProductsService:
         product = Product(
             tenant_id=self.tenant_context.tenant_id,
             name=payload.name,
+            price=payload.price,
             description=payload.description,
             image_url=payload.image_url,
         )
@@ -223,6 +219,9 @@ class ProductsService:
 
         if "name" in payload.model_fields_set and payload.name is not None:
             product.name = payload.name
+
+        if "price" in payload.model_fields_set and payload.price is not None:
+            product.price = payload.price
 
         if "description" in payload.model_fields_set:
             product.description = payload.description
