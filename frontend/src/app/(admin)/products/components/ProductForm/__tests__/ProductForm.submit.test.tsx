@@ -9,6 +9,17 @@ import type {
 } from "@/app/(admin)/products/components/product-types";
 
 const push = vi.fn();
+const requestAnimationFrameMock = vi.fn(
+  (callback: FrameRequestCallback): number => {
+    callback(0);
+    return 1;
+  },
+);
+const { toastSuccess, toastError, toastDismiss } = vi.hoisted(() => ({
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
+  toastDismiss: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace: vi.fn() }),
@@ -28,6 +39,14 @@ vi.mock("next/link", () => ({
         {children}
       </a>
     );
+  },
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: toastSuccess,
+    error: toastError,
+    dismiss: toastDismiss,
   },
 }));
 
@@ -67,9 +86,14 @@ describe("ProductForm submit flow", () => {
   };
 
   beforeEach(() => {
+    vi.stubGlobal("requestAnimationFrame", requestAnimationFrameMock);
     push.mockReset();
     createProduct.mockReset();
     updateProduct.mockReset();
+    toastSuccess.mockReset();
+    toastError.mockReset();
+    toastDismiss.mockReset();
+    requestAnimationFrameMock.mockClear();
   });
 
   it("creates a product and navigates to /products on success", async () => {
@@ -109,6 +133,9 @@ describe("ProductForm submit flow", () => {
         }),
       );
     });
+    expect(toastSuccess).toHaveBeenCalledWith("Produto salvo com sucesso.", {
+      duration: 3000,
+    });
     expect(push).toHaveBeenCalledWith("/products");
   });
 
@@ -143,6 +170,9 @@ describe("ProductForm submit flow", () => {
         }),
       );
     });
+    expect(toastSuccess).toHaveBeenCalledWith("Produto salvo com sucesso.", {
+      duration: 3000,
+    });
     expect(push).toHaveBeenCalledWith("/products");
   });
 
@@ -168,9 +198,10 @@ describe("ProductForm submit flow", () => {
     await user.click(screen.getByRole("button", { name: "Criar produto" }));
 
     await waitFor(() => {
-      expect(
-        screen.getByText("O preço deve ser maior que zero."),
-      ).toBeInTheDocument();
+      expect(toastError).toHaveBeenCalledWith(
+        "Revise os campos destacados no formulário.",
+        { duration: 5000 },
+      );
     });
     expect(push).not.toHaveBeenCalled();
   });

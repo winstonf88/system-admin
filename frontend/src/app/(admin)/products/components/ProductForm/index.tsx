@@ -22,6 +22,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useDropzone, type FileRejection } from "react-dropzone";
+import { toast } from "sonner";
 
 import { CreateCategoryModal } from "./CreateCategoryModal";
 import { ImageLightboxModal } from "./ImageLightboxModal";
@@ -94,6 +95,12 @@ function parsePriceInput(value: string): number | null {
 
 export default function ProductForm({ categories, mode, product }: Props) {
   const router = useRouter();
+  const navigateToProductsAfterToast = useCallback(() => {
+    toast.success("Produto salvo com sucesso.", { duration: 3000 });
+    window.requestAnimationFrame(() => {
+      router.push("/products");
+    });
+  }, [router]);
   const {
     isOpen: isCategoryModalOpen,
     openModal: openCategoryModal,
@@ -159,7 +166,6 @@ export default function ProductForm({ categories, mode, product }: Props) {
     return [{ key: createClientId(), size: "", color: "", quantity: 0 }];
   });
 
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<ProductFieldErrors>({});
   /** Shown inside the image dropzone (not the form-wide alert). */
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
@@ -251,6 +257,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
           newCategoryParentId === "" ? null : Number(newCategoryParentId),
       });
       if (!response.ok) {
+        toast.error(response.error, { duration: 5000 });
         setCategoryCreateError(response.error);
         return;
       }
@@ -258,7 +265,6 @@ export default function ProductForm({ categories, mode, product }: Props) {
       setSelectedCategoryIds((prev) => [
         ...new Set([...prev, response.category.id]),
       ]);
-      setError(null);
       setImageUploadError(null);
       closeCategoryModal();
     } finally {
@@ -542,6 +548,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
             ) ?? null,
         );
         setImageUploadError(result.error);
+        toast.error(result.error, { duration: 5000 });
         return false;
       }
       setUploadProgress(
@@ -559,14 +566,15 @@ export default function ProductForm({ categories, mode, product }: Props) {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setError(null);
+    toast.dismiss();
     setFieldErrors({});
     setImageUploadError(null);
     setUploadProgress(null);
 
     if (!categoryList.length) {
-      setError(
+      toast.error(
         "É necessário ter pelo menos uma categoria. Clique em “Nova categoria”.",
+        { duration: 5000 },
       );
       return;
     }
@@ -575,6 +583,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
         category_ids: "Selecione pelo menos uma categoria.",
       };
       setFieldErrors(nextErrors);
+      toast.error(nextErrors.category_ids, { duration: 5000 });
       focusFirstInvalidField(nextErrors);
       return;
     }
@@ -582,6 +591,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
     if (parsedPrice === null) {
       const nextErrors = { price: "Informe um preço válido (maior que zero)." };
       setFieldErrors(nextErrors);
+      toast.error(nextErrors.price, { duration: 5000 });
       focusFirstInvalidField(nextErrors);
       return;
     }
@@ -589,25 +599,27 @@ export default function ProductForm({ categories, mode, product }: Props) {
     const variations = buildVariations(variationRows);
     for (const variation of variations) {
       if (!variation.size && !variation.color) {
-        setError("Cada variação precisa de tamanho ou cor (ou ambos).");
+        toast.error("Cada variação precisa de tamanho ou cor (ou ambos).", {
+          duration: 5000,
+        });
         return;
       }
     }
 
     for (const pendingFile of pendingFiles) {
       if (pendingFile.file.size > MAX_PRODUCT_IMAGE_BYTES) {
-        setImageUploadError(
-          `Cada imagem deve ter no máximo ${formatMaxImageLabel()}.`,
-        );
+        const message = `Cada imagem deve ter no máximo ${formatMaxImageLabel()}.`;
+        setImageUploadError(message);
+        toast.error(message, { duration: 5000 });
         return;
       }
     }
 
     const savedCount = mode === "edit" ? savedImages.length : 0;
     if (savedCount + pendingFiles.length > MAX_PRODUCT_IMAGES) {
-      setImageUploadError(
-        `No máximo ${MAX_PRODUCT_IMAGES} imagens por produto.`,
-      );
+      const message = `No máximo ${MAX_PRODUCT_IMAGES} imagens por produto.`;
+      setImageUploadError(message);
+      toast.error(message, { duration: 5000 });
       return;
     }
 
@@ -631,7 +643,10 @@ export default function ProductForm({ categories, mode, product }: Props) {
                 response.fieldErrors.category_ids),
           );
           setFieldErrors(response.fieldErrors ?? {});
-          setError(hasFieldErrors ? null : response.error);
+          const fallbackMessage = "Revise os campos destacados no formulário.";
+          toast.error(hasFieldErrors ? fallbackMessage : response.error, {
+            duration: 5000,
+          });
           if (response.fieldErrors) {
             focusFirstInvalidField(response.fieldErrors);
           }
@@ -645,7 +660,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
           }
           setPendingFiles([]);
         }
-        router.push("/products");
+        navigateToProductsAfterToast();
         return;
       }
 
@@ -665,7 +680,10 @@ export default function ProductForm({ categories, mode, product }: Props) {
                 response.fieldErrors.category_ids),
           );
           setFieldErrors(response.fieldErrors ?? {});
-          setError(hasFieldErrors ? null : response.error);
+          const fallbackMessage = "Revise os campos destacados no formulário.";
+          toast.error(hasFieldErrors ? fallbackMessage : response.error, {
+            duration: 5000,
+          });
           if (response.fieldErrors) {
             focusFirstInvalidField(response.fieldErrors);
           }
@@ -678,7 +696,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
           }
           setPendingFiles([]);
         }
-        router.push("/products");
+        navigateToProductsAfterToast();
       }
     } finally {
       setSubmitPhase("idle");
@@ -686,12 +704,6 @@ export default function ProductForm({ categories, mode, product }: Props) {
   };
 
   const pageTitle = mode === "create" ? "Novo produto" : "Editar produto";
-  const hasFieldErrors = Boolean(
-    fieldErrors.name || fieldErrors.price || fieldErrors.category_ids,
-  );
-  const submitAreaError =
-    error ??
-    (hasFieldErrors ? "Revise os campos destacados no formulário." : null);
   const submitLabel =
     submitPhase === "saving"
       ? "Salvando…"
@@ -718,12 +730,6 @@ export default function ProductForm({ categories, mode, product }: Props) {
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-white/[0.05] dark:bg-white/[0.03]">
-          {error && (
-            <p className="mb-4 text-sm text-red-600 dark:text-red-400">
-              {error}
-            </p>
-          )}
-
           {categoryList.length === 0 && (
             <div
               className="mb-6 rounded-2xl border border-dashed border-brand-400/35 bg-linear-to-br from-brand-50/90 to-white px-4 py-3.5 text-sm text-gray-700 shadow-sm dark:border-brand-700/40 dark:from-brand-950/50 dark:to-gray-900/80 dark:text-gray-300"
@@ -896,11 +902,6 @@ export default function ProductForm({ categories, mode, product }: Props) {
           </section>
 
           <div className="mt-8 flex flex-wrap justify-end gap-3 border-t border-gray-100 pt-6 dark:border-white/[0.05]">
-            {submitAreaError && (
-              <p className="mr-auto self-center text-sm text-red-600 dark:text-red-400">
-                {submitAreaError}
-              </p>
-            )}
             <Link
               href="/products"
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"

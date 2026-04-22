@@ -8,6 +8,7 @@ import Label from "@/components/form/Label";
 import { Modal } from "@/components/ui/modal";
 import type { UserRow } from "@/components/users/user-types";
 import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 const modalInner =
   "no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11";
@@ -35,12 +36,10 @@ export default function UserEditModal({
   const [editFirst, setEditFirst] = useState("");
   const [editLast, setEditLast] = useState("");
   const [editActive, setEditActive] = useState(true);
-  const [editError, setEditError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
     if (isOpen && user) {
-      setEditError(null);
       setEditPassword("");
       setEditEmail(user.email);
       setEditFirst(user.first_name ?? "");
@@ -54,7 +53,7 @@ export default function UserEditModal({
     if (!user) {
       return;
     }
-    setEditError(null);
+    toast.dismiss();
     setPending(true);
     try {
       const r = await updateUser(user.id, {
@@ -66,9 +65,10 @@ export default function UserEditModal({
       });
       if (r.ok) {
         await onSaved?.();
+        toast.success("Usuário atualizado com sucesso.", { duration: 3000 });
         onClose();
       } else {
-        setEditError(r.error);
+        toast.error(r.error, { duration: 5000 });
       }
     } finally {
       setPending(false);
@@ -91,11 +91,6 @@ export default function UserEditModal({
           </p>
         </div>
         <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col">
-          {editError && (
-            <p className="mb-4 px-2 text-sm text-red-600 dark:text-red-400">
-              {editError}
-            </p>
-          )}
           <div className="custom-scrollbar max-h-[450px] overflow-y-auto px-2 pb-3">
             <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
               Informações pessoais

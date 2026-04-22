@@ -19,6 +19,7 @@ import { createUser, deleteUser, getUsers } from "@/lib/api-client/users";
 import UserEditModal from "@/components/users/UserEditModal";
 import type { UserRow } from "@/components/users/user-types";
 import React, { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 type Props = {
   users: UserRow[];
@@ -45,8 +46,6 @@ export default function UsersManagement({ users, currentUserId }: Props) {
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [deleting, setDeleting] = useState<UserRow | null>(null);
 
-  const [createError, setCreateError] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   const [createEmail, setCreateEmail] = useState("");
@@ -67,7 +66,6 @@ export default function UsersManagement({ users, currentUserId }: Props) {
   }, []);
 
   const openCreate = useCallback(() => {
-    setCreateError(null);
     setCreateEmail("");
     setCreatePassword("");
     setCreateFirst("");
@@ -87,7 +85,6 @@ export default function UsersManagement({ users, currentUserId }: Props) {
   const openDelete = useCallback(
     (user: UserRow) => {
       setDeleting(user);
-      setDeleteError(null);
       deleteModal.openModal();
     },
     [deleteModal],
@@ -95,7 +92,7 @@ export default function UsersManagement({ users, currentUserId }: Props) {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setCreateError(null);
+    toast.dismiss();
     setPending(true);
     try {
       const r = await createUser({
@@ -108,8 +105,9 @@ export default function UsersManagement({ users, currentUserId }: Props) {
       if (r.ok) {
         createModal.closeModal();
         await reloadUsers();
+        toast.success("Usuário criado com sucesso.", { duration: 3000 });
       } else {
-        setCreateError(r.error);
+        toast.error(r.error, { duration: 5000 });
       }
     } finally {
       setPending(false);
@@ -120,7 +118,7 @@ export default function UsersManagement({ users, currentUserId }: Props) {
     if (!deleting) {
       return;
     }
-    setDeleteError(null);
+    toast.dismiss();
     setPending(true);
     try {
       const r = await deleteUser(deleting.id);
@@ -128,8 +126,9 @@ export default function UsersManagement({ users, currentUserId }: Props) {
         deleteModal.closeModal();
         setDeleting(null);
         setRows((prev) => prev.filter((user) => user.id !== deleting.id));
+        toast.success("Usuário excluído com sucesso.", { duration: 3000 });
       } else {
-        setDeleteError(r.error);
+        toast.error(r.error, { duration: 5000 });
       }
     } finally {
       setPending(false);
@@ -259,11 +258,6 @@ export default function UsersManagement({ users, currentUserId }: Props) {
             </p>
           </div>
           <form onSubmit={handleCreate} className="flex flex-col">
-            {createError && (
-              <p className="mb-4 px-2 text-sm text-red-600 dark:text-red-400">
-                {createError}
-              </p>
-            )}
             <div className="custom-scrollbar max-h-[450px] overflow-y-auto px-2 pb-3">
               <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
                 Conta
@@ -360,11 +354,6 @@ export default function UsersManagement({ users, currentUserId }: Props) {
                 : ""}
             </p>
           </div>
-          {deleteError && (
-            <p className="mb-4 px-2 text-sm text-red-600 dark:text-red-400">
-              {deleteError}
-            </p>
-          )}
           <div className="flex items-center gap-3 px-2 lg:justify-end">
             <Button
               size="sm"

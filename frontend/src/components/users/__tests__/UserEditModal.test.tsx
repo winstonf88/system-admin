@@ -5,9 +5,22 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { UserRow } from "@/components/users/user-types";
 
 const updateUser = vi.fn();
+const { toastSuccess, toastError, toastDismiss } = vi.hoisted(() => ({
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
+  toastDismiss: vi.fn(),
+}));
 
 vi.mock("@/lib/api-client/users", () => ({
   updateUser: (...a: unknown[]) => updateUser(...a),
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: toastSuccess,
+    error: toastError,
+    dismiss: toastDismiss,
+  },
 }));
 
 import UserEditModal from "../UserEditModal";
@@ -28,6 +41,9 @@ describe("UserEditModal", () => {
     updateUser.mockReset();
     onClose.mockReset();
     onSaved.mockReset();
+    toastSuccess.mockReset();
+    toastError.mockReset();
+    toastDismiss.mockReset();
   });
 
   it("submits update and closes on success", async () => {
@@ -66,6 +82,12 @@ describe("UserEditModal", () => {
     });
     expect(onSaved).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
+    expect(toastSuccess).toHaveBeenCalledWith(
+      "Usuário atualizado com sucesso.",
+      {
+        duration: 3000,
+      },
+    );
   });
 
   it("shows error when update fails", async () => {
@@ -88,7 +110,11 @@ describe("UserEditModal", () => {
       screen.getAllByRole("button", { name: "Salvar alterações" })[0],
     );
 
-    expect(await screen.findByText("E-mail inválido.")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith("E-mail inválido.", {
+        duration: 5000,
+      });
+    });
     expect(onClose).not.toHaveBeenCalled();
   });
 });

@@ -8,12 +8,25 @@ const createUser = vi.fn();
 const deleteUser = vi.fn();
 const getUsers = vi.fn();
 const updateUser = vi.fn();
+const { toastSuccess, toastError, toastDismiss } = vi.hoisted(() => ({
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
+  toastDismiss: vi.fn(),
+}));
 
 vi.mock("@/lib/api-client/users", () => ({
   createUser: (...a: unknown[]) => createUser(...a),
   deleteUser: (...a: unknown[]) => deleteUser(...a),
   getUsers: (...a: unknown[]) => getUsers(...a),
   updateUser: (...a: unknown[]) => updateUser(...a),
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: toastSuccess,
+    error: toastError,
+    dismiss: toastDismiss,
+  },
 }));
 
 import UsersManagement from "../UsersManagement";
@@ -41,6 +54,9 @@ describe("UsersManagement", () => {
     deleteUser.mockReset();
     getUsers.mockReset();
     updateUser.mockReset();
+    toastSuccess.mockReset();
+    toastError.mockReset();
+    toastDismiss.mockReset();
   });
 
   it("disables delete for the current user row", () => {
@@ -85,6 +101,9 @@ describe("UsersManagement", () => {
       });
     });
     expect(getUsers).toHaveBeenCalled();
+    expect(toastSuccess).toHaveBeenCalledWith("Usuário criado com sucesso.", {
+      duration: 3000,
+    });
   });
 
   it("deletes another user when confirmed", async () => {
@@ -106,6 +125,9 @@ describe("UsersManagement", () => {
 
     await waitFor(() => {
       expect(deleteUser).toHaveBeenCalledWith(2);
+    });
+    expect(toastSuccess).toHaveBeenCalledWith("Usuário excluído com sucesso.", {
+      duration: 3000,
     });
     expect(screen.queryByText("other@test.co")).not.toBeInTheDocument();
   });
