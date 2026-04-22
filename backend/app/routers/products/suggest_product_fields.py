@@ -3,9 +3,11 @@ from functools import lru_cache
 from pathlib import Path
 
 from agno.agent import Agent
+from agno.guardrails.base import BaseGuardrail
 from agno.media import Image
 from agno.models.openai import OpenAIResponses
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from app.core.config import get_settings
@@ -25,6 +27,45 @@ DESCRIPTION_SUGGESTION_LIMIT = 6
 
 
 router = APIRouter()
+
+
+class ProductAICategoryContext(BaseModel):
+    id: int
+    name: str
+    parent_id: int | None = None
+
+
+class ProductAISuggestionInputSchema(BaseModel):
+    requested_fields: list[ProductSuggestionField] = Field(min_length=1)
+    name_suggestion_count: int = Field(ge=1)
+    description_suggestion_count: int = Field(ge=1)
+    available_categories: list[ProductAICategoryContext] = Field(default_factory=list)
+
+
+class ProductAISuggestionInputGuardrail(BaseGuardrail):
+    @staticmethod
+    def _validate(run_input_model: ProductAISuggestionInputSchema) -> None:
+        requested_fields = set(run_input_model.requested_fields)
+        if ProductSuggestionField.CATEGORY in requested_fields:
+            if not run_input_model.available_categories:
+                raise ValueError(
+                    "Categoria solicitada, mas nenhuma categoria disponível foi informada."
+                )
+            category_ids = [
+                category.id for category in run_input_model.available_categories
+            ]
+            if len(category_ids) != len(set(category_ids)):
+                raise ValueError("Categorias disponíveis com IDs duplicados.")
+
+    def check(self, run_input) -> None:  # type: ignore[override]
+        payload = run_input.input_content
+        if isinstance(payload, ProductAISuggestionInputSchema):
+            self._validate(payload)
+            return
+        self._validate(ProductAISuggestionInputSchema.model_validate(payload))
+
+    async def async_check(self, run_input) -> None:  # type: ignore[override]
+        self.check(run_input)
 
 
 def build_image_from_product_image_url(url: str) -> Image:
@@ -175,17 +216,22 @@ async def suggest_product_fields(
 def get_product_suggestion_agent(model_id: str, api_key: str) -> Agent:
     return Agent(
         retries=1,
+        telemetry=False,
         markdown=False,
         model=OpenAIResponses(id=model_id, api_key=api_key),
+        input_schema=ProductAISuggestionInputSchema,
         output_schema=ProductAISuggestionOutput,
+        pre_hooks=[ProductAISuggestionInputGuardrail()],
         role="You only answer in Brazilian Portuguese",
         instructions=[
             "You suggest product metadata from product images.",
+            "Use the structured input payload to decide which fields to return.",
+            "Use only the category IDs present in available_categories.",
             "Only output JSON that matches the schema.",
             "If a field is not requested, return an empty list for that field.",
-            "For names, provide concise product names.",
-            "For descriptions, provide short ecommerce-ready descriptions.",
-            "For category, return only IDs from provided categories.",
+            "For names, return exactly name_suggestion_count concise suggestions.",
+            "For descriptions, return exactly description_suggestion_count short ecommerce-ready suggestions.",
+            "For category, return only IDs from available_categories that make sense for the product.",
         ],
     )
 
@@ -206,26 +252,26 @@ async def run_ai_suggestions(
         model_id=settings.openai_model,
         api_key=settings.openai_api_key,
     )
-    requested_field_names = sorted(field.value for field in requested_fields)
-    categories_context = [
-        {"id": category.id, "name": category.name, "parent_id": category.parent_id}
-        for category in tenant_categories
-    ]
-    prompt = (
-        "Analyze the product images and suggest values only for the requested fields.\n"
-        f"requested_fields={requested_field_names}\n"
-        f"name_suggestion_count={NAME_SUGGESTION_LIMIT}\n"
-        f"description_suggestion_count={DESCRIPTION_SUGGESTION_LIMIT}\n"
-        f"available_categories={categories_context}\n"
-        "Rules:\n"
-        "- If name is requested, return exactly name_suggestion_count suggestions.\n"
-        "- If description is requested, return exactly description_suggestion_count suggestions.\n"
-        "- If category is requested, return category ids that make sense for the product.\n"
-        "- Category ids must be chosen only from available_categories ids.\n"
-        "- If a field is not requested, return an empty list for that field.\n"
+    suggestion_input = ProductAISuggestionInputSchema(
+        requested_fields=sorted(requested_fields, key=lambda field: field.value),
+        name_suggestion_count=NAME_SUGGESTION_LIMIT,
+        description_suggestion_count=DESCRIPTION_SUGGESTION_LIMIT,
+        available_categories=[
+            ProductAICategoryContext(
+                id=category.id,
+                name=category.name,
+                parent_id=category.parent_id,
+            )
+            for category in tenant_categories
+        ],
     )
     try:
-        run_output = agent.run(prompt, images=images)
+        run_output = agent.run(suggestion_input, images=images)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
