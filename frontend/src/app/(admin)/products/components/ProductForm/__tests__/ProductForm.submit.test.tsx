@@ -145,4 +145,33 @@ describe("ProductForm submit flow", () => {
     });
     expect(push).toHaveBeenCalledWith("/products");
   });
+
+  it("shows backend price validation error on the price field", async () => {
+    const user = userEvent.setup();
+    createProduct.mockResolvedValue({
+      ok: false,
+      error: "O preço deve ser maior que zero.",
+      fieldErrors: { price: "O preço deve ser maior que zero." },
+    });
+
+    render(<ProductForm categories={baseCategories} mode="create" />);
+
+    await user.type(
+      screen.getByRole("textbox", { name: /^Nome$/i }),
+      "Produto com erro",
+    );
+    await user.clear(screen.getByRole("textbox", { name: /^Preço$/i }));
+    await user.type(screen.getByRole("textbox", { name: /^Preço$/i }), "1000");
+    await user.clear(screen.getByPlaceholderText("ex.: M"));
+    await user.type(screen.getByPlaceholderText("ex.: M"), "Único");
+
+    await user.click(screen.getByRole("button", { name: "Criar produto" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("O preço deve ser maior que zero."),
+      ).toBeInTheDocument();
+    });
+    expect(push).not.toHaveBeenCalled();
+  });
 });

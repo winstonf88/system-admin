@@ -15,6 +15,7 @@ import {
   reorderProductImages,
   createProduct,
   updateProduct,
+  type ProductFieldErrors,
 } from "@/lib/api-client/products";
 import { createCategory as createCategoryFromApi } from "@/lib/api-client/categories";
 import Link from "next/link";
@@ -85,7 +86,7 @@ function parsePriceInput(value: string): number | null {
     return null;
   }
   const parsed = Number(digits) / 100;
-  if (!Number.isFinite(parsed) || parsed < 0) {
+  if (!Number.isFinite(parsed) || parsed <= 0) {
     return null;
   }
   return Number(parsed.toFixed(2));
@@ -159,6 +160,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
   });
 
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<ProductFieldErrors>({});
   /** Shown inside the image dropzone (not the form-wide alert). */
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const [imageLightbox, setImageLightbox] = useState<{
@@ -166,6 +168,34 @@ export default function ProductForm({ categories, mode, product }: Props) {
     alt: string;
   } | null>(null);
   const [deletingImageId, setDeletingImageId] = useState<number | null>(null);
+
+  const focusFirstInvalidField = useCallback((errors: ProductFieldErrors) => {
+    const fieldToElementId: Array<[keyof ProductFieldErrors, string]> = [
+      ["name", "product-name"],
+      ["price", "product-price"],
+      ["category_ids", "product-categories"],
+    ];
+    for (const [field, elementId] of fieldToElementId) {
+      if (!errors[field]) {
+        continue;
+      }
+      const element = document.getElementById(elementId);
+      if (!element) {
+        continue;
+      }
+      if (typeof element.scrollIntoView === "function") {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      if (
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLTextAreaElement ||
+        element instanceof HTMLButtonElement
+      ) {
+        element.focus({ preventScroll: true });
+      }
+      return;
+    }
+  }, []);
 
   const openImageLightbox = (
     event: React.MouseEvent,
@@ -445,6 +475,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
   };
 
   const toggleCategory = (categoryId: number) => {
+    setFieldErrors((prev) => ({ ...prev, category_ids: undefined }));
     setSelectedCategoryIds((prev) => {
       if (prev.includes(categoryId)) {
         if (prev.length <= 1) {
@@ -457,7 +488,13 @@ export default function ProductForm({ categories, mode, product }: Props) {
   };
 
   const handlePriceChange = (rawValue: string) => {
+    setFieldErrors((prev) => ({ ...prev, price: undefined }));
     setPrice(formatPriceDigitsAsCurrencyInput(rawValue));
+  };
+
+  const handleNameChange = (value: string) => {
+    setFieldErrors((prev) => ({ ...prev, name: undefined }));
+    setName(value);
   };
 
   const runImageUploads = async (
@@ -523,6 +560,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
+    setFieldErrors({});
     setImageUploadError(null);
     setUploadProgress(null);
 
@@ -533,12 +571,18 @@ export default function ProductForm({ categories, mode, product }: Props) {
       return;
     }
     if (selectedCategoryIds.length === 0) {
-      setError("Selecione pelo menos uma categoria.");
+      const nextErrors = {
+        category_ids: "Selecione pelo menos uma categoria.",
+      };
+      setFieldErrors(nextErrors);
+      focusFirstInvalidField(nextErrors);
       return;
     }
     const parsedPrice = parsePriceInput(price);
     if (parsedPrice === null) {
-      setError("Informe um preço válido (maior ou igual a zero).");
+      const nextErrors = { price: "Informe um preço válido (maior que zero)." };
+      setFieldErrors(nextErrors);
+      focusFirstInvalidField(nextErrors);
       return;
     }
 
@@ -580,7 +624,17 @@ export default function ProductForm({ categories, mode, product }: Props) {
           variations,
         });
         if (!response.ok) {
-          setError(response.error);
+          const hasFieldErrors = Boolean(
+            response.fieldErrors &&
+              (response.fieldErrors.name ||
+                response.fieldErrors.price ||
+                response.fieldErrors.category_ids),
+          );
+          setFieldErrors(response.fieldErrors ?? {});
+          setError(hasFieldErrors ? null : response.error);
+          if (response.fieldErrors) {
+            focusFirstInvalidField(response.fieldErrors);
+          }
           return;
         }
         if (filesSnapshot.length > 0) {
@@ -604,7 +658,17 @@ export default function ProductForm({ categories, mode, product }: Props) {
           variations,
         });
         if (!response.ok) {
-          setError(response.error);
+          const hasFieldErrors = Boolean(
+            response.fieldErrors &&
+              (response.fieldErrors.name ||
+                response.fieldErrors.price ||
+                response.fieldErrors.category_ids),
+          );
+          setFieldErrors(response.fieldErrors ?? {});
+          setError(hasFieldErrors ? null : response.error);
+          if (response.fieldErrors) {
+            focusFirstInvalidField(response.fieldErrors);
+          }
           return;
         }
         if (filesSnapshot.length > 0) {
@@ -622,6 +686,12 @@ export default function ProductForm({ categories, mode, product }: Props) {
   };
 
   const pageTitle = mode === "create" ? "Novo produto" : "Editar produto";
+  const hasFieldErrors = Boolean(
+    fieldErrors.name || fieldErrors.price || fieldErrors.category_ids,
+  );
+  const submitAreaError =
+    error ??
+    (hasFieldErrors ? "Revise os campos destacados no formulário." : null);
   const submitLabel =
     submitPhase === "saving"
       ? "Salvando…"
@@ -786,8 +856,11 @@ export default function ProductForm({ categories, mode, product }: Props) {
                   name={name}
                   price={price}
                   description={description}
+                  nameError={fieldErrors.name}
+                  priceError={fieldErrors.price}
+                  categoryError={fieldErrors.category_ids}
                   selectedCategoryIds={selectedCategoryIds}
-                  onNameChange={setName}
+                  onNameChange={handleNameChange}
                   onPriceChange={handlePriceChange}
                   onDescriptionChange={setDescription}
                   onToggleCategory={toggleCategory}
@@ -823,6 +896,11 @@ export default function ProductForm({ categories, mode, product }: Props) {
           </section>
 
           <div className="mt-8 flex flex-wrap justify-end gap-3 border-t border-gray-100 pt-6 dark:border-white/[0.05]">
+            {submitAreaError && (
+              <p className="mr-auto self-center text-sm text-red-600 dark:text-red-400">
+                {submitAreaError}
+              </p>
+            )}
             <Link
               href="/products"
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"

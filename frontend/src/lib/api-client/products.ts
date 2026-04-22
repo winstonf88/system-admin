@@ -20,10 +20,15 @@ type CreateProductPayload = {
 
 type UpdateProductPayload = CreateProductPayload;
 
-export type ProductActionResult = { ok: true } | { ok: false; error: string };
+export type ProductFieldErrors = Partial<
+  Record<"name" | "price" | "category_ids", string>
+>;
+export type ProductActionResult =
+  | { ok: true }
+  | { ok: false; error: string; fieldErrors?: ProductFieldErrors };
 export type CreateProductResult =
   | { ok: true; id: number }
-  | { ok: false; error: string };
+  | { ok: false; error: string; fieldErrors?: ProductFieldErrors };
 export type ProductAISuggestions = {
   name: string[];
   description: string[];
@@ -36,7 +41,7 @@ export type ProductAISuggestionResult =
 
 function asActionResult<T>(result: ApiResult<T>): ProductActionResult {
   if (!result.ok) {
-    return { ok: false, error: result.error };
+    return { ok: false, error: result.error, fieldErrors: result.fieldErrors };
   }
   return { ok: true };
 }
@@ -88,7 +93,7 @@ export async function createProduct(
     body: JSON.stringify(payload),
   });
   if (!result.ok) {
-    return { ok: false, error: result.error };
+    return { ok: false, error: result.error, fieldErrors: result.fieldErrors };
   }
   return { ok: true, id: result.data.id };
 }

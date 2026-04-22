@@ -49,6 +49,9 @@ type Props = {
   name: string;
   price: string;
   description: string;
+  nameError?: string;
+  priceError?: string;
+  categoryError?: string;
   selectedCategoryIds: number[];
   onNameChange: (value: string) => void;
   onPriceChange: (value: string) => void;
@@ -65,6 +68,9 @@ export function ProductBasicsSection({
   name,
   price,
   description,
+  nameError,
+  priceError,
+  categoryError,
   selectedCategoryIds,
   onNameChange,
   onPriceChange,
@@ -89,6 +95,8 @@ export function ProductBasicsSection({
           onChange={(e) => onNameChange(e.target.value)}
           required
           minLength={1}
+          error={Boolean(nameError)}
+          hint={nameError}
           suffix={
             <button
               type="button"
@@ -124,6 +132,8 @@ export function ProductBasicsSection({
             required
             placeholder="0,00"
             className="pl-11"
+            error={Boolean(priceError)}
+            hint={priceError}
           />
         </div>
       </div>
@@ -169,6 +179,9 @@ export function ProductBasicsSection({
           emptyText="Crie uma categoria (botão acima)…"
           lockLastSelected
         />
+        {categoryError && (
+          <p className="mt-1.5 text-xs text-error-500">{categoryError}</p>
+        )}
       </div>
       <div className="col-span-2">
         <Label htmlFor="product-description">Descrição</Label>

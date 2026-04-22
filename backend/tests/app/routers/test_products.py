@@ -158,6 +158,110 @@ async def test_create_product_returns_selected_categories_in_payload_ordered(
     assert body["variations"][0]["quantity"] == 7
 
 
+@pytest.mark.parametrize("missing_field", ["name", "category_ids", "price"])
+async def test_create_product_requires_name_category_and_price(
+    client,
+    session_maker: async_sessionmaker[AsyncSession],
+    missing_field: str,
+) -> None:
+    await seed_two_tenant_users(session_maker)
+    async with session_maker() as session:
+        category = CategoryFactory.build(tenant_id=1, name="Roupas", parent_id=None)
+        session.add(category)
+        await session.commit()
+
+    payload = {
+        "name": "Camisa",
+        "price": 129.9,
+        "description": "Produto",
+        "category_ids": [category.id],
+        "image_url": None,
+        "variations": [{"size": "M", "color": "Preto", "quantity": 7}],
+    }
+    payload.pop(missing_field)
+
+    created = await client.post(
+        "/api/products/",
+        auth=AUTH_TENANT_ONE,
+        json=payload,
+    )
+    assert created.status_code == 422
+    body = created.json()
+    assert any(
+        error.get("loc") == ["body", missing_field] for error in body.get("detail", [])
+    )
+
+
+@pytest.mark.parametrize("invalid_price", [0, -1, -0.01])
+async def test_create_product_rejects_zero_or_negative_price(
+    client,
+    session_maker: async_sessionmaker[AsyncSession],
+    invalid_price: float,
+) -> None:
+    await seed_two_tenant_users(session_maker)
+    async with session_maker() as session:
+        category = CategoryFactory.build(tenant_id=1, name="Roupas", parent_id=None)
+        session.add(category)
+        await session.commit()
+
+    created = await client.post(
+        "/api/products/",
+        auth=AUTH_TENANT_ONE,
+        json={
+            "name": "Camisa",
+            "price": invalid_price,
+            "description": "Produto com preço inválido",
+            "category_ids": [category.id],
+            "image_url": None,
+            "variations": [{"size": "M", "color": "Preto", "quantity": 7}],
+        },
+    )
+    assert created.status_code == 422
+    body = created.json()
+    assert any(
+        error.get("loc") == ["body", "price"] for error in body.get("detail", [])
+    )
+
+
+@pytest.mark.parametrize("invalid_price", [0, -1, -0.01])
+async def test_update_product_rejects_zero_or_negative_price(
+    client,
+    session_maker: async_sessionmaker[AsyncSession],
+    invalid_price: float,
+) -> None:
+    await seed_two_tenant_users(session_maker)
+    async with session_maker() as session:
+        category = CategoryFactory.build(tenant_id=1, name="Roupas", parent_id=None)
+        product = ProductFactory.build(
+            tenant_id=1,
+            name="Camisa",
+            description=None,
+            image_url=None,
+        )
+        session.add_all([category, product])
+        await session.flush()
+        session.add(
+            ProductCategory(
+                product_id=product.id,
+                tenant_id=1,
+                category_id=category.id,
+            )
+        )
+        await session.commit()
+        product_id = product.id
+
+    updated = await client.put(
+        f"/api/products/{product_id}",
+        auth=AUTH_TENANT_ONE,
+        json={"price": invalid_price},
+    )
+    assert updated.status_code == 422
+    body = updated.json()
+    assert any(
+        error.get("loc") == ["body", "price"] for error in body.get("detail", [])
+    )
+
+
 async def test_list_products_supports_name_and_category_filters(
     client, session_maker: async_sessionmaker[AsyncSession]
 ) -> None:
