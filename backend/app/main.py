@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from app.admin import create_admin
 from app.routers import (
     auth_router,
     categories_router,
@@ -13,7 +14,7 @@ from app.routers import (
     users_router,
 )
 from app.core.config import get_settings
-from app.core.database import check_db_connection
+from app.core.database import check_db_connection, close_db, init_db
 from app.core.logging import configure_logging
 
 settings = get_settings()
@@ -24,8 +25,10 @@ UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     configure_logging(settings.app_log_level)
+    await init_db()
     await check_db_connection()
     yield
+    await close_db()
 
 
 def create_app() -> FastAPI:
@@ -49,6 +52,8 @@ def create_app() -> FastAPI:
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok", "environment": settings.app_env}
+
+    admin = create_admin(app)
 
     app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
     app.include_router(auth_router)

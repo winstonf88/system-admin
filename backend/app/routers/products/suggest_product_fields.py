@@ -8,7 +8,6 @@ from agno.media import Image
 from agno.models.openai import OpenAIResponses
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
 
 from app.core.config import get_settings
 from app.models import Category, ProductImage
@@ -110,13 +109,10 @@ async def build_images_from_product_image_ids(
         seen.add(image_id)
         unique_ids.append(image_id)
 
-    result = await service.db.execute(
-        select(ProductImage).where(
-            ProductImage.id.in_(unique_ids),
-            ProductImage.tenant_id == service.tenant_context.tenant_id,
-        )
+    rows = await ProductImage.filter(
+        id__in=unique_ids,
+        tenant_id=service.tenant_context.tenant_id,
     )
-    rows = list(result.scalars().all())
     by_id = {row.id: row for row in rows}
     missing_ids = [image_id for image_id in unique_ids if image_id not in by_id]
     if missing_ids:

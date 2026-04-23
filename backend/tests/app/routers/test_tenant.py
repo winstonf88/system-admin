@@ -1,5 +1,4 @@
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from tests.app.models.factories import AUTH_TENANT_ONE, seed_two_tenant_users
 
@@ -11,10 +10,8 @@ async def test_get_tenant_requires_auth(client) -> None:
     assert response.status_code == 401
 
 
-async def test_get_tenant_ok(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
+async def test_get_tenant_ok(client) -> None:
+    await seed_two_tenant_users()
     response = await client.get("/api/tenant/", auth=AUTH_TENANT_ONE)
     assert response.status_code == 200
     data = response.json()
@@ -23,10 +20,8 @@ async def test_get_tenant_ok(
     assert data["config"] == {}
 
 
-async def test_patch_tenant_name_and_config(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
+async def test_patch_tenant_name_and_config(client) -> None:
+    await seed_two_tenant_users()
     response = await client.patch(
         "/api/tenant/",
         auth=AUTH_TENANT_ONE,

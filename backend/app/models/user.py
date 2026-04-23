@@ -1,26 +1,24 @@
-from sqlalchemy import Boolean, ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from __future__ import annotations
+
+from tortoise import fields
 
 from app.core.security import hash_password
-from app.models.base import Base
+from app.models.base import BaseModel
 
 
-class User(Base):
-    __tablename__ = "users"
-
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    email: Mapped[str] = mapped_column(
-        String(255), nullable=False, unique=True, index=True
+class User(BaseModel):
+    id = fields.IntField(primary_key=True)
+    email = fields.CharField(max_length=255, unique=True, db_index=True)
+    first_name = fields.CharField(max_length=120, null=True)
+    last_name = fields.CharField(max_length=120, null=True)
+    password_hash = fields.CharField(max_length=255)
+    tenant: fields.ForeignKeyRelation["Tenant"] = fields.ForeignKeyField(  # noqa: F821
+        "models.Tenant", related_name="users", on_delete=fields.CASCADE
     )
-    first_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    last_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    tenant_id: Mapped[int] = mapped_column(
-        ForeignKey("tenants.id", name="fk_users_tenant_id"), nullable=False, index=True
-    )
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    is_active = fields.BooleanField(default=True)
 
-    tenant = relationship("Tenant", back_populates="users")
+    class Meta:
+        table = "users"
 
     def set_password(self, plain_password: str) -> None:
         self.password_hash = hash_password(plain_password)

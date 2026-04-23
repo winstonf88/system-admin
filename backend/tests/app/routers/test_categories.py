@@ -1,33 +1,22 @@
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.models import ProductCategory
+from app.models import ProductCategory, Tenant
 from tests.app.models.factories import (
     AUTH_TENANT_ONE,
-    CategoryFactory,
-    ProductFactory,
+    create_category,
+    create_product,
     seed_two_tenant_users,
 )
 
 pytestmark = pytest.mark.asyncio
 
 
-async def test_categories_are_scoped_by_tenant(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
-    async with session_maker() as session:
-        session.add_all(
-            [
-                CategoryFactory.build(
-                    tenant_id=1, name="Tenant 1 Root", parent_id=None
-                ),
-                CategoryFactory.build(
-                    tenant_id=2, name="Tenant 2 Root", parent_id=None
-                ),
-            ]
-        )
-        await session.commit()
+async def test_categories_are_scoped_by_tenant(client) -> None:
+    await seed_two_tenant_users()
+    t1 = await Tenant.get(slug="t1")
+    t2 = await Tenant.get(slug="t2")
+    await create_category(tenant_id=t1.id, name="Tenant 1 Root")
+    await create_category(tenant_id=t2.id, name="Tenant 2 Root")
 
     response = await client.get("/api/categories/", auth=AUTH_TENANT_ONE)
     assert response.status_code == 200
@@ -36,26 +25,12 @@ async def test_categories_are_scoped_by_tenant(
     assert payload[0]["name"] == "Tenant 1 Root"
 
 
-async def test_delete_category_is_blocked_when_linked_to_products(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
-    async with session_maker() as session:
-        category = CategoryFactory.build(
-            tenant_id=1, name="Com vínculo", parent_id=None
-        )
-        product = ProductFactory.build(
-            tenant_id=1,
-            name="Produto ligado",
-            description=None,
-            image_url=None,
-        )
-        session.add_all([category, product])
-        await session.flush()
-        session.add(
-            ProductCategory(product_id=product.id, category_id=category.id, tenant_id=1)
-        )
-        await session.commit()
+async def test_delete_category_is_blocked_when_linked_to_products(client) -> None:
+    await seed_two_tenant_users()
+    t1 = await Tenant.get(slug="t1")
+    category = await create_category(tenant_id=t1.id, name="Com vínculo")
+    product = await create_product(tenant_id=t1.id, name="Produto ligado")
+    await ProductCategory.create(product_id=product.id, category_id=category.id, tenant_id=t1.id)
 
     response = await client.delete(
         f"/api/categories/{category.id}", auth=AUTH_TENANT_ONE
@@ -64,10 +39,8 @@ async def test_delete_category_is_blocked_when_linked_to_products(
     assert "Exclua ou mova os produtos" in response.json()["detail"]
 
 
-async def test_create_categories_assign_incrementing_sort_order(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
+async def test_create_categories_assign_incrementing_sort_order(client) -> None:
+    await seed_two_tenant_users()
     first = await client.post(
         "/api/categories/",
         json={"name": "First", "parent_id": None},
@@ -84,10 +57,8 @@ async def test_create_categories_assign_incrementing_sort_order(
     assert second.json()["sort_order"] == 1
 
 
-async def test_put_reorder_root_siblings(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
+async def test_put_reorder_root_siblings(client) -> None:
+    await seed_two_tenant_users()
     a = (
         await client.post(
             "/api/categories/",
@@ -121,10 +92,8 @@ async def test_put_reorder_root_siblings(
     assert [row["sort_order"] for row in ordered] == [0, 1, 2]
 
 
-async def test_put_reorder_rejects_incomplete_sibling_list(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
+async def test_put_reorder_rejects_incomplete_sibling_list(client) -> None:
+    await seed_two_tenant_users()
     a = (
         await client.post(
             "/api/categories/",
@@ -147,10 +116,8 @@ async def test_put_reorder_rejects_incomplete_sibling_list(
     assert "irmãs" in bad.json()["detail"]
 
 
-async def test_move_category_renormalizes_old_parent_siblings(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
+async def test_move_category_renormalizes_old_parent_siblings(client) -> None:
+    await seed_two_tenant_users()
     cat_a = (
         await client.post(
             "/api/categories/",
@@ -194,10 +161,8 @@ async def test_move_category_renormalizes_old_parent_siblings(
     assert [row["name"] for row in children] == ["B"]
 
 
-async def test_delete_category_renormalizes_sibling_sort_order(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
+async def test_delete_category_renormalizes_sibling_sort_order(client) -> None:
+    await seed_two_tenant_users()
     await client.post(
         "/api/categories/", json={"name": "A", "parent_id": None}, auth=AUTH_TENANT_ONE
     )
@@ -223,10 +188,8 @@ async def test_delete_category_renormalizes_sibling_sort_order(
     assert [row["sort_order"] for row in roots] == [0, 1]
 
 
-async def test_category_tree_includes_sort_order(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
+async def test_category_tree_includes_sort_order(client) -> None:
+    await seed_two_tenant_users()
     await client.post(
         "/api/categories/",
         json={"name": "Root", "parent_id": None},

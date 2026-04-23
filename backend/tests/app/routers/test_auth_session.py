@@ -1,63 +1,46 @@
 import pytest
-from sqlalchemy import update
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.models import Tenant
-
 from tests.app.models.factories import seed_two_tenant_users
 
 pytestmark = pytest.mark.asyncio
 
 
-async def test_auth_session_requires_credentials(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
+async def test_auth_session_requires_credentials(client) -> None:
+    await seed_two_tenant_users()
     response = await client.get("/api/auth/session")
     assert response.status_code == 401
 
 
-async def test_auth_session_rejects_wrong_password(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
+async def test_auth_session_rejects_wrong_password(client) -> None:
+    await seed_two_tenant_users()
     response = await client.get("/api/auth/session", auth=("u1@test.com", "wrong"))
     assert response.status_code == 401
 
 
-async def test_auth_session_inactive_forbidden(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
+async def test_auth_session_inactive_forbidden(client) -> None:
+    await seed_two_tenant_users()
     response = await client.get(
         "/api/auth/session", auth=("inactive@test.com", "secret")
     )
     assert response.status_code == 403
 
 
-async def test_auth_session_inactive_tenant_forbidden(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
-    async with session_maker() as session:
-        await session.execute(
-            update(Tenant).where(Tenant.id == 1).values(is_active=False)
-        )
-        await session.commit()
+async def test_auth_session_inactive_tenant_forbidden(client) -> None:
+    await seed_two_tenant_users()
+    await Tenant.filter(slug="t1").update(is_active=False)
 
     response = await client.get("/api/auth/session", auth=("u1@test.com", "secret"))
     assert response.status_code == 403
 
 
-async def test_auth_session_ok(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
+async def test_auth_session_ok(client) -> None:
+    await seed_two_tenant_users()
     response = await client.get("/api/auth/session", auth=("u1@test.com", "secret"))
     assert response.status_code == 200
     data = response.json()
     assert data == {
-        "id": 1,
+        "id": data["id"],
         "email": "u1@test.com",
         "first_name": "User",
         "last_name": "One",

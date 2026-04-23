@@ -1,14 +1,18 @@
-import factory
-
 from app.models import Product
 
 
-class ProductFactory(factory.Factory):
-    class Meta:
-        model = Product
-
-    name = factory.Sequence(lambda n: f"Product {n}")
-    price = 0
-    description = None
-    tenant_id = factory.Sequence(lambda n: n + 1)
-    image_url = None
+async def create_product(
+    *,
+    tenant_id: int,
+    name: str,
+    price: float = 10.0,
+    description: str | None = None,
+    image_url: str | None = None,
+) -> Product:
+    return await Product.create(
+        tenant_id=tenant_id,
+        name=name,
+        price=price,
+        description=description,
+        image_url=image_url,
+    )

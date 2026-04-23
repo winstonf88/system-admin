@@ -1,93 +1,44 @@
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 import app.routers.products.suggest_product_fields as suggest_product_fields_router
-from app.models import ProductCategory, ProductImage
+from app.models import ProductCategory, ProductImage, Tenant
 from app.routers import products as products_router
 
 from tests.app.models.factories import (
     AUTH_TENANT_ONE,
-    CategoryFactory,
-    ProductFactory,
+    create_category,
+    create_product,
     seed_two_tenant_users,
 )
 
 pytestmark = pytest.mark.asyncio
 
 
-async def test_product_lookup_blocks_cross_tenant_access(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
-    async with session_maker() as session:
-        tenant1_category = CategoryFactory.build(
-            tenant_id=1, name="T1 Cat", parent_id=None
-        )
-        tenant2_category = CategoryFactory.build(
-            tenant_id=2, name="T2 Cat", parent_id=None
-        )
-        session.add_all([tenant1_category, tenant2_category])
-        await session.flush()
-        tenant2_product = ProductFactory.build(
-            tenant_id=2,
-            name="Tenant 2 Product",
-            description=None,
-            image_url=None,
-        )
-        session.add(tenant2_product)
-        await session.flush()
-        session.add(
-            ProductCategory(
-                product_id=tenant2_product.id,
-                tenant_id=2,
-                category_id=tenant2_category.id,
-            )
-        )
-        product_id = tenant2_product.id
-        await session.commit()
+async def test_product_lookup_blocks_cross_tenant_access(client) -> None:
+    await seed_two_tenant_users()
+    t2 = await Tenant.get(slug="t2")
+    tenant2_category = await create_category(tenant_id=t2.id, name="T2 Cat")
+    tenant2_product = await create_product(tenant_id=t2.id, name="Tenant 2 Product")
+    await ProductCategory.create(
+        product_id=tenant2_product.id,
+        tenant_id=t2.id,
+        category_id=tenant2_category.id,
+    )
 
-    response = await client.get(f"/api/products/{product_id}", auth=AUTH_TENANT_ONE)
+    response = await client.get(f"/api/products/{tenant2_product.id}", auth=AUTH_TENANT_ONE)
     assert response.status_code == 404
 
 
-async def test_upload_url_stays_tenant_agnostic_and_enforced(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
-    async with session_maker() as session:
-        category_1 = CategoryFactory.build(tenant_id=1, name="T1 Cat", parent_id=None)
-        category_2 = CategoryFactory.build(tenant_id=2, name="T2 Cat", parent_id=None)
-        session.add_all([category_1, category_2])
-        await session.flush()
-        product_1 = ProductFactory.build(
-            tenant_id=1,
-            name="Tenant 1 Product",
-            description=None,
-            image_url=None,
-        )
-        product_2 = ProductFactory.build(
-            tenant_id=2,
-            name="Tenant 2 Product",
-            description=None,
-            image_url=None,
-        )
-        session.add_all([product_1, product_2])
-        await session.flush()
-        session.add_all(
-            [
-                ProductCategory(
-                    product_id=product_1.id,
-                    tenant_id=1,
-                    category_id=category_1.id,
-                ),
-                ProductCategory(
-                    product_id=product_2.id,
-                    tenant_id=2,
-                    category_id=category_2.id,
-                ),
-            ]
-        )
-        await session.commit()
+async def test_upload_url_stays_tenant_agnostic_and_enforced(client) -> None:
+    await seed_two_tenant_users()
+    t1 = await Tenant.get(slug="t1")
+    t2 = await Tenant.get(slug="t2")
+    category_1 = await create_category(tenant_id=t1.id, name="T1 Cat")
+    category_2 = await create_category(tenant_id=t2.id, name="T2 Cat")
+    product_1 = await create_product(tenant_id=t1.id, name="Tenant 1 Product")
+    product_2 = await create_product(tenant_id=t2.id, name="Tenant 2 Product")
+    await ProductCategory.create(product_id=product_1.id, tenant_id=t1.id, category_id=category_1.id)
+    await ProductCategory.create(product_id=product_2.id, tenant_id=t2.id, category_id=category_2.id)
 
     own_upload = await client.post(
         f"/api/products/{product_1.id}/upload",
@@ -127,15 +78,11 @@ async def test_upload_url_stays_tenant_agnostic_and_enforced(
     assert len(after.json()["images"]) == 1
 
 
-async def test_create_product_returns_selected_categories_in_payload_ordered(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
-    async with session_maker() as session:
-        cat_a = CategoryFactory.build(tenant_id=1, name="A", parent_id=None)
-        cat_b = CategoryFactory.build(tenant_id=1, name="B", parent_id=None)
-        session.add_all([cat_a, cat_b])
-        await session.commit()
+async def test_create_product_returns_selected_categories_in_payload_ordered(client) -> None:
+    await seed_two_tenant_users()
+    t1 = await Tenant.get(slug="t1")
+    cat_a = await create_category(tenant_id=t1.id, name="A")
+    cat_b = await create_category(tenant_id=t1.id, name="B")
 
     created = await client.post(
         "/api/products/",
@@ -153,22 +100,17 @@ async def test_create_product_returns_selected_categories_in_payload_ordered(
     body = created.json()
     assert body["name"] == "Camisa"
     assert body["price"] == 129.9
-    # API normalizes to sorted category ids to keep payload deterministic.
     assert body["category_ids"] == sorted([cat_b.id, cat_a.id])
     assert body["variations"][0]["quantity"] == 7
 
 
 @pytest.mark.parametrize("missing_field", ["name", "category_ids", "price"])
 async def test_create_product_requires_name_category_and_price(
-    client,
-    session_maker: async_sessionmaker[AsyncSession],
-    missing_field: str,
+    client, missing_field: str
 ) -> None:
-    await seed_two_tenant_users(session_maker)
-    async with session_maker() as session:
-        category = CategoryFactory.build(tenant_id=1, name="Roupas", parent_id=None)
-        session.add(category)
-        await session.commit()
+    await seed_two_tenant_users()
+    t1 = await Tenant.get(slug="t1")
+    category = await create_category(tenant_id=t1.id, name="Roupas")
 
     payload = {
         "name": "Camisa",
@@ -180,11 +122,7 @@ async def test_create_product_requires_name_category_and_price(
     }
     payload.pop(missing_field)
 
-    created = await client.post(
-        "/api/products/",
-        auth=AUTH_TENANT_ONE,
-        json=payload,
-    )
+    created = await client.post("/api/products/", auth=AUTH_TENANT_ONE, json=payload)
     assert created.status_code == 422
     body = created.json()
     assert any(
@@ -194,15 +132,11 @@ async def test_create_product_requires_name_category_and_price(
 
 @pytest.mark.parametrize("invalid_price", [0, -1, -0.01])
 async def test_create_product_rejects_zero_or_negative_price(
-    client,
-    session_maker: async_sessionmaker[AsyncSession],
-    invalid_price: float,
+    client, invalid_price: float
 ) -> None:
-    await seed_two_tenant_users(session_maker)
-    async with session_maker() as session:
-        category = CategoryFactory.build(tenant_id=1, name="Roupas", parent_id=None)
-        session.add(category)
-        await session.commit()
+    await seed_two_tenant_users()
+    t1 = await Tenant.get(slug="t1")
+    category = await create_category(tenant_id=t1.id, name="Roupas")
 
     created = await client.post(
         "/api/products/",
@@ -218,113 +152,46 @@ async def test_create_product_rejects_zero_or_negative_price(
     )
     assert created.status_code == 422
     body = created.json()
-    assert any(
-        error.get("loc") == ["body", "price"] for error in body.get("detail", [])
-    )
+    assert any(error.get("loc") == ["body", "price"] for error in body.get("detail", []))
 
 
 @pytest.mark.parametrize("invalid_price", [0, -1, -0.01])
 async def test_update_product_rejects_zero_or_negative_price(
-    client,
-    session_maker: async_sessionmaker[AsyncSession],
-    invalid_price: float,
+    client, invalid_price: float
 ) -> None:
-    await seed_two_tenant_users(session_maker)
-    async with session_maker() as session:
-        category = CategoryFactory.build(tenant_id=1, name="Roupas", parent_id=None)
-        product = ProductFactory.build(
-            tenant_id=1,
-            name="Camisa",
-            description=None,
-            image_url=None,
-        )
-        session.add_all([category, product])
-        await session.flush()
-        session.add(
-            ProductCategory(
-                product_id=product.id,
-                tenant_id=1,
-                category_id=category.id,
-            )
-        )
-        await session.commit()
-        product_id = product.id
+    await seed_two_tenant_users()
+    t1 = await Tenant.get(slug="t1")
+    category = await create_category(tenant_id=t1.id, name="Roupas")
+    product = await create_product(tenant_id=t1.id, name="Camisa")
+    await ProductCategory.create(product_id=product.id, tenant_id=t1.id, category_id=category.id)
 
     updated = await client.put(
-        f"/api/products/{product_id}",
+        f"/api/products/{product.id}",
         auth=AUTH_TENANT_ONE,
         json={"price": invalid_price},
     )
     assert updated.status_code == 422
     body = updated.json()
-    assert any(
-        error.get("loc") == ["body", "price"] for error in body.get("detail", [])
-    )
+    assert any(error.get("loc") == ["body", "price"] for error in body.get("detail", []))
 
 
-async def test_list_products_supports_name_and_category_filters(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
-    async with session_maker() as session:
-        roupas = CategoryFactory.build(tenant_id=1, name="Roupas", parent_id=None)
-        calcados = CategoryFactory.build(tenant_id=1, name="Calçados", parent_id=None)
-        tenant2_cat = CategoryFactory.build(tenant_id=2, name="Roupas", parent_id=None)
-        session.add_all([roupas, calcados, tenant2_cat])
-        await session.flush()
+async def test_list_products_supports_name_and_category_filters(client) -> None:
+    await seed_two_tenant_users()
+    t1 = await Tenant.get(slug="t1")
+    t2 = await Tenant.get(slug="t2")
+    roupas = await create_category(tenant_id=t1.id, name="Roupas")
+    calcados = await create_category(tenant_id=t1.id, name="Calçados")
+    tenant2_cat = await create_category(tenant_id=t2.id, name="Roupas")
 
-        camisa = ProductFactory.build(
-            tenant_id=1,
-            name="Camisa Polo",
-            description=None,
-            image_url=None,
-        )
-        tenis = ProductFactory.build(
-            tenant_id=1,
-            name="Tênis Corrida",
-            description=None,
-            image_url=None,
-        )
-        bone = ProductFactory.build(
-            tenant_id=1,
-            name="Boné Aba Reta",
-            description=None,
-            image_url=None,
-        )
-        tenant2_product = ProductFactory.build(
-            tenant_id=2,
-            name="Camisa Tenant 2",
-            description=None,
-            image_url=None,
-        )
-        session.add_all([camisa, tenis, bone, tenant2_product])
-        await session.flush()
+    camisa = await create_product(tenant_id=t1.id, name="Camisa Polo")
+    tenis = await create_product(tenant_id=t1.id, name="Tênis Corrida")
+    bone = await create_product(tenant_id=t1.id, name="Boné Aba Reta")
+    tenant2_product = await create_product(tenant_id=t2.id, name="Camisa Tenant 2")
 
-        session.add_all(
-            [
-                ProductCategory(
-                    product_id=camisa.id,
-                    tenant_id=1,
-                    category_id=roupas.id,
-                ),
-                ProductCategory(
-                    product_id=tenis.id,
-                    tenant_id=1,
-                    category_id=calcados.id,
-                ),
-                ProductCategory(
-                    product_id=bone.id,
-                    tenant_id=1,
-                    category_id=roupas.id,
-                ),
-                ProductCategory(
-                    product_id=tenant2_product.id,
-                    tenant_id=2,
-                    category_id=tenant2_cat.id,
-                ),
-            ]
-        )
-        await session.commit()
+    await ProductCategory.create(product_id=camisa.id, tenant_id=t1.id, category_id=roupas.id)
+    await ProductCategory.create(product_id=tenis.id, tenant_id=t1.id, category_id=calcados.id)
+    await ProductCategory.create(product_id=bone.id, tenant_id=t1.id, category_id=roupas.id)
+    await ProductCategory.create(product_id=tenant2_product.id, tenant_id=t2.id, category_id=tenant2_cat.id)
 
     by_name = await client.get("/api/products/?name=camisa", auth=AUTH_TENANT_ONE)
     assert by_name.status_code == 200
@@ -332,44 +199,26 @@ async def test_list_products_supports_name_and_category_filters(
     assert by_name_names == ["Camisa Polo"]
 
     by_category = await client.get(
-        f"/api/products/?category_id={roupas.id}",
-        auth=AUTH_TENANT_ONE,
+        f"/api/products/?category_id={roupas.id}", auth=AUTH_TENANT_ONE
     )
     assert by_category.status_code == 200
     by_category_names = [p["name"] for p in by_category.json()]
     assert by_category_names == ["Boné Aba Reta", "Camisa Polo"]
 
     combined = await client.get(
-        f"/api/products/?name=bo&category_id={roupas.id}",
-        auth=AUTH_TENANT_ONE,
+        f"/api/products/?name=bo&category_id={roupas.id}", auth=AUTH_TENANT_ONE
     )
     assert combined.status_code == 200
     combined_names = [p["name"] for p in combined.json()]
     assert combined_names == ["Boné Aba Reta"]
 
 
-async def test_upload_rejects_more_than_ten_images_per_product(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
-    async with session_maker() as session:
-        category = CategoryFactory.build(tenant_id=1, name="Acessórios", parent_id=None)
-        product = ProductFactory.build(
-            tenant_id=1,
-            name="Boné",
-            description=None,
-            image_url=None,
-        )
-        session.add_all([category, product])
-        await session.flush()
-        session.add(
-            ProductCategory(
-                product_id=product.id,
-                tenant_id=1,
-                category_id=category.id,
-            )
-        )
-        await session.commit()
+async def test_upload_rejects_more_than_ten_images_per_product(client) -> None:
+    await seed_two_tenant_users()
+    t1 = await Tenant.get(slug="t1")
+    category = await create_category(tenant_id=t1.id, name="Acessórios")
+    product = await create_product(tenant_id=t1.id, name="Boné")
+    await ProductCategory.create(product_id=product.id, tenant_id=t1.id, category_id=category.id)
 
     for idx in range(10):
         uploaded = await client.post(
@@ -388,105 +237,59 @@ async def test_upload_rejects_more_than_ten_images_per_product(
     assert "No m\u00e1ximo 10 imagens" in rejected.json()["detail"]
 
 
-async def test_reorder_product_images_updates_primary_url_and_order(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
-    async with session_maker() as session:
-        category = CategoryFactory.build(tenant_id=1, name="Acessórios", parent_id=None)
-        product = ProductFactory.build(
-            tenant_id=1,
-            name="Boné",
-            description=None,
-            image_url=None,
-        )
-        session.add_all([category, product])
-        await session.flush()
-        session.add(
-            ProductCategory(
-                product_id=product.id,
-                tenant_id=1,
-                category_id=category.id,
-            )
-        )
-        image_a = ProductImage(
-            tenant_id=1,
-            product_id=product.id,
-            url="/uploads/products/a.png",
-            sort_order=0,
-        )
-        image_b = ProductImage(
-            tenant_id=1,
-            product_id=product.id,
-            url="/uploads/products/b.png",
-            sort_order=1,
-        )
-        session.add_all([image_a, image_b])
-        await session.commit()
-        product_id = product.id
-        first_id = image_a.id
-        second_id = image_b.id
+async def test_reorder_product_images_updates_primary_url_and_order(client) -> None:
+    await seed_two_tenant_users()
+    t1 = await Tenant.get(slug="t1")
+    category = await create_category(tenant_id=t1.id, name="Acessórios")
+    product = await create_product(tenant_id=t1.id, name="Boné")
+    await ProductCategory.create(product_id=product.id, tenant_id=t1.id, category_id=category.id)
+    image_a = await ProductImage.create(
+        tenant_id=t1.id, product_id=product.id, url="/uploads/products/a.png", sort_order=0
+    )
+    image_b = await ProductImage.create(
+        tenant_id=t1.id, product_id=product.id, url="/uploads/products/b.png", sort_order=1
+    )
+    await product.save(update_fields=["image_url"])
 
     reordered = await client.put(
-        f"/api/products/{product_id}/images/order",
+        f"/api/products/{product.id}/images/order",
         auth=AUTH_TENANT_ONE,
-        json={"image_ids": [second_id, first_id]},
+        json={"image_ids": [image_b.id, image_a.id]},
     )
     assert reordered.status_code == 200
     body = reordered.json()
-    assert [img["id"] for img in body["images"]] == [second_id, first_id]
+    assert [img["id"] for img in body["images"]] == [image_b.id, image_a.id]
     assert body["image_url"] == "/uploads/products/b.png"
 
     invalid = await client.put(
-        f"/api/products/{product_id}/images/order",
+        f"/api/products/{product.id}/images/order",
         auth=AUTH_TENANT_ONE,
-        json={"image_ids": [first_id]},
+        json={"image_ids": [image_a.id]},
     )
     assert invalid.status_code == 400
     assert "nova ordem" in invalid.json()["detail"].lower()
 
 
 async def test_ai_suggestions_returns_only_requested_fields_and_tenant_categories(
-    client,
-    session_maker: async_sessionmaker[AsyncSession],
-    monkeypatch: pytest.MonkeyPatch,
+    client, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    await seed_two_tenant_users(session_maker)
-    async with session_maker() as session:
-        tenant1_cat_a = CategoryFactory.build(
-            tenant_id=1, name="Roupas", parent_id=None
-        )
-        tenant1_cat_b = CategoryFactory.build(
-            tenant_id=1, name="Calçados", parent_id=None
-        )
-        tenant2_cat = CategoryFactory.build(
-            tenant_id=2, name="Eletrônicos", parent_id=None
-        )
-        session.add_all([tenant1_cat_a, tenant1_cat_b, tenant2_cat])
-        await session.commit()
+    await seed_two_tenant_users()
+    t1 = await Tenant.get(slug="t1")
+    t2 = await Tenant.get(slug="t2")
+    tenant1_cat_a = await create_category(tenant_id=t1.id, name="Roupas")
+    tenant1_cat_b = await create_category(tenant_id=t1.id, name="Calçados")
+    tenant2_cat = await create_category(tenant_id=t2.id, name="Eletrônicos")
 
     async def fake_run_ai_suggestions(
-        *,
-        requested_fields,
-        images,
-        tenant_categories,
+        *, requested_fields, images, tenant_categories
     ) -> products_router.ProductAISuggestionOutput:
         return products_router.ProductAISuggestionOutput(
             name=["Nome 1", "Nome 1", "Nome 2"],
             description=["Descrição que não deve retornar"],
-            category=[
-                tenant1_cat_b.id,
-                tenant2_cat.id,
-                tenant1_cat_a.id,
-                tenant1_cat_b.id,
-            ],
+            category=[tenant1_cat_b.id, tenant2_cat.id, tenant1_cat_a.id, tenant1_cat_b.id],
         )
 
-    monkeypatch.setattr(
-        suggest_product_fields_router,
-        "run_ai_suggestions",
-        fake_run_ai_suggestions,
-    )
+    monkeypatch.setattr(suggest_product_fields_router, "run_ai_suggestions", fake_run_ai_suggestions)
 
     response = await client.post(
         "/api/products/ai-suggestions",
@@ -505,10 +308,8 @@ async def test_ai_suggestions_returns_only_requested_fields_and_tenant_categorie
     assert body["category"] == [tenant1_cat_b.id, tenant1_cat_a.id]
 
 
-async def test_ai_suggestions_enforces_field_whitelist(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
+async def test_ai_suggestions_enforces_field_whitelist(client) -> None:
+    await seed_two_tenant_users()
     response = await client.post(
         "/api/products/ai-suggestions",
         auth=AUTH_TENANT_ONE,
@@ -517,22 +318,16 @@ async def test_ai_suggestions_enforces_field_whitelist(
             ("files", ("product.png", b"fake-image", "image/png")),
         ],
     )
-
     assert response.status_code == 422
 
 
 async def test_ai_suggestions_applies_limits(
-    client,
-    session_maker: async_sessionmaker[AsyncSession],
-    monkeypatch: pytest.MonkeyPatch,
+    client, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    await seed_two_tenant_users(session_maker)
+    await seed_two_tenant_users()
 
     async def fake_run_ai_suggestions(
-        *,
-        requested_fields,
-        images,
-        tenant_categories,
+        *, requested_fields, images, tenant_categories
     ) -> products_router.ProductAISuggestionOutput:
         return products_router.ProductAISuggestionOutput(
             name=[f"Nome {idx}" for idx in range(1, 15)],
@@ -540,11 +335,7 @@ async def test_ai_suggestions_applies_limits(
             category=[999],
         )
 
-    monkeypatch.setattr(
-        suggest_product_fields_router,
-        "run_ai_suggestions",
-        fake_run_ai_suggestions,
-    )
+    monkeypatch.setattr(suggest_product_fields_router, "run_ai_suggestions", fake_run_ai_suggestions)
 
     response = await client.post(
         "/api/products/ai-suggestions",
@@ -563,10 +354,8 @@ async def test_ai_suggestions_applies_limits(
     assert "category" not in body
 
 
-async def test_ai_suggestions_rejects_empty_or_missing_files(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
+async def test_ai_suggestions_rejects_empty_or_missing_files(client) -> None:
+    await seed_two_tenant_users()
     empty_file = await client.post(
         "/api/products/ai-suggestions",
         auth=AUTH_TENANT_ONE,
@@ -588,56 +377,32 @@ async def test_ai_suggestions_rejects_empty_or_missing_files(
 
 
 async def test_ai_suggestions_accepts_existing_product_image_ids(
-    client,
-    session_maker: async_sessionmaker[AsyncSession],
-    monkeypatch: pytest.MonkeyPatch,
+    client, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    await seed_two_tenant_users(session_maker)
-    async with session_maker() as session:
-        category = CategoryFactory.build(tenant_id=1, name="Roupas", parent_id=None)
-        product = ProductFactory.build(
-            tenant_id=1,
-            name="Camisa",
-            description=None,
-            image_url=None,
-        )
-        session.add_all([category, product])
-        await session.flush()
-        session.add(
-            ProductCategory(
-                product_id=product.id,
-                tenant_id=1,
-                category_id=category.id,
-            )
-        )
-        await session.commit()
-        product_id = product.id
+    await seed_two_tenant_users()
+    t1 = await Tenant.get(slug="t1")
+    category = await create_category(tenant_id=t1.id, name="Roupas")
+    product = await create_product(tenant_id=t1.id, name="Camisa")
+    await ProductCategory.create(product_id=product.id, tenant_id=t1.id, category_id=category.id)
 
     uploaded = await client.post(
-        f"/api/products/{product_id}/upload",
+        f"/api/products/{product.id}/upload",
         auth=AUTH_TENANT_ONE,
         files={"file": ("product.png", b"fake-image", "image/png")},
     )
     assert uploaded.status_code == 200
 
-    detail = await client.get(f"/api/products/{product_id}", auth=AUTH_TENANT_ONE)
+    detail = await client.get(f"/api/products/{product.id}", auth=AUTH_TENANT_ONE)
     assert detail.status_code == 200
     product_image_id = detail.json()["images"][0]["id"]
 
     async def fake_run_ai_suggestions(
-        *,
-        requested_fields,
-        images,
-        tenant_categories,
+        *, requested_fields, images, tenant_categories
     ) -> products_router.ProductAISuggestionOutput:
         assert len(images) == 1
         return products_router.ProductAISuggestionOutput(name=["Nome por ID"])
 
-    monkeypatch.setattr(
-        suggest_product_fields_router,
-        "run_ai_suggestions",
-        fake_run_ai_suggestions,
-    )
+    monkeypatch.setattr(suggest_product_fields_router, "run_ai_suggestions", fake_run_ai_suggestions)
 
     response = await client.post(
         "/api/products/ai-suggestions",
@@ -652,48 +417,27 @@ async def test_ai_suggestions_accepts_existing_product_image_ids(
     assert response.json()["name"] == ["Nome por ID"]
 
 
-async def test_ai_suggestions_blocks_cross_tenant_product_image_ids(
-    client, session_maker: async_sessionmaker[AsyncSession]
-) -> None:
-    await seed_two_tenant_users(session_maker)
-    async with session_maker() as session:
-        tenant1_category = CategoryFactory.build(
-            tenant_id=1, name="Roupas T1", parent_id=None
-        )
-        tenant2_category = CategoryFactory.build(
-            tenant_id=2, name="Roupas T2", parent_id=None
-        )
-        tenant2_product = ProductFactory.build(
-            tenant_id=2,
-            name="Produto T2",
-            description=None,
-            image_url=None,
-        )
-        session.add_all([tenant1_category, tenant2_category, tenant2_product])
-        await session.flush()
-        session.add(
-            ProductCategory(
-                product_id=tenant2_product.id,
-                tenant_id=2,
-                category_id=tenant2_category.id,
-            )
-        )
-        tenant2_image = ProductImage(
-            tenant_id=2,
-            product_id=tenant2_product.id,
-            url="/uploads/products/tenant2.png",
-            sort_order=0,
-        )
-        session.add(tenant2_image)
-        await session.commit()
-        tenant2_image_id = tenant2_image.id
+async def test_ai_suggestions_blocks_cross_tenant_product_image_ids(client) -> None:
+    await seed_two_tenant_users()
+    t2 = await Tenant.get(slug="t2")
+    tenant2_category = await create_category(tenant_id=t2.id, name="Roupas T2")
+    tenant2_product = await create_product(tenant_id=t2.id, name="Produto T2")
+    await ProductCategory.create(
+        product_id=tenant2_product.id, tenant_id=t2.id, category_id=tenant2_category.id
+    )
+    tenant2_image = await ProductImage.create(
+        tenant_id=t2.id,
+        product_id=tenant2_product.id,
+        url="/uploads/products/tenant2.png",
+        sort_order=0,
+    )
 
     response = await client.post(
         "/api/products/ai-suggestions",
         auth=AUTH_TENANT_ONE,
         files=[
             ("fields", (None, "name")),
-            ("product_image_ids", (None, str(tenant2_image_id))),
+            ("product_image_ids", (None, str(tenant2_image.id))),
         ],
     )
 
@@ -702,29 +446,17 @@ async def test_ai_suggestions_blocks_cross_tenant_product_image_ids(
 
 
 async def test_ai_suggestions_without_fields_suggests_all(
-    client,
-    session_maker: async_sessionmaker[AsyncSession],
-    monkeypatch: pytest.MonkeyPatch,
+    client, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    await seed_two_tenant_users(session_maker)
-    async with session_maker() as session:
-        tenant1_cat_a = CategoryFactory.build(
-            tenant_id=1, name="Roupas", parent_id=None
-        )
-        tenant1_cat_b = CategoryFactory.build(
-            tenant_id=1, name="Calçados", parent_id=None
-        )
-        tenant2_cat = CategoryFactory.build(
-            tenant_id=2, name="Eletrônicos", parent_id=None
-        )
-        session.add_all([tenant1_cat_a, tenant1_cat_b, tenant2_cat])
-        await session.commit()
+    await seed_two_tenant_users()
+    t1 = await Tenant.get(slug="t1")
+    t2 = await Tenant.get(slug="t2")
+    tenant1_cat_a = await create_category(tenant_id=t1.id, name="Roupas")
+    tenant1_cat_b = await create_category(tenant_id=t1.id, name="Calçados")
+    tenant2_cat = await create_category(tenant_id=t2.id, name="Eletrônicos")
 
     async def fake_run_ai_suggestions(
-        *,
-        requested_fields,
-        images,
-        tenant_categories,
+        *, requested_fields, images, tenant_categories
     ) -> products_router.ProductAISuggestionOutput:
         return products_router.ProductAISuggestionOutput(
             name=["Nome 1", "Nome 2"],
@@ -732,11 +464,7 @@ async def test_ai_suggestions_without_fields_suggests_all(
             category=[tenant1_cat_a.id, tenant2_cat.id, tenant1_cat_b.id],
         )
 
-    monkeypatch.setattr(
-        suggest_product_fields_router,
-        "run_ai_suggestions",
-        fake_run_ai_suggestions,
-    )
+    monkeypatch.setattr(suggest_product_fields_router, "run_ai_suggestions", fake_run_ai_suggestions)
 
     response = await client.post(
         "/api/products/ai-suggestions",

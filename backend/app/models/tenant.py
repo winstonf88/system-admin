@@ -1,39 +1,27 @@
-from typing import TYPE_CHECKING
+from __future__ import annotations
 
-from sqlalchemy import Boolean, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from tortoise import fields
 
-from app.models.base import Base
-from app.models.pydantic_json import PydanticJSON
+from app.models.base import BaseModel
 from app.models.tenant_config import TenantConfig
 
-if TYPE_CHECKING:
-    from app.models.user import User
 
+class Tenant(BaseModel):
+    id = fields.IntField(primary_key=True)
+    slug = fields.CharField(max_length=80, unique=True, db_index=True)
+    name = fields.CharField(max_length=180)
+    is_active = fields.BooleanField(default=True)
+    config: fields.JSONField = fields.JSONField(default=dict)
+    api_key_hash = fields.CharField(max_length=64, null=True, db_index=True)
 
-def _default_tenant_config() -> TenantConfig:
-    return TenantConfig()
+    users: fields.ReverseRelation["User"]  # noqa: F821
 
+    class Meta:
+        table = "tenants"
 
-_tenant_config_json = PydanticJSON(TenantConfig, coerce_null_to_empty=True)
+    def get_config(self) -> TenantConfig:
+        raw = self.config or {}
+        return TenantConfig.model_validate(raw)
 
-
-class Tenant(Base):
-    __tablename__ = "tenants"
-
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    slug: Mapped[str] = mapped_column(
-        String(80), nullable=False, unique=True, index=True
-    )
-    name: Mapped[str] = mapped_column(String(180), nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    config: Mapped[TenantConfig] = mapped_column(
-        _tenant_config_json,
-        nullable=False,
-        default=_default_tenant_config,
-    )
-    api_key_hash: Mapped[str | None] = mapped_column(
-        String(64), nullable=True, index=True
-    )
-
-    users: Mapped[list["User"]] = relationship("User", back_populates="tenant")
+    def set_config(self, value: TenantConfig) -> None:
+        self.config = value.model_dump(mode="json")

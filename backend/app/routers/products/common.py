@@ -2,11 +2,8 @@ import uuid
 from pathlib import Path
 
 from fastapi import Depends, HTTPException, UploadFile, status
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from app.dependencies import TenantContext, get_db, get_tenant_context
+from app.dependencies import TenantContext, get_tenant_context
 from app.models import (
     Category,
     Product,
@@ -38,9 +35,18 @@ def delete_upload_file_if_safe(url: str) -> None:
         path.unlink()
 
 
+async def _fetch_product_with_relations(
+    product_id: int, tenant_id: int
+) -> Product | None:
+    return await (
+        Product.filter(id=product_id, tenant_id=tenant_id)
+        .prefetch_related("category_links", "variations", "images")
+        .first()
+    )
+
+
 class ProductsService:
-    def __init__(self, db: AsyncSession, tenant_context: TenantContext) -> None:
-        self.db = db
+    def __init__(self, tenant_context: TenantContext) -> None:
         self.tenant_context = tenant_context
 
     def product_to_read(self, product: Product) -> ProductRead:
@@ -62,19 +68,9 @@ class ProductsService:
         )
 
     async def get_product_or_404(self, product_id: int) -> Product:
-        result = await self.db.execute(
-            select(Product)
-            .options(
-                selectinload(Product.variations),
-                selectinload(Product.category_links),
-                selectinload(Product.images),
-            )
-            .where(
-                Product.id == product_id,
-                Product.tenant_id == self.tenant_context.tenant_id,
-            )
+        product = await _fetch_product_with_relations(
+            product_id, self.tenant_context.tenant_id
         )
-        product = result.scalar_one_or_none()
         if product is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Produto não encontrado."
@@ -84,14 +80,11 @@ class ProductsService:
     async def validate_categories(self, category_ids: list[int]) -> None:
         if not category_ids:
             return
-        result = await self.db.execute(
-            select(Category.id).where(
-                Category.id.in_(category_ids),
-                Category.tenant_id == self.tenant_context.tenant_id,
-            )
-        )
-        found = {row[0] for row in result.all()}
-        missing = set(category_ids) - found
+        found = await Category.filter(
+            id__in=category_ids,
+            tenant_id=self.tenant_context.tenant_id,
+        ).values_list("id", flat=True)
+        missing = set(category_ids) - set(found)
         if missing:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -99,17 +92,9 @@ class ProductsService:
             )
 
     async def list_tenant_categories(self) -> list[Category]:
-        result = await self.db.execute(
-            select(Category)
-            .where(Category.tenant_id == self.tenant_context.tenant_id)
-            .order_by(
-                Category.parent_id.asc(),
-                Category.sort_order.asc(),
-                Category.name.asc(),
-                Category.id.asc(),
-            )
-        )
-        return list(result.scalars().all())
+        return await Category.filter(
+            tenant_id=self.tenant_context.tenant_id
+        ).order_by("parent_id", "sort_order", "name", "id")
 
     @staticmethod
     def sanitize_text_suggestions(
@@ -151,25 +136,24 @@ class ProductsService:
             normalized.append(raw)
         return normalized
 
-    def replace_variations(
+    async def _replace_variations(
         self,
         product: Product,
         payload_variations: list[ProductVariationCreate],
     ) -> None:
-        product.variations.clear()
+        await ProductVariation.filter(product_id=product.id).delete()
         for variation in payload_variations:
-            product.variations.append(
-                ProductVariation(
-                    size=variation.size,
-                    color=variation.color,
-                    quantity=variation.quantity,
-                )
+            await ProductVariation.create(
+                product_id=product.id,
+                size=variation.size,
+                color=variation.color,
+                quantity=variation.quantity,
             )
 
     async def create_product(self, payload: ProductCreate) -> ProductRead:
         await self.validate_categories(payload.category_ids)
 
-        product = Product(
+        product = await Product.create(
             tenant_id=self.tenant_context.tenant_id,
             name=payload.name,
             price=payload.price,
@@ -177,24 +161,19 @@ class ProductsService:
             image_url=payload.image_url,
         )
         for category_id in payload.category_ids:
-            product.category_links.append(
-                ProductCategory(
-                    tenant_id=self.tenant_context.tenant_id,
-                    category_id=category_id,
-                )
+            await ProductCategory.create(
+                product_id=product.id,
+                tenant_id=self.tenant_context.tenant_id,
+                category_id=category_id,
             )
-
         for variation in payload.variations:
-            product.variations.append(
-                ProductVariation(
-                    size=variation.size,
-                    color=variation.color,
-                    quantity=variation.quantity,
-                )
+            await ProductVariation.create(
+                product_id=product.id,
+                size=variation.size,
+                color=variation.color,
+                quantity=variation.quantity,
             )
 
-        self.db.add(product)
-        await self.db.commit()
         created = await self.get_product_or_404(product.id)
         return self.product_to_read(created)
 
@@ -202,37 +181,43 @@ class ProductsService:
         self, product_id: int, payload: ProductUpdate
     ) -> ProductRead:
         product = await self.get_product_or_404(product_id)
+        update_fields: list[str] = []
 
         if (
             "category_ids" in payload.model_fields_set
             and payload.category_ids is not None
         ):
             await self.validate_categories(payload.category_ids)
-            product.category_links.clear()
+            await ProductCategory.filter(product_id=product.id).delete()
             for category_id in payload.category_ids:
-                product.category_links.append(
-                    ProductCategory(
-                        tenant_id=self.tenant_context.tenant_id,
-                        category_id=category_id,
-                    )
+                await ProductCategory.create(
+                    product_id=product.id,
+                    tenant_id=self.tenant_context.tenant_id,
+                    category_id=category_id,
                 )
 
         if "name" in payload.model_fields_set and payload.name is not None:
             product.name = payload.name
+            update_fields.append("name")
 
         if "price" in payload.model_fields_set and payload.price is not None:
             product.price = payload.price
+            update_fields.append("price")
 
         if "description" in payload.model_fields_set:
             product.description = payload.description
+            update_fields.append("description")
 
         if "image_url" in payload.model_fields_set:
             product.image_url = payload.image_url
+            update_fields.append("image_url")
 
         if "variations" in payload.model_fields_set and payload.variations is not None:
-            self.replace_variations(product, payload.variations)
+            await self._replace_variations(product, payload.variations)
 
-        await self.db.commit()
+        if update_fields:
+            await product.save(update_fields=update_fields)
+
         updated = await self.get_product_or_404(product_id)
         return self.product_to_read(updated)
 
@@ -242,73 +227,58 @@ class ProductsService:
         name: str | None,
         category_id: int | None,
     ) -> list[ProductRead]:
-        query = (
-            select(Product)
-            .options(
-                selectinload(Product.variations),
-                selectinload(Product.category_links),
-                selectinload(Product.images),
-            )
-            .where(Product.tenant_id == self.tenant_context.tenant_id)
-            .order_by(Product.name.asc())
+        qs = (
+            Product.filter(tenant_id=self.tenant_context.tenant_id)
+            .prefetch_related("variations", "category_links", "images")
+            .order_by("name")
         )
         if name is not None and name.strip():
-            query = query.where(Product.name.ilike(f"%{name.strip()}%"))
+            qs = qs.filter(name__icontains=name.strip())
         if category_id is not None:
-            query = query.where(
-                Product.category_links.any(ProductCategory.category_id == category_id)
-            )
+            matching_ids = await ProductCategory.filter(
+                category_id=category_id,
+                tenant_id=self.tenant_context.tenant_id,
+            ).values_list("product_id", flat=True)
+            qs = qs.filter(id__in=list(matching_ids))
 
-        result = await self.db.execute(query)
-        products = list(result.scalars().all())
+        products = await qs
         return [self.product_to_read(product) for product in products]
 
     async def delete_product(self, product_id: int) -> None:
         product = await self.get_product_or_404(product_id)
         for image in list(product.images):
             delete_upload_file_if_safe(image.url)
-        await self.db.delete(product)
-        await self.db.commit()
+        await product.delete()
 
     async def image_row_count(self, product_id: int) -> int:
-        result = await self.db.execute(
-            select(func.count())
-            .select_from(ProductImage)
-            .where(
-                ProductImage.product_id == product_id,
-                ProductImage.tenant_id == self.tenant_context.tenant_id,
-            )
-        )
-        return int(result.scalar_one() or 0)
+        return await ProductImage.filter(
+            product_id=product_id,
+            tenant_id=self.tenant_context.tenant_id,
+        ).count()
 
     async def persist_legacy_image_row_if_needed(self, product: Product) -> None:
         if not product.image_url:
             return
         if await self.image_row_count(product.id) > 0:
             return
-        self.db.add(
-            ProductImage(
-                tenant_id=self.tenant_context.tenant_id,
-                product_id=product.id,
-                url=product.image_url,
-                sort_order=0,
-            )
+        await ProductImage.create(
+            tenant_id=self.tenant_context.tenant_id,
+            product_id=product.id,
+            url=product.image_url,
+            sort_order=0,
         )
-        await self.db.flush()
 
     async def sync_product_primary_image_url(self, product_id: int) -> None:
-        product = await self.get_product_or_404(product_id)
-        first = await self.db.execute(
-            select(ProductImage.url)
-            .where(
-                ProductImage.product_id == product_id,
-                ProductImage.tenant_id == self.tenant_context.tenant_id,
+        first_image = (
+            await ProductImage.filter(
+                product_id=product_id,
+                tenant_id=self.tenant_context.tenant_id,
             )
-            .order_by(ProductImage.sort_order.asc())
-            .limit(1)
+            .order_by("sort_order")
+            .first()
         )
-        product.image_url = first.scalar_one_or_none()
-        await self.db.commit()
+        new_url = first_image.url if first_image else None
+        await Product.filter(id=product_id).update(image_url=new_url)
 
     async def upload_product_file(self, product_id: int, file: UploadFile) -> str:
         product = await self.get_product_or_404(product_id)
@@ -334,35 +304,28 @@ class ProductsService:
         destination.write_bytes(file_bytes)
 
         file_url = f"/uploads/products/{filename}"
-        self.db.add(
-            ProductImage(
-                tenant_id=self.tenant_context.tenant_id,
-                product_id=product.id,
-                url=file_url,
-                sort_order=next_index,
-            )
+        await ProductImage.create(
+            tenant_id=self.tenant_context.tenant_id,
+            product_id=product.id,
+            url=file_url,
+            sort_order=next_index,
         )
-        await self.db.commit()
         await self.sync_product_primary_image_url(product_id)
         return file_url
 
     async def delete_product_image(self, product_id: int, image_id: int) -> None:
         await self.get_product_or_404(product_id)
-        result = await self.db.execute(
-            select(ProductImage).where(
-                ProductImage.id == image_id,
-                ProductImage.product_id == product_id,
-                ProductImage.tenant_id == self.tenant_context.tenant_id,
-            )
+        row = await ProductImage.get_or_none(
+            id=image_id,
+            product_id=product_id,
+            tenant_id=self.tenant_context.tenant_id,
         )
-        row = result.scalar_one_or_none()
         if row is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Imagem não encontrada."
             )
         url = row.url
-        await self.db.delete(row)
-        await self.db.commit()
+        await row.delete()
         delete_upload_file_if_safe(url)
         await self.sync_product_primary_image_url(product_id)
 
@@ -385,22 +348,21 @@ class ProductsService:
 
         by_id = {img.id: img for img in product.images}
         offset = len(requested_ids)
+        # Two-phase update to avoid unique constraint conflicts on sort_order
         for index, image_id in enumerate(requested_ids):
             by_id[image_id].sort_order = index + offset
-
-        await self.db.flush()
+            await by_id[image_id].save(update_fields=["sort_order"])
 
         for index, image_id in enumerate(requested_ids):
             by_id[image_id].sort_order = index
+            await by_id[image_id].save(update_fields=["sort_order"])
 
-        await self.db.commit()
         await self.sync_product_primary_image_url(product_id)
         updated = await self.get_product_or_404(product_id)
         return self.product_to_read(updated)
 
 
 def get_products_service(
-    db: AsyncSession = Depends(get_db),
     tenant_context: TenantContext = Depends(get_tenant_context),
 ) -> ProductsService:
-    return ProductsService(db=db, tenant_context=tenant_context)
+    return ProductsService(tenant_context=tenant_context)

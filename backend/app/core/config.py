@@ -37,18 +37,8 @@ class Settings(BaseSettings):
         default=True, validation_alias=AliasChoices("APP_EXPOSE_DOCS")
     )
     database_url: str = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:5432/system_admin",
+        default="postgres://postgres:postgres@localhost:5432/system_admin",
         validation_alias=AliasChoices("DATABASE_URL", "APP_DATABASE_URL"),
-    )
-    db_pool_size: int = Field(default=10, validation_alias=AliasChoices("DB_POOL_SIZE"))
-    db_max_overflow: int = Field(
-        default=20, validation_alias=AliasChoices("DB_MAX_OVERFLOW")
-    )
-    db_pool_timeout: int = Field(
-        default=30, validation_alias=AliasChoices("DB_POOL_TIMEOUT")
-    )
-    db_pool_recycle: int = Field(
-        default=1800, validation_alias=AliasChoices("DB_POOL_RECYCLE")
     )
     openai_api_key: str | None = Field(
         default=None, validation_alias=AliasChoices("OPENAI_API_KEY")

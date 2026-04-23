@@ -3,7 +3,7 @@
     uv sync --extra dev
     uv run python -m app.scripts.create_user --email admin@example.com --password secret --tenant-slug default --create-tenant
 
-Requires DATABASE_URL (or default in Settings) and existing tables (start the API once or use create_all).
+Requires DATABASE_URL (or default in Settings) and existing tables.
 """
 
 from __future__ import annotations
@@ -11,9 +11,9 @@ from __future__ import annotations
 import argparse
 import asyncio
 
-from sqlalchemy import select
+from tortoise import Tortoise
 
-from app.core.database import SessionLocal
+from app.core.database import TORTOISE_ORM
 from app.core.security import hash_password
 from app.models import Tenant, User
 
@@ -28,30 +28,20 @@ async def _run(
     last_name: str | None,
 ) -> None:
     email_norm = email.strip().lower()
-    async with SessionLocal() as session:
+    await Tortoise.init(config=TORTOISE_ORM)
+    try:
         if new_tenant:
-            taken = await session.scalar(
-                select(Tenant.id).where(Tenant.slug == tenant_slug).limit(1)
-            )
-            if taken is not None:
+            if await Tenant.filter(slug=tenant_slug).exists():
                 raise SystemExit(f"Tenant slug already exists: {tenant_slug!r}")
-            tenant = Tenant(slug=tenant_slug, name=tenant_name or tenant_slug)
-            session.add(tenant)
-            await session.flush()
+            tenant = await Tenant.create(slug=tenant_slug, name=tenant_name or tenant_slug)
         else:
-            result = await session.execute(
-                select(Tenant).where(Tenant.slug == tenant_slug).limit(1)
-            )
-            tenant = result.scalar_one_or_none()
+            tenant = await Tenant.filter(slug=tenant_slug).first()
             if tenant is None:
                 raise SystemExit(
                     f"No tenant with slug={tenant_slug!r}; use --create-tenant to create one."
                 )
 
-        existing = await session.scalar(
-            select(User.id).where(User.email == email_norm).limit(1)
-        )
-        if existing is not None:
+        if await User.filter(email=email_norm).exists():
             raise SystemExit(f"User already exists: {email_norm}")
 
         user = User(
@@ -62,11 +52,12 @@ async def _run(
             tenant_id=tenant.id,
             is_active=True,
         )
-        session.add(user)
-        await session.commit()
+        await user.save()
         print(
             f"Created user {email_norm} for tenant id={tenant.id} slug={tenant.slug!r}"
         )
+    finally:
+        await Tortoise.close_connections()
 
 
 def main() -> None:

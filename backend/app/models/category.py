@@ -1,47 +1,31 @@
 from __future__ import annotations
 
-from sqlalchemy import ForeignKeyConstraint, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from tortoise import fields
+from tortoise.indexes import Index
 
-from app.models.base import Base
+from app.models.base import BaseModel
 
 
-class Category(Base):
-    __tablename__ = "categories"
-    __table_args__ = (
-        UniqueConstraint("id", "tenant_id", name="uq_categories_id_tenant"),
-        UniqueConstraint(
-            "tenant_id", "name", "parent_id", name="uq_category_tenant_name_parent"
-        ),
-        ForeignKeyConstraint(
-            ["tenant_id"], ["tenants.id"], name="fk_categories_tenant_id"
-        ),
-        ForeignKeyConstraint(
-            ["parent_id", "tenant_id"],
-            ["categories.id", "categories.tenant_id"],
-            name="fk_categories_parent_same_tenant",
-        ),
+class Category(BaseModel):
+    id = fields.IntField(primary_key=True)
+    tenant: fields.ForeignKeyRelation["Tenant"] = fields.ForeignKeyField(  # noqa: F821
+        "models.Tenant", related_name="categories", on_delete=fields.CASCADE
     )
+    name = fields.CharField(max_length=120)
+    parent: fields.ForeignKeyNullableRelation["Category"] = fields.ForeignKeyField(
+        "models.Category",
+        related_name="subcategories",
+        null=True,
+        on_delete=fields.RESTRICT,
+    )
+    sort_order = fields.IntField(default=0)
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    tenant_id: Mapped[int] = mapped_column(nullable=False, index=True)
-    name: Mapped[str] = mapped_column(String(120), nullable=False)
-    parent_id: Mapped[int | None] = mapped_column(nullable=True, index=True)
-    sort_order: Mapped[int] = mapped_column(nullable=False, default=0)
+    subcategories: fields.ReverseRelation["Category"]
+    product_links: fields.ReverseRelation["ProductCategory"]  # noqa: F821
 
-    parent: Mapped[Category | None] = relationship(
-        "Category",
-        remote_side=[id, tenant_id],
-        back_populates="subcategories",
-    )
-    subcategories: Mapped[list[Category]] = relationship(
-        "Category",
-        back_populates="parent",
-        cascade="all, delete-orphan",
-    )
-    product_links: Mapped[list["ProductCategory"]] = relationship(
-        "ProductCategory",
-        back_populates="category",
-        cascade="all, delete-orphan",
-        overlaps="category_links,product",
-    )
+    class Meta:
+        table = "categories"
+        indexes = [
+            Index(fields=("tenant_id", "name", "parent_id"), name="uq_category_tenant_name_parent"),
+        ]
+        unique_together = [("tenant_id", "name", "parent_id")]

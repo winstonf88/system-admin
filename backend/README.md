@@ -14,7 +14,7 @@ Run Python tools through the project environment with `uv run`, for example `uv 
 
 ## Interactive shell (Django shell_plus–style)
 
-With dev extras, opens IPython with async session factory and models from `app.models` pre-imported.
+With dev extras, opens IPython with models from `app.models` pre-imported and Tortoise ORM initialized.
 
 **Commands** (from `backend/` after `uv sync --extra dev`):
 
@@ -26,7 +26,7 @@ uv run python -m app.scripts.shell
 uv run api-shell
 ```
 
-Requires `DATABASE_URL` (or defaults in Settings) and a reachable database. A **sync** ORM `session` is opened for queries without `await`, e.g. `session.execute(select(User).limit(5)).scalars().all()`. For the same patterns as the app, use top-level `await` with `SessionLocal` (e.g. `async with SessionLocal() as s: ...`).
+Requires `DATABASE_URL` (or defaults in Settings) and a reachable database. Use top-level `await` for queries, e.g. `await User.all().limit(5)`.
 
 ## Configuration
 
@@ -36,8 +36,7 @@ Key variables:
 - `APP_ENV`: `local`, `staging`, `production`, `test`
 - `APP_DEBUG`: enables FastAPI debug mode
 - `APP_CORS_ORIGINS`: comma-separated origins
-- `DATABASE_URL`: SQLAlchemy URL (`postgresql+asyncpg://...`)
-- `DB_POOL_*`: connection pool tuning
+- `DATABASE_URL`: asyncpg URL (`postgresql+asyncpg://...`)
 
 ## Tests
 
@@ -51,116 +50,40 @@ Test layout mirrors [`app/`](app/): e.g. [`app/routers/categories.py`](app/route
 
 ## Database migrations
 
-Migrations are managed with [Alembic](https://alembic.sqlalchemy.org/) and live in `migrations/versions/`. The env is async-aware and reads `DATABASE_URL` from your `.env` automatically — no credentials in `alembic.ini`.
+Migrations are managed with [aerich](https://github.com/tortoise/aerich) (the Tortoise ORM migration tool) and live in `migrations/`. Config is in `pyproject.toml` under `[tool.aerich]`.
 
-### Status
+### First-time setup
 
 ```bash
-# Show the revision(s) currently applied to the database
-uv run alembic current
+uv run aerich init-db
+```
 
-# List all revisions oldest → newest with details
-uv run alembic history --verbose
+### Creating a migration
 
-# Show pending migrations (not yet applied)
-uv run alembic history --indicate-current
+After changing a Tortoise model:
+
+```bash
+uv run aerich migrate --name "describe_your_change"
 ```
 
 ### Applying migrations
 
 ```bash
-# Apply all pending migrations
-uv run alembic upgrade head
-
-# Apply up to a specific revision
-uv run alembic upgrade <revision>
-
-# Apply the next N revisions
-uv run alembic upgrade +2
+uv run aerich upgrade
+# or via the project script alias:
+uv run db-migrate upgrade
 ```
 
 ### Rolling back
 
 ```bash
-# Roll back the most recent migration
-uv run alembic downgrade -1
-
-# Roll back N steps
-uv run alembic downgrade -3
-
-# Roll back to a specific revision
-uv run alembic downgrade <revision>
-
-# Roll back everything (empty database)
-uv run alembic downgrade base
+uv run aerich downgrade
 ```
 
-### Creating a migration
-
-After changing a SQLAlchemy model, autogenerate a migration:
+### History
 
 ```bash
-uv run alembic revision --autogenerate -m "describe_your_change"
-```
-
-The file is written to `migrations/versions/`. **Always review it** before applying — Alembic cannot detect every change (e.g. renamed columns, custom types, check constraints, computed defaults).
-
-Then apply:
-
-```bash
-uv run alembic upgrade head
-```
-
-### Writing a manual migration
-
-For changes Alembic cannot detect (data migrations, custom DDL, etc.):
-
-```bash
-uv run alembic revision -m "backfill_tenant_slugs"
-# edit the generated file, then:
-uv run alembic upgrade head
-```
-
-### Generating SQL without connecting (offline mode)
-
-Useful for reviewing or applying migrations in CI/CD without a live database:
-
-```bash
-# Print SQL for all pending migrations
-uv run alembic upgrade head --sql
-
-# Print SQL for a specific range
-uv run alembic upgrade <from_rev>:<to_rev> --sql > migration.sql
-```
-
-### Stamp (mark without running)
-
-Tells Alembic the database is already at a revision without executing any SQL — useful when the schema was created outside of Alembic:
-
-```bash
-uv run alembic stamp head
-uv run alembic stamp <revision>
-```
-
-### Merge divergent branches
-
-If two migration chains have diverged (e.g. from parallel feature branches):
-
-```bash
-uv run alembic merge -m "merge_feature_branches" <rev1> <rev2>
-uv run alembic upgrade head
-```
-
-### File layout
-
-```
-backend/
-├── alembic.ini               # Alembic config (no credentials)
-└── migrations/
-    ├── env.py                # Async env; imports all models for autogenerate
-    ├── script.py.mako        # Migration file template
-    └── versions/
-        └── <rev>_<label>.py  # One file per migration
+uv run aerich history
 ```
 
 ## Run (development)
@@ -214,7 +137,7 @@ APP_ENV=production APP_EXPOSE_DOCS=false uv run uvicorn app.main:app --host 0.0.
 
 ## Bootstrap user
 
-With the database reachable and migrations applied (`uv run alembic upgrade head`):
+With the database reachable and migrations applied (`uv run aerich upgrade`):
 
 ```bash
 uv run python -m app.scripts.create_user --email you@example.com --password '...' --tenant-slug default --create-tenant

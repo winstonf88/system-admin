@@ -1,10 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_utils.cbv import cbv
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import normalize_email
-from app.dependencies import TenantContext, get_current_user, get_db, get_tenant_context
+from app.dependencies import TenantContext, get_current_user, get_tenant_context
 from app.models import User
 from app.schemas import UserCreate, UserRead, UserUpdate
 
@@ -13,17 +11,12 @@ router = APIRouter(prefix="/api/users", tags=["users"])
 
 @cbv(router)
 class UserView:
-    db: AsyncSession = Depends(get_db)
     tenant_context: TenantContext = Depends(get_tenant_context)
 
     async def _get_user_or_404(self, user_id: int) -> User:
-        result = await self.db.execute(
-            select(User).where(
-                User.id == user_id,
-                User.tenant_id == self.tenant_context.tenant_id,
-            )
+        user = await User.get_or_none(
+            id=user_id, tenant_id=self.tenant_context.tenant_id
         )
-        user = result.scalar_one_or_none()
         if user is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado."
@@ -33,11 +26,11 @@ class UserView:
     async def _ensure_email_available(
         self, email: str, exclude_user_id: int | None = None
     ) -> None:
-        q = select(User.id).where(User.email == email)
+        q = User.filter(email=email)
         if exclude_user_id is not None:
-            q = q.where(User.id != exclude_user_id)
-        taken = await self.db.scalar(q.limit(1))
-        if taken is not None:
+            q = q.exclude(id=exclude_user_id)
+        taken = await q.exists()
+        if taken:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Já existe um usuário com este e-mail.",
@@ -45,12 +38,7 @@ class UserView:
 
     @router.get("/", response_model=list[UserRead])
     async def list_users(self) -> list[User]:
-        result = await self.db.execute(
-            select(User)
-            .where(User.tenant_id == self.tenant_context.tenant_id)
-            .order_by(User.email.asc())
-        )
-        return list(result.scalars().all())
+        return await User.filter(tenant_id=self.tenant_context.tenant_id).order_by("email")
 
     @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
     async def create_user(self, payload: UserCreate) -> User:
@@ -65,9 +53,7 @@ class UserView:
             is_active=payload.is_active,
         )
         user.set_password(payload.password)
-        self.db.add(user)
-        await self.db.commit()
-        await self.db.refresh(user)
+        await user.save()
         return user
 
     @router.get("/{user_id}", response_model=UserRead)
@@ -95,8 +81,7 @@ class UserView:
         if "password" in payload.model_fields_set and payload.password:
             user.set_password(payload.password)
 
-        await self.db.commit()
-        await self.db.refresh(user)
+        await user.save()
         return user
 
     @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -109,5 +94,4 @@ class UserView:
                 detail="Você não pode excluir sua própria conta.",
             )
         user = await self._get_user_or_404(user_id)
-        await self.db.delete(user)
-        await self.db.commit()
+        await user.delete()
