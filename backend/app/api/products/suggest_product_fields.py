@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
 from app.models import Category, ProductImage
-from app.routers.products.common import (
+from app.routers.products.service import (
     ProductsService,
     get_products_service,
 )

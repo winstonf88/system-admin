@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.routers.products.common import ProductsService, get_products_service
+from app.routers.products.service import ProductsService, get_products_service
 from app.schemas import ProductRead
 
 router = APIRouter()

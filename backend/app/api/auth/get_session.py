@@ -4,7 +4,7 @@ from app.dependencies import TenantContext, get_current_user, get_tenant_context
 from app.models import User
 from app.schemas import AuthSessionRead
 
-router = APIRouter(prefix="/api/auth", tags=["auth"])
+router = APIRouter()
 
 
 @router.get("/session", response_model=AuthSessionRead)
