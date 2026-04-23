@@ -7,7 +7,7 @@ requires-python = ">=3.11"
 dependencies = [
     "asyncpg>=0.29.0",
     "alembic>=1.13.0",
-    "fastapi>=0.115.0",
+    "fastapi[standard]>=0.115.0",
     "fastapi-utils>=0.8.0",
     "greenlet>=3.0.0",
     "bcrypt>=4.0",
@@ -23,6 +23,7 @@ dependencies = [
 
 [project.scripts]
 api-shell = "app.scripts.shell:main"
+db-migrate = "alembic.config:main"
 
 [project.optional-dependencies]
 dev = [

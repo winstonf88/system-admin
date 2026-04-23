@@ -13,15 +13,8 @@ from app.routers import (
     users_router,
 )
 from app.core.config import get_settings
-from app.core.database import (
-    check_db_connection,
-    engine,
-    migrate_category_sort_order,
-    migrate_legacy_product_images,
-    migrate_product_price_column,
-)
+from app.core.database import check_db_connection
 from app.core.logging import configure_logging
-from app.models import Base
 
 settings = get_settings()
 UPLOADS_DIR = Path("uploads")
@@ -32,11 +25,6 @@ UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 async def lifespan(_: FastAPI):
     configure_logging(settings.app_log_level)
     await check_db_connection()
-    async with engine.begin() as connection:
-        await connection.run_sync(Base.metadata.create_all)
-        await migrate_category_sort_order(connection)
-        await migrate_product_price_column(connection)
-        await migrate_legacy_product_images(connection)
     yield
 
 

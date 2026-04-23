@@ -32,5 +32,8 @@ class Tenant(Base):
         nullable=False,
         default=_default_tenant_config,
     )
+    api_key_hash: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, index=True
+    )
 
     users: Mapped[list["User"]] = relationship("User", back_populates="tenant")

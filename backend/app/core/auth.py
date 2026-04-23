@@ -14,17 +14,14 @@ def normalize_email(email: str) -> str:
     return email.strip().lower()
 
 
-async def get_current_user(
-    credentials: HTTPBasicCredentials | None = Depends(http_basic),
-    db: AsyncSession = Depends(get_db),
+async def _authenticate_user(
+    credentials: HTTPBasicCredentials,
+    db: AsyncSession,
 ) -> User:
-    if credentials is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Não autenticado",
-            headers={"WWW-Authenticate": "Basic"},
-        )
+    """Validate Basic auth credentials and return the authenticated User.
 
+    Raises HTTPException on invalid credentials, inactive user, or inactive tenant.
+    """
     email = normalize_email(credentials.username)
     result = await db.execute(
         select(User, Tenant)
@@ -60,3 +57,16 @@ async def get_current_user(
         )
 
     return user
+
+
+async def get_current_user(
+    credentials: HTTPBasicCredentials | None = Depends(http_basic),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Não autenticado",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return await _authenticate_user(credentials, db)
