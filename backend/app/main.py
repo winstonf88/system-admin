@@ -4,6 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.admin import create_admin
 from app.routers import (
@@ -41,6 +42,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.app_cors_origins,

@@ -1,6 +1,12 @@
+import secrets
+from typing import Any
+
+from starlette.requests import Request
 from starlette_admin import BooleanField, EmailField, FloatField, IntegerField, StringField, TextAreaField
+from starlette_admin.actions import row_action
 
 from app.admin.base import TortoiseModelView
+from app.core.security import hash_api_key
 from app.models.category import Category
 from app.models.product import Product, ProductImage, ProductVariation
 from app.models.tenant import Tenant
@@ -19,9 +25,27 @@ class TenantView(TortoiseModelView):
         StringField("slug"),
         StringField("name"),
         BooleanField("is_active"),
+        StringField("api_key_hash", read_only=True),
     ]
     sortable_fields = ["id", "slug", "name", "is_active"]
     search_builder = True
+
+    @row_action(
+        name="generate_api_key",
+        text="Generate API Key",
+        confirmation="This will replace the existing API key. The new key will be shown once — copy it now.",
+        submit_btn_text="Generate",
+        submit_btn_class="btn-warning",
+        icon_class="fa fa-key",
+    )
+    async def generate_api_key_row_action(self, request: Request, pk: Any) -> str:
+        tenant = await Tenant.get_or_none(pk=pk)
+        if tenant is None:
+            return "Tenant not found."
+        raw_key = secrets.token_urlsafe(32)
+        tenant.api_key_hash = hash_api_key(raw_key)
+        await tenant.save(update_fields=["api_key_hash"])
+        return f"New API key for {tenant.name}: {raw_key}\n\nStore it securely — it will not be shown again."
 
 
 class UserView(TortoiseModelView):
@@ -38,6 +62,7 @@ class UserView(TortoiseModelView):
         StringField("last_name"),
         IntegerField("tenant_id", label="Tenant ID"),
         BooleanField("is_active"),
+        BooleanField("is_superuser"),
     ]
     sortable_fields = ["id", "email", "first_name", "last_name", "is_active"]
     search_builder = True

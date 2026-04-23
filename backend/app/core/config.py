@@ -40,6 +40,10 @@ class Settings(BaseSettings):
         default="postgres://postgres:postgres@localhost:5432/system_admin",
         validation_alias=AliasChoices("DATABASE_URL", "APP_DATABASE_URL"),
     )
+    secret_key: str = Field(
+        default="change-me-in-production",
+        validation_alias=AliasChoices("SECRET_KEY"),
+    )
     openai_api_key: str | None = Field(
         default=None, validation_alias=AliasChoices("OPENAI_API_KEY")
     )

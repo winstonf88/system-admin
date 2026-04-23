@@ -16,6 +16,7 @@ class User(BaseModel):
         "models.Tenant", related_name="users", on_delete=fields.CASCADE
     )
     is_active = fields.BooleanField(default=True)
+    is_superuser = fields.BooleanField(default=False)
 
     class Meta:
         table = "users"

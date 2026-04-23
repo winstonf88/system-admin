@@ -1,5 +1,6 @@
 from starlette_admin import BaseAdmin
 
+from app.admin.auth import AdminAuthProvider
 from app.admin.views import (
     CategoryView,
     ProductImageView,
@@ -11,7 +12,7 @@ from app.admin.views import (
 
 
 def create_admin(app) -> BaseAdmin:
-    admin = BaseAdmin(title="System Admin")
+    admin = BaseAdmin(title="System Admin", auth_provider=AdminAuthProvider())
     admin.add_view(TenantView())
     admin.add_view(UserView())
     admin.add_view(CategoryView())
@@ -19,6 +20,7 @@ def create_admin(app) -> BaseAdmin:
     admin.add_view(ProductImageView())
     admin.add_view(ProductVariationView())
 
-    # app.mount_to(app)
+    admin.mount_to(app)
 
     return admin
+

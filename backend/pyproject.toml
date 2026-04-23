@@ -18,6 +18,7 @@ dependencies = [
     "agno>=2.5.17",
     "openai>=2.32.0",
     "starlette-admin[tortoise]>=0.16.0",
+    "itsdangerous>=2.2.0",
 ]
 
 [project.scripts]
