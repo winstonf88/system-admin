@@ -10,6 +10,8 @@ import { toast } from "sonner";
 
 export type TenantSettings = {
   name: string;
+  instagram_account: string;
+  whatsapp_number: string;
 };
 
 export default function TenantSettingsForm({
@@ -18,6 +20,10 @@ export default function TenantSettingsForm({
   initial: TenantSettings;
 }) {
   const [name, setName] = useState(initial.name);
+  const [instagramAccount, setInstagramAccount] = useState(
+    initial.instagram_account,
+  );
+  const [whatsappNumber, setWhatsappNumber] = useState(initial.whatsapp_number);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -25,7 +31,13 @@ export default function TenantSettingsForm({
     toast.dismiss();
     setLoading(true);
     try {
-      const result = await updateTenant({ name });
+      const result = await updateTenant({
+        name,
+        config: {
+          instagram_account: instagramAccount || null,
+          whatsapp_number: whatsappNumber || null,
+        },
+      });
       if (!result.ok) {
         toast.error(result.error, { duration: 5000 });
         return;
@@ -47,6 +59,28 @@ export default function TenantSettingsForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Nome exibido no painel"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="instagram-account">Instagram</Label>
+        <Input
+          id="instagram-account"
+          type="text"
+          value={instagramAccount}
+          onChange={(e) => setInstagramAccount(e.target.value)}
+          placeholder="@usuario"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="whatsapp-number">WhatsApp</Label>
+        <Input
+          id="whatsapp-number"
+          type="text"
+          value={whatsappNumber}
+          onChange={(e) => setWhatsappNumber(e.target.value)}
+          placeholder="+55 11 99999-9999"
         />
       </div>
 

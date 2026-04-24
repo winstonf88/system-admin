@@ -11,3 +11,6 @@ from pydantic import BaseModel, ConfigDict
 
 class TenantConfig(BaseModel):
     model_config = ConfigDict(extra="allow")
+
+    instagram_account: str | None = None
+    whatsapp_number: str | None = None

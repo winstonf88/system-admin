@@ -2,7 +2,15 @@ import secrets
 from typing import Any
 
 from starlette.requests import Request
-from starlette_admin import BooleanField, EmailField, FloatField, IntegerField, StringField, TextAreaField
+from starlette_admin import (
+    BooleanField,
+    EmailField,
+    FloatField,
+    IntegerField,
+    StringField,
+    TextAreaField,
+    JSONField,
+)
 from starlette_admin.actions import row_action
 
 from app.admin.base import TortoiseModelView
@@ -26,6 +34,7 @@ class TenantView(TortoiseModelView):
         StringField("name"),
         BooleanField("is_active"),
         StringField("api_key_hash", read_only=True),
+        JSONField("config"),
     ]
     sortable_fields = ["id", "slug", "name", "is_active"]
     search_builder = True

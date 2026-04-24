@@ -12,7 +12,14 @@ repos:
     hooks:
       - id: biome
         name: biome check
-        language: node
-        entry: pnpm --prefix frontend biome check --write
+        language: system
+        entry: bash
+        args:
+          - -c
+          - >-
+            cd frontend && files=();
+            for f in "$@"; do files+=("${f#frontend/}"); done &&
+            exec pnpm exec biome check --write "${files[@]}"
+          - bash
         types_or: [javascript, jsx, ts, tsx, json]
         files: ^frontend/

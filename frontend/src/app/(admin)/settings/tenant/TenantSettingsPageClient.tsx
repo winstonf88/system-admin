@@ -7,6 +7,10 @@ import { useEffect, useState } from "react";
 
 type TenantApi = {
   name: string;
+  config?: {
+    instagram_account?: string | null;
+    whatsapp_number?: string | null;
+  };
 };
 
 export default function TenantSettingsPageClient() {
@@ -83,7 +87,13 @@ export default function TenantSettingsPageClient() {
         </p>
       </div>
       <div className="max-w-3xl rounded-xl border border-gray-200 bg-white p-6 dark:border-white/[0.05] dark:bg-white/[0.03]">
-        <TenantSettingsForm initial={{ name: tenant?.name ?? "" }} />
+        <TenantSettingsForm
+          initial={{
+            name: tenant?.name ?? "",
+            instagram_account: tenant?.config?.instagram_account ?? "",
+            whatsapp_number: tenant?.config?.whatsapp_number ?? "",
+          }}
+        />
       </div>
     </>
   );
