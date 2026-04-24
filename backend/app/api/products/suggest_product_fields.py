@@ -25,6 +25,46 @@ NAME_SUGGESTION_LIMIT = 10
 DESCRIPTION_SUGGESTION_LIMIT = 6
 
 
+def sanitize_text_suggestions(
+    values: list[str] | None,
+    *,
+    limit: int,
+) -> list[str]:
+    if not values:
+        return []
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for raw in values:
+        item = raw.strip()
+        if not item:
+            continue
+        key = item.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        normalized.append(item)
+        if len(normalized) >= limit:
+            break
+    return normalized
+
+
+def sanitize_category_suggestions(
+    values: list[int] | None,
+    *,
+    allowed_category_ids: set[int],
+) -> list[int]:
+    if not values:
+        return []
+    normalized: list[int] = []
+    seen: set[int] = set()
+    for raw in values:
+        if raw in seen or raw not in allowed_category_ids:
+            continue
+        seen.add(raw)
+        normalized.append(raw)
+    return normalized
+
+
 router = APIRouter()
 
 
@@ -65,66 +105,6 @@ class ProductAISuggestionInputGuardrail(BaseGuardrail):
 
     async def async_check(self, run_input) -> None:  # type: ignore[override]
         self.check(run_input)
-
-
-def build_image_from_product_image_url(url: str) -> Image:
-    if not url.startswith("/uploads/"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Imagem do produto inválida para sugestão por IA.",
-        )
-
-    relative = url.removeprefix("/uploads/")
-    path = Path("uploads") / relative
-    if not path.is_file():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Arquivo da imagem do produto não encontrado.",
-        )
-
-    content = path.read_bytes()
-    if not content:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Arquivo da imagem do produto está vazio.",
-        )
-
-    guessed_mime_type, _ = mimetypes.guess_type(path.name)
-    return Image(
-        content=content,
-        mime_type=guessed_mime_type or "application/octet-stream",
-    )
-
-
-async def build_images_from_product_image_ids(
-    *,
-    product_image_ids: list[int],
-    service: ProductsService,
-) -> list[Image]:
-    unique_ids: list[int] = []
-    seen: set[int] = set()
-    for image_id in product_image_ids:
-        if image_id in seen:
-            continue
-        seen.add(image_id)
-        unique_ids.append(image_id)
-
-    rows = await ProductImage.filter(
-        id__in=unique_ids,
-        tenant_id=service.tenant_context.tenant_id,
-    )
-    by_id = {row.id: row for row in rows}
-    missing_ids = [image_id for image_id in unique_ids if image_id not in by_id]
-    if missing_ids:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Imagem não encontrada.",
-        )
-
-    return [
-        build_image_from_product_image_url(by_id[image_id].url)
-        for image_id in unique_ids
-    ]
 
 
 @router.post(
@@ -190,46 +170,22 @@ async def suggest_product_fields(
 
     response_payload: dict[str, list[str] | list[int]] = {}
     if ProductSuggestionField.NAME in requested_fields:
-        response_payload["name"] = service.sanitize_text_suggestions(
+        response_payload["name"] = sanitize_text_suggestions(
             raw_suggestions.name,
             limit=NAME_SUGGESTION_LIMIT,
         )
     if ProductSuggestionField.DESCRIPTION in requested_fields:
-        response_payload["description"] = service.sanitize_text_suggestions(
+        response_payload["description"] = sanitize_text_suggestions(
             raw_suggestions.description,
             limit=DESCRIPTION_SUGGESTION_LIMIT,
         )
     if ProductSuggestionField.CATEGORY in requested_fields:
-        response_payload["category"] = service.sanitize_category_suggestions(
+        response_payload["category"] = sanitize_category_suggestions(
             raw_suggestions.category,
             allowed_category_ids={category.id for category in tenant_categories},
         )
 
     return ProductAISuggestionsResponse(**response_payload)
-
-
-@lru_cache
-def get_product_suggestion_agent(model_id: str, api_key: str) -> Agent:
-    return Agent(
-        retries=1,
-        telemetry=False,
-        markdown=False,
-        model=OpenAIResponses(id=model_id, api_key=api_key),
-        input_schema=ProductAISuggestionInputSchema,
-        output_schema=ProductAISuggestionOutput,
-        pre_hooks=[ProductAISuggestionInputGuardrail()],
-        role="You only answer in Brazilian Portuguese",
-        instructions=[
-            "You suggest product metadata from product images.",
-            "Use the structured input payload to decide which fields to return.",
-            "Use only the category IDs present in available_categories.",
-            "Only output JSON that matches the schema.",
-            "If a field is not requested, return an empty list for that field.",
-            "For names, return exactly name_suggestion_count concise suggestions.",
-            "For descriptions, return exactly description_suggestion_count short ecommerce-ready suggestions.",
-            "For category, return only IDs from available_categories that make sense for the product.",
-        ],
-    )
 
 
 async def run_ai_suggestions(
@@ -245,8 +201,7 @@ async def run_ai_suggestions(
             detail="OPENAI_API_KEY não configurada.",
         )
     agent = get_product_suggestion_agent(
-        model_id=settings.openai_model,
-        api_key=settings.openai_api_key,
+        model_id=settings.openai_model, api_key=settings.openai_api_key
     )
     suggestion_input = ProductAISuggestionInputSchema(
         requested_fields=sorted(requested_fields, key=lambda field: field.value),
@@ -282,4 +237,88 @@ async def run_ai_suggestions(
     raise HTTPException(
         status_code=status.HTTP_502_BAD_GATEWAY,
         detail="Resposta inválida do serviço de sugestões.",
+    )
+
+
+@lru_cache
+def get_product_suggestion_agent(model_id: str, api_key: str) -> Agent:
+    return Agent(
+        retries=1,
+        telemetry=False,
+        markdown=False,
+        model=OpenAIResponses(id=model_id, api_key=api_key),
+        input_schema=ProductAISuggestionInputSchema,
+        output_schema=ProductAISuggestionOutput,
+        pre_hooks=[ProductAISuggestionInputGuardrail()],
+        role="You only answer in Brazilian Portuguese",
+        instructions=[
+            "You suggest product metadata from product images.",
+            "Use the structured input payload to decide which fields to return.",
+            "Use only the category IDs present in available_categories.",
+            "Only output JSON that matches the schema.",
+            "If a field is not requested, return an empty list for that field.",
+            "For names, return exactly name_suggestion_count concise suggestions.",
+            "For descriptions, return exactly description_suggestion_count short ecommerce-ready suggestions.",
+            "For category, return only IDs from available_categories that make sense for the product.",
+        ],
+    )
+
+
+async def build_images_from_product_image_ids(
+    *,
+    product_image_ids: list[int],
+    service: ProductsService,
+) -> list[Image]:
+    unique_ids: list[int] = []
+    seen: set[int] = set()
+    for image_id in product_image_ids:
+        if image_id in seen:
+            continue
+        seen.add(image_id)
+        unique_ids.append(image_id)
+
+    rows = await ProductImage.filter(
+        id__in=unique_ids,
+        tenant_id=service.tenant_context.tenant_id,
+    )
+    by_id = {row.id: row for row in rows}
+    missing_ids = [image_id for image_id in unique_ids if image_id not in by_id]
+    if missing_ids:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Imagem não encontrada.",
+        )
+
+    return [
+        build_image_from_product_image_url(by_id[image_id].url)
+        for image_id in unique_ids
+    ]
+
+
+def build_image_from_product_image_url(url: str) -> Image:
+    if not url.startswith("/uploads/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Imagem do produto inválida para sugestão por IA.",
+        )
+
+    relative = url.removeprefix("/uploads/")
+    path = Path("uploads") / relative
+    if not path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Arquivo da imagem do produto não encontrado.",
+        )
+
+    content = path.read_bytes()
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Arquivo da imagem do produto está vazio.",
+        )
+
+    guessed_mime_type, _ = mimetypes.guess_type(path.name)
+    return Image(
+        content=content,
+        mime_type=guessed_mime_type or "application/octet-stream",
     )

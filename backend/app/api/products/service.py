@@ -95,46 +95,6 @@ class ProductsService:
     async def list_tenant_categories(self) -> list[Category]:
         return await self.category_qs.order_by("parent_id", "sort_order", "name", "id")
 
-    @staticmethod
-    def sanitize_text_suggestions(
-        values: list[str] | None,
-        *,
-        limit: int,
-    ) -> list[str]:
-        if not values:
-            return []
-        normalized: list[str] = []
-        seen: set[str] = set()
-        for raw in values:
-            item = raw.strip()
-            if not item:
-                continue
-            key = item.lower()
-            if key in seen:
-                continue
-            seen.add(key)
-            normalized.append(item)
-            if len(normalized) >= limit:
-                break
-        return normalized
-
-    @staticmethod
-    def sanitize_category_suggestions(
-        values: list[int] | None,
-        *,
-        allowed_category_ids: set[int],
-    ) -> list[int]:
-        if not values:
-            return []
-        normalized: list[int] = []
-        seen: set[int] = set()
-        for raw in values:
-            if raw in seen or raw not in allowed_category_ids:
-                continue
-            seen.add(raw)
-            normalized.append(raw)
-        return normalized
-
     async def _replace_variations(
         self,
         product: Product,
