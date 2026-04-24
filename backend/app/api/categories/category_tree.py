@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends
 from tortoise.functions import Count
 
-from app.models import Category
 from app.models.product import ProductCategory
-from app.api.categories.service import CategoriesService, get_categories_service
+from app.api.categories.service import (
+    CategoryFilters,
+    CategoriesService,
+    get_categories_service,
+)
 from app.schemas import CategoryTreeRead
 
 router = APIRouter()
@@ -11,20 +14,20 @@ router = APIRouter()
 
 @router.get("/tree", response_model=list[CategoryTreeRead])
 async def category_tree(
+    filters: CategoryFilters = Depends(),
     service: CategoriesService = Depends(get_categories_service),
 ) -> list[CategoryTreeRead]:
-    tenant_id = service.tenant_context.tenant_id
-    categories = await Category.filter(tenant_id=tenant_id).order_by(
-        "parent_id", "sort_order", "name", "id"
-    )
+    categories = await service.filter_categories(filters)
 
     counts = await (
-        ProductCategory.filter(tenant_id=tenant_id)
+        ProductCategory.filter(tenant_id=service.tenant_context.tenant_id)
         .annotate(count=Count("id"))
         .group_by("category_id")
         .values("category_id", "count")
     )
-    count_by_category: dict[int, int] = {row["category_id"]: row["count"] for row in counts}
+    count_by_category: dict[int, int] = {
+        row["category_id"]: row["count"] for row in counts
+    }
 
     node_map: dict[int, CategoryTreeRead] = {
         category.id: CategoryTreeRead(

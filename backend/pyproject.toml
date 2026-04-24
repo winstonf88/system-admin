@@ -61,3 +61,8 @@ asyncio_mode = "auto"
 tortoise_orm = "app.core.database.TORTOISE_ORM"
 location = "./migrations"
 src_folder = "./."
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.0",
+]

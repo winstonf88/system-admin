@@ -7,10 +7,12 @@ async def create_category(
     name: str,
     parent_id: int | None = None,
     sort_order: int = 0,
+    is_active: bool = True,
 ) -> Category:
     return await Category.create(
         tenant_id=tenant_id,
         name=name,
         parent_id=parent_id,
         sort_order=sort_order,
+        is_active=is_active,
     )

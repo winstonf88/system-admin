@@ -1,26 +1,35 @@
-from fastapi import Depends, HTTPException, status
+from dataclasses import dataclass
+
+from fastapi import Depends, HTTPException, Query, status
 from tortoise.functions import Max
 
 from app.dependencies import TenantContext, get_tenant_context
 from app.models import Category
 
 
+@dataclass
+class CategoryFilters:
+    is_active: bool | None = Query(default=None)
+
+
 class CategoriesService:
     def __init__(self, tenant_context: TenantContext) -> None:
         self.tenant_context = tenant_context
+        self.queryset = Category.filter(tenant_id=tenant_context.tenant_id)
 
-    def _siblings_filter(self, parent_id: int | None) -> dict:
-        filters = {"tenant_id": self.tenant_context.tenant_id}
+    async def filter_categories(self, filters: CategoryFilters) -> list[Category]:
+        qs = self.queryset
+        if filters.is_active is not None:
+            qs = qs.filter(is_active=filters.is_active)
+        return await qs.order_by("parent_id", "sort_order", "name", "id")
+
+    def _siblings_qs(self, parent_id: int | None):
         if parent_id is None:
-            filters["parent_id__isnull"] = True
-        else:
-            filters["parent_id"] = parent_id
-        return filters
+            return self.queryset.filter(parent_id__isnull=True)
+        return self.queryset.filter(parent_id=parent_id)
 
     async def get_category(self, category_id: int) -> Category | None:
-        return await Category.get_or_none(
-            id=category_id, tenant_id=self.tenant_context.tenant_id
-        )
+        return await self.queryset.get_or_none(id=category_id)
 
     async def get_category_or_404(self, category_id: int) -> Category:
         category = await self.get_category(category_id)
@@ -32,13 +41,11 @@ class CategoriesService:
         return category
 
     async def list_siblings(self, parent_id: int | None) -> list[Category]:
-        return await Category.filter(**self._siblings_filter(parent_id)).order_by(
-            "sort_order", "name", "id"
-        )
+        return await self._siblings_qs(parent_id).order_by("sort_order", "name", "id")
 
     async def next_sort_order(self, parent_id: int | None) -> int:
         result = (
-            await Category.filter(**self._siblings_filter(parent_id))
+            await self._siblings_qs(parent_id)
             .annotate(max_order=Max("sort_order"))
             .values("max_order")
         )

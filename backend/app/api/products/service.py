@@ -35,19 +35,15 @@ def delete_upload_file_if_safe(url: str) -> None:
         path.unlink()
 
 
-async def _fetch_product_with_relations(
-    product_id: int, tenant_id: int
-) -> Product | None:
-    return await (
-        Product.filter(id=product_id, tenant_id=tenant_id)
-        .prefetch_related("category_links", "variations", "images")
-        .first()
-    )
-
-
 class ProductsService:
     def __init__(self, tenant_context: TenantContext) -> None:
         self.tenant_context = tenant_context
+        self.queryset = Product.filter(tenant_id=tenant_context.tenant_id)
+        self.category_qs = Category.filter(tenant_id=tenant_context.tenant_id)
+        self.product_category_qs = ProductCategory.filter(
+            tenant_id=tenant_context.tenant_id
+        )
+        self.image_qs = ProductImage.filter(tenant_id=tenant_context.tenant_id)
 
     def product_to_read(self, product: Product) -> ProductRead:
         category_ids = sorted({link.category_id for link in product.category_links})
@@ -68,10 +64,15 @@ class ProductsService:
             ],
         )
 
-    async def get_product_or_404(self, product_id: int) -> Product:
-        product = await _fetch_product_with_relations(
-            product_id, self.tenant_context.tenant_id
+    async def _fetch_with_relations(self, product_id: int) -> Product | None:
+        return await (
+            self.queryset.filter(id=product_id)
+            .prefetch_related("category_links", "variations", "images")
+            .first()
         )
+
+    async def get_product_or_404(self, product_id: int) -> Product:
+        product = await self._fetch_with_relations(product_id)
         if product is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Produto não encontrado."
@@ -81,9 +82,8 @@ class ProductsService:
     async def validate_categories(self, category_ids: list[int]) -> None:
         if not category_ids:
             return
-        found = await Category.filter(
+        found = await self.category_qs.filter(
             id__in=category_ids,
-            tenant_id=self.tenant_context.tenant_id,
         ).values_list("id", flat=True)
         missing = set(category_ids) - set(found)
         if missing:
@@ -93,9 +93,7 @@ class ProductsService:
             )
 
     async def list_tenant_categories(self) -> list[Category]:
-        return await Category.filter(
-            tenant_id=self.tenant_context.tenant_id
-        ).order_by("parent_id", "sort_order", "name", "id")
+        return await self.category_qs.order_by("parent_id", "sort_order", "name", "id")
 
     @staticmethod
     def sanitize_text_suggestions(
@@ -226,6 +224,21 @@ class ProductsService:
         updated = await self.get_product_or_404(product_id)
         return self.product_to_read(updated)
 
+    async def _collect_category_ids(self, root_id: int) -> list[int]:
+        all_categories = await self.category_qs.values("id", "parent_id")
+        children: dict[int, list[int]] = {}
+        for cat in all_categories:
+            parent = cat["parent_id"]
+            if parent is not None:
+                children.setdefault(parent, []).append(cat["id"])
+        result: list[int] = []
+        queue = [root_id]
+        while queue:
+            current = queue.pop()
+            result.append(current)
+            queue.extend(children.get(current, []))
+        return result
+
     async def list_products(
         self,
         *,
@@ -233,17 +246,15 @@ class ProductsService:
         category_id: int | None,
         is_active: bool | None,
     ) -> list[ProductRead]:
-        qs = (
-            Product.filter(tenant_id=self.tenant_context.tenant_id)
-            .prefetch_related("variations", "category_links", "images")
-            .order_by("name")
-        )
+        qs = self.queryset.prefetch_related(
+            "variations", "category_links", "images"
+        ).order_by("name")
         if name is not None and name.strip():
             qs = qs.filter(name__icontains=name.strip())
         if category_id is not None:
-            matching_ids = await ProductCategory.filter(
-                category_id=category_id,
-                tenant_id=self.tenant_context.tenant_id,
+            category_ids = await self._collect_category_ids(category_id)
+            matching_ids = await self.product_category_qs.filter(
+                category_id__in=category_ids,
             ).values_list("product_id", flat=True)
             qs = qs.filter(id__in=list(matching_ids))
         if is_active is not None:
@@ -258,11 +269,11 @@ class ProductsService:
             delete_upload_file_if_safe(image.url)
         await product.delete()
 
+    def _image_qs(self, product_id: int):
+        return self.image_qs.filter(product_id=product_id)
+
     async def image_row_count(self, product_id: int) -> int:
-        return await ProductImage.filter(
-            product_id=product_id,
-            tenant_id=self.tenant_context.tenant_id,
-        ).count()
+        return await self._image_qs(product_id).count()
 
     async def persist_legacy_image_row_if_needed(self, product: Product) -> None:
         if not product.image_url:
@@ -277,14 +288,7 @@ class ProductsService:
         )
 
     async def sync_product_primary_image_url(self, product_id: int) -> None:
-        first_image = (
-            await ProductImage.filter(
-                product_id=product_id,
-                tenant_id=self.tenant_context.tenant_id,
-            )
-            .order_by("sort_order")
-            .first()
-        )
+        first_image = await self._image_qs(product_id).order_by("sort_order").first()
         new_url = first_image.url if first_image else None
         await Product.filter(id=product_id).update(image_url=new_url)
 
@@ -323,11 +327,7 @@ class ProductsService:
 
     async def delete_product_image(self, product_id: int, image_id: int) -> None:
         await self.get_product_or_404(product_id)
-        row = await ProductImage.get_or_none(
-            id=image_id,
-            product_id=product_id,
-            tenant_id=self.tenant_context.tenant_id,
-        )
+        row = await self._image_qs(product_id).get_or_none(id=image_id)
         if row is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Imagem não encontrada."
