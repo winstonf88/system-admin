@@ -14,6 +14,7 @@ class Product(BaseModel):
     price = fields.FloatField(default=0)
     description = fields.TextField(null=True)
     image_url = fields.CharField(max_length=512, null=True)
+    is_active = fields.BooleanField(default=True)
 
     category_links: fields.ReverseRelation["ProductCategory"]
     variations: fields.ReverseRelation["ProductVariation"]

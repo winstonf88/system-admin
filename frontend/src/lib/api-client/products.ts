@@ -14,6 +14,7 @@ type CreateProductPayload = {
   name: string;
   price: number;
   description: string | null;
+  is_active: boolean;
   category_ids: number[];
   variations: VariationPayload[];
 };
@@ -80,6 +81,7 @@ export async function createProduct(
     name: input.name.trim(),
     price: Number(input.price.toFixed(2)),
     description: input.description?.trim() || null,
+    is_active: input.is_active,
     category_ids: input.category_ids,
     variations: input.variations.map((variation) => ({
       size: variation.size?.trim() || null,
@@ -106,6 +108,7 @@ export async function updateProduct(
     name: input.name.trim(),
     price: Number(input.price.toFixed(2)),
     description: input.description?.trim() || null,
+    is_active: input.is_active,
     category_ids: input.category_ids,
     variations: input.variations.map((variation) => ({
       size: variation.size?.trim() || null,

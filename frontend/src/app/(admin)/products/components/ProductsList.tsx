@@ -1,6 +1,7 @@
 "use client";
 
-import { deleteProduct } from "@/lib/api-client/products";
+import Switch from "@/components/form/switch/Switch";
+import { deleteProduct, updateProduct } from "@/lib/api-client/products";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
 import Input from "@/components/form/input/InputField";
 import Button from "@/components/ui/button/Button";
@@ -25,6 +26,7 @@ import { useModal } from "@/hooks/useModal";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 type Props = {
   products: ProductRow[];
@@ -56,6 +58,7 @@ export default function ProductsList({
   const [deleting, setDeleting] = useState<ProductRow | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [togglingProductId, setTogglingProductId] = useState<number | null>(null);
   const [rows, setRows] = useState<ProductRow[]>(products);
   const [nameFilter, setNameFilter] = useState(initialNameFilter);
   const [categoryFilterId, setCategoryFilterId] = useState<number | "">(
@@ -116,6 +119,45 @@ export default function ProductsList({
       setPending(false);
     }
   };
+
+  const handleToggleActive = useCallback(async (product: ProductRow) => {
+    const nextIsActive = !product.is_active;
+    setTogglingProductId(product.id);
+    setRows((prev) =>
+      prev.map((row) =>
+        row.id === product.id ? { ...row, is_active: nextIsActive } : row,
+      ),
+    );
+    try {
+      const response = await updateProduct(product.id, {
+        name: product.name,
+        price: product.price,
+        description: product.description,
+        is_active: nextIsActive,
+        category_ids: product.category_ids,
+        variations: product.variations.map((variation) => ({
+          size: variation.size,
+          color: variation.color,
+          quantity: variation.quantity,
+        })),
+      });
+      if (!response.ok) {
+        setRows((prev) =>
+          prev.map((row) =>
+            row.id === product.id ? { ...row, is_active: product.is_active } : row,
+          ),
+        );
+        toast.error(response.error, { duration: 5000 });
+        return;
+      }
+      toast.success(
+        nextIsActive ? "Produto ativado com sucesso." : "Produto desativado com sucesso.",
+        { duration: 3000 },
+      );
+    } finally {
+      setTogglingProductId((current) => (current === product.id ? null : current));
+    }
+  }, []);
 
   return (
     <>
@@ -245,6 +287,12 @@ export default function ProductsList({
                         </TableCell>
                         <TableCell
                           isHeader
+                          className="px-5 py-3 text-start font-medium text-gray-500 text-theme-xs dark:text-gray-400"
+                        >
+                          Status
+                        </TableCell>
+                        <TableCell
+                          isHeader
                           className="px-5 py-3 text-end font-medium text-gray-500 text-theme-xs dark:text-gray-400"
                         >
                           Ações
@@ -287,6 +335,16 @@ export default function ProductsList({
                             </TableCell>
                             <TableCell className="px-5 py-4 text-start text-theme-sm text-gray-600 dark:text-gray-400">
                               {product.variations.length}
+                            </TableCell>
+                            <TableCell className="px-5 py-4 text-start">
+                              <Switch
+                                label={product.is_active ? "Ativo" : "Inativo"}
+                                checked={product.is_active}
+                                disabled={togglingProductId === product.id}
+                                onChange={() => {
+                                  void handleToggleActive(product);
+                                }}
+                              />
                             </TableCell>
                             <TableCell className="px-5 py-4 text-end">
                               <div className="flex justify-end gap-2">

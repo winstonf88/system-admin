@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.models import Category
-from app.routers.categories.service import CategoriesService, get_categories_service
+from app.api.categories.service import CategoriesService, get_categories_service
 from app.schemas import CategoryRead, CategoryUpdate
 
 router = APIRouter()
@@ -14,7 +14,6 @@ async def update_category(
     service: CategoriesService = Depends(get_categories_service),
 ) -> Category:
     category = await service.get_category_or_404(category_id)
-
     if (
         "parent_id" in payload.model_fields_set
         and payload.parent_id != category.parent_id
@@ -29,6 +28,10 @@ async def update_category(
     if payload.name is not None:
         category.name = payload.name
         await category.save(update_fields=["name"])
+
+    if payload.is_active is not None:
+        category.is_active = payload.is_active
+        await category.save(update_fields=["is_active"])
 
     await category.refresh_from_db()
     return category

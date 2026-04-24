@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.models import Category, ProductCategory
-from app.routers.categories.service import CategoriesService, get_categories_service
+from app.api.categories.service import CategoriesService, get_categories_service
 
 router = APIRouter()
 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.models import User
-from app.routers.users.service import UsersService, get_users_service
+from app.api.users.service import UsersService, get_users_service
 from app.schemas import UserRead
 
 router = APIRouter()

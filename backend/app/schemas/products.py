@@ -49,6 +49,7 @@ class ProductBase(BaseModel):
     description: str | None = None
     category_ids: list[int] = Field(min_length=1)
     image_url: str | None = None
+    is_active: bool = True
 
     @field_validator("category_ids")
     @classmethod
@@ -68,6 +69,7 @@ class ProductUpdate(BaseModel):
     description: str | None = None
     category_ids: list[int] | None = None
     image_url: str | None = None
+    is_active: bool | None = None
     variations: list[ProductVariationCreate] | None = None
 
     @field_validator("category_ids")
@@ -89,6 +91,7 @@ class ProductRead(BaseModel):
     description: str | None
     category_ids: list[int]
     image_url: str | None
+    is_active: bool
     images: list[ProductImageRead] = Field(default_factory=list)
     variations: list[ProductVariationRead] = Field(default_factory=list)
 

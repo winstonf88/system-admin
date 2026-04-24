@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status
 
-from app.routers.products.service import ProductsService, get_products_service
+from app.api.products.service import ProductsService, get_products_service
 from app.schemas import ProductCreate, ProductRead
 
 router = APIRouter()

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.dependencies import get_current_user
 from app.models import User
-from app.routers.users.service import UsersService, get_users_service
+from app.api.users.service import UsersService, get_users_service
 
 router = APIRouter()
 

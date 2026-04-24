@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 
 from app.core.auth import normalize_email
 from app.models import User
-from app.routers.users.service import UsersService, get_users_service
+from app.api.users.service import UsersService, get_users_service
 from app.schemas import UserCreate, UserRead
 
 router = APIRouter()

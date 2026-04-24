@@ -134,6 +134,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
     product?.price != null ? priceFormatter.format(product.price) : "0,00",
   );
   const [description, setDescription] = useState(product?.description ?? "");
+  const [isActive, setIsActive] = useState(product?.is_active ?? true);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>(
     () => {
       if (product?.category_ids?.length) {
@@ -632,6 +633,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
           name,
           price: parsedPrice,
           description: description.trim() || null,
+          is_active: isActive,
           category_ids: selectedCategoryIds,
           variations,
         });
@@ -669,6 +671,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
           name,
           price: parsedPrice,
           description: description.trim() || null,
+          is_active: isActive,
           category_ids: selectedCategoryIds,
           variations,
         });
@@ -862,6 +865,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
                   name={name}
                   price={price}
                   description={description}
+                  isActive={isActive}
                   nameError={fieldErrors.name}
                   priceError={fieldErrors.price}
                   categoryError={fieldErrors.category_ids}
@@ -869,6 +873,7 @@ export default function ProductForm({ categories, mode, product }: Props) {
                   onNameChange={handleNameChange}
                   onPriceChange={handlePriceChange}
                   onDescriptionChange={setDescription}
+                  onIsActiveChange={setIsActive}
                   onToggleCategory={toggleCategory}
                   onOpenCategoryModal={() => {
                     setCategoryCreateError(null);

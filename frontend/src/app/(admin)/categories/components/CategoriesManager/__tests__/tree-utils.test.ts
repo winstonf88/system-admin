@@ -10,17 +10,19 @@ import {
 } from "../tree-utils";
 
 describe("tree-utils", () => {
+  const node = (
+    id: number,
+    name: string,
+    parent_id: number | null,
+    subcategories: CategoryTreeNode[] = [],
+  ): CategoryTreeNode => ({ id, name, parent_id, is_active: true, product_count: 0, subcategories });
+
   const sample: CategoryTreeNode[] = [
-    {
-      id: 1,
-      name: "A",
-      parent_id: null,
-      subcategories: [
-        { id: 11, name: "A1", parent_id: 1, subcategories: [] },
-        { id: 12, name: "A2", parent_id: 1, subcategories: [] },
-      ],
-    },
-    { id: 2, name: "B", parent_id: null, subcategories: [] },
+    node(1, "A", null, [
+      node(11, "A1", 1),
+      node(12, "A2", 1),
+    ]),
+    node(2, "B", null),
   ];
 
   it("flattenTree preserves depth and ancestors", () => {

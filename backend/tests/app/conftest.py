@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from tortoise import Tortoise
 
-from app.routers import (
+from app.api import (
     auth_router,
     categories_router,
     products_router,

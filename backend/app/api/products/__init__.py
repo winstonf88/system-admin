@@ -1,22 +1,22 @@
 from fastapi import APIRouter
 
-from app.routers.products.service import ProductsService
+from app.api.products.service import ProductsService
 from app.schemas import ProductAISuggestionOutput
-from app.routers.products.create_product import router as create_product_router
-from app.routers.products.delete_product import router as delete_product_router
-from app.routers.products.delete_product_image import (
+from app.api.products.create_product import router as create_product_router
+from app.api.products.delete_product import router as delete_product_router
+from app.api.products.delete_product_image import (
     router as delete_product_image_router,
 )
-from app.routers.products.get_product import router as get_product_router
-from app.routers.products.list_products import router as list_products_router
-from app.routers.products.reorder_product_images import (
+from app.api.products.get_product import router as get_product_router
+from app.api.products.list_products import router as list_products_router
+from app.api.products.reorder_product_images import (
     router as reorder_product_images_router,
 )
-from app.routers.products.suggest_product_fields import (
+from app.api.products.suggest_product_fields import (
     router as suggest_product_fields_router,
 )
-from app.routers.products.update_product import router as update_product_router
-from app.routers.products.upload_product_file import (
+from app.api.products.update_product import router as update_product_router
+from app.api.products.upload_product_file import (
     router as upload_product_file_router,
 )
 

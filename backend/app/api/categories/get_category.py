@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.models import Category
-from app.routers.categories.service import CategoriesService, get_categories_service
+from app.api.categories.service import CategoriesService, get_categories_service
 from app.schemas import CategoryRead
 
 router = APIRouter()

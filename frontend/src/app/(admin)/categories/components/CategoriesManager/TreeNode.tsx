@@ -37,6 +37,7 @@ export type TreeNodeProps = {
   onSaveCreateChild: (parentId: number) => void;
   onCancelCreateChild: () => void;
   onDelete: (id: number) => void;
+  onToggleActive: (id: number) => void;
   onToggleCollapsed: (id: number) => void;
 };
 
@@ -88,6 +89,7 @@ export function TreeNode({
   onSaveCreateChild,
   onCancelCreateChild,
   onDelete,
+  onToggleActive,
   onToggleCollapsed,
 }: TreeNodeProps) {
   const isEditing = editingId === node.id;
@@ -280,9 +282,14 @@ export function TreeNode({
             ) : (
               <>
                 <div className="flex min-w-0 flex-1 items-center gap-1.5">
-                  <span className="truncate text-sm font-medium text-gray-800 dark:text-white/90">
+                  <span className={`truncate text-sm font-medium ${node.is_active ? "text-gray-800 dark:text-white/90" : "text-gray-400 line-through dark:text-gray-500"}`}>
                     {node.name}
                   </span>
+                  {node.product_count > 0 && (
+                    <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                      {node.product_count}
+                    </span>
+                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-1 overflow-visible">
                   <button
@@ -322,6 +329,24 @@ export function TreeNode({
                       className="pointer-events-none block shrink-0 overflow-visible text-current"
                       aria-hidden
                     />
+                  </button>
+                  <button
+                    type="button"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onToggleActive(node.id);
+                    }}
+                    disabled={pendingAction || blockActions}
+                    className={`inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-visible rounded-md border text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                      node.is_active
+                        ? "border-green-200 text-green-600 hover:border-yellow-300 hover:bg-yellow-50 hover:text-yellow-700 dark:border-green-800 dark:text-green-400 dark:hover:border-yellow-700 dark:hover:bg-yellow-900/30 dark:hover:text-yellow-300"
+                        : "border-gray-200 text-gray-400 hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:border-gray-700 dark:text-gray-500 dark:hover:border-green-700 dark:hover:bg-green-900/30 dark:hover:text-green-300"
+                    }`}
+                    aria-label={node.is_active ? "Desativar categoria" : "Ativar categoria"}
+                    title={node.is_active ? "Desativar" : "Ativar"}
+                  >
+                    {node.is_active ? "●" : "○"}
                   </button>
                   <button
                     type="button"
@@ -442,6 +467,7 @@ export function TreeNode({
                 onSaveCreateChild={onSaveCreateChild}
                 onCancelCreateChild={onCancelCreateChild}
                 onDelete={onDelete}
+                onToggleActive={onToggleActive}
                 onToggleCollapsed={onToggleCollapsed}
               />
             ))}

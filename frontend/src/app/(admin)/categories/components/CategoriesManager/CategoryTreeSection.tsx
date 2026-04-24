@@ -50,6 +50,7 @@ type CategoryTreeSectionProps = {
   onSaveCreateChild: TreeNodeProps["onSaveCreateChild"];
   onCancelCreateChild: TreeNodeProps["onCancelCreateChild"];
   onDelete: TreeNodeProps["onDelete"];
+  onToggleActive: TreeNodeProps["onToggleActive"];
   onToggleCollapsed: TreeNodeProps["onToggleCollapsed"];
   onDndDragStart: (event: DragStartEvent) => void;
   onDndDragOver: (event: DragOverEvent) => void;
@@ -112,6 +113,7 @@ export function CategoryTreeSection({
   onSaveCreateChild,
   onCancelCreateChild,
   onDelete,
+  onToggleActive,
   onToggleCollapsed,
   onDndDragStart,
   onDndDragOver,
@@ -304,6 +306,7 @@ export function CategoryTreeSection({
                   onSaveCreateChild={onSaveCreateChild}
                   onCancelCreateChild={onCancelCreateChild}
                   onDelete={onDelete}
+                  onToggleActive={onToggleActive}
                   onToggleCollapsed={onToggleCollapsed}
                 />
               ))}

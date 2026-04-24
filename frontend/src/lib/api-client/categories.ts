@@ -60,6 +60,19 @@ export async function updateCategory(
   return { ok: true, category: result.data };
 }
 
+export async function toggleCategoryActive(
+  categoryId: number,
+  is_active: boolean,
+): Promise<CategoryActionResult> {
+  return asActionError(
+    await apiRequest<unknown>(`/api/categories/${categoryId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_active }),
+    }),
+  );
+}
+
 export async function deleteCategory(
   categoryId: number,
 ): Promise<CategoryActionResult> {

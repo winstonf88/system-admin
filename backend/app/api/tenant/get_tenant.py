@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.models import Tenant
-from app.routers.tenant.service import TenantService, get_tenant_service
+from app.api.tenant.service import TenantService, get_tenant_service
 from app.schemas import TenantRead
 
 router = APIRouter()

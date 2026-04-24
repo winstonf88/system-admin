@@ -102,7 +102,8 @@ class ProductView(TortoiseModelView):
         StringField("name"),
         FloatField("price"),
         TextAreaField("description"),
-        StringField("image_url"),
+        BooleanField("is_active"),
+        # StringField("image_url"),
     ]
     sortable_fields = ["id", "tenant_id", "name", "price"]
     search_builder = True

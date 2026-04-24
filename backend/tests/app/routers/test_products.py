@@ -2,7 +2,7 @@ import pytest
 
 import app.routers.products.suggest_product_fields as suggest_product_fields_router
 from app.models import ProductCategory, ProductImage, Tenant
-from app.routers import products as products_router
+from app.api import products as products_router
 
 from tests.app.models.factories import (
     AUTH_TENANT_ONE,
@@ -175,7 +175,7 @@ async def test_update_product_rejects_zero_or_negative_price(
     assert any(error.get("loc") == ["body", "price"] for error in body.get("detail", []))
 
 
-async def test_list_products_supports_name_and_category_filters(client) -> None:
+async def test_list_products_supports_name_category_and_is_active_filters(client) -> None:
     await seed_two_tenant_users()
     t1 = await Tenant.get(slug="t1")
     t2 = await Tenant.get(slug="t2")
@@ -187,6 +187,8 @@ async def test_list_products_supports_name_and_category_filters(client) -> None:
     tenis = await create_product(tenant_id=t1.id, name="Tênis Corrida")
     bone = await create_product(tenant_id=t1.id, name="Boné Aba Reta")
     tenant2_product = await create_product(tenant_id=t2.id, name="Camisa Tenant 2")
+    bone.is_active = False
+    await bone.save(update_fields=["is_active"])
 
     await ProductCategory.create(product_id=camisa.id, tenant_id=t1.id, category_id=roupas.id)
     await ProductCategory.create(product_id=tenis.id, tenant_id=t1.id, category_id=calcados.id)
@@ -211,6 +213,16 @@ async def test_list_products_supports_name_and_category_filters(client) -> None:
     assert combined.status_code == 200
     combined_names = [p["name"] for p in combined.json()]
     assert combined_names == ["Boné Aba Reta"]
+
+    active_only = await client.get("/api/products/?is_active=true", auth=AUTH_TENANT_ONE)
+    assert active_only.status_code == 200
+    active_only_names = [p["name"] for p in active_only.json()]
+    assert active_only_names == ["Camisa Polo", "Tênis Corrida"]
+
+    inactive_only = await client.get("/api/products/?is_active=false", auth=AUTH_TENANT_ONE)
+    assert inactive_only.status_code == 200
+    inactive_only_names = [p["name"] for p in inactive_only.json()]
+    assert inactive_only_names == ["Boné Aba Reta"]
 
 
 async def test_upload_rejects_more_than_ten_images_per_product(client) -> None:

@@ -60,6 +60,7 @@ class ProductsService:
             price=product.price,
             description=product.description,
             image_url=primary_url,
+            is_active=product.is_active,
             images=image_reads,
             category_ids=category_ids,
             variations=[
@@ -215,6 +216,10 @@ class ProductsService:
         if "variations" in payload.model_fields_set and payload.variations is not None:
             await self._replace_variations(product, payload.variations)
 
+        if payload.is_active is not None:
+            product.is_active = payload.is_active
+            update_fields.append("is_active")
+
         if update_fields:
             await product.save(update_fields=update_fields)
 
@@ -226,6 +231,7 @@ class ProductsService:
         *,
         name: str | None,
         category_id: int | None,
+        is_active: bool | None,
     ) -> list[ProductRead]:
         qs = (
             Product.filter(tenant_id=self.tenant_context.tenant_id)
@@ -240,6 +246,8 @@ class ProductsService:
                 tenant_id=self.tenant_context.tenant_id,
             ).values_list("product_id", flat=True)
             qs = qs.filter(id__in=list(matching_ids))
+        if is_active is not None:
+            qs = qs.filter(is_active=is_active)
 
         products = await qs
         return [self.product_to_read(product) for product in products]

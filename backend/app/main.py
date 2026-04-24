@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.admin import create_admin
-from app.routers import (
+from app.api import (
     auth_router,
     categories_router,
     products_router,

@@ -19,6 +19,7 @@ class Category(BaseModel):
         on_delete=fields.RESTRICT,
     )
     sort_order = fields.IntField(default=0)
+    is_active = fields.BooleanField(default=True)
 
     subcategories: fields.ReverseRelation["Category"]
     product_links: fields.ReverseRelation["ProductCategory"]  # noqa: F821

@@ -13,6 +13,7 @@ import {
   deleteCategory,
   moveCategory,
   reorderCategorySiblings,
+  toggleCategoryActive,
   updateCategory,
 } from "@/lib/api-client/categories";
 import PageBreadCrumb from "@/components/common/PageBreadCrumb";
@@ -385,6 +386,8 @@ export default function CategoriesManager({ initialTree }: Props) {
         id: result.category.id,
         name: result.category.name,
         parent_id: result.category.parent_id,
+        is_active: true,
+        product_count: 0,
         subcategories: [],
       };
       setTree((current) => insertNode(current, null, newNode));
@@ -418,6 +421,8 @@ export default function CategoriesManager({ initialTree }: Props) {
         id: result.category.id,
         name: result.category.name,
         parent_id: result.category.parent_id,
+        is_active: true,
+        product_count: 0,
         subcategories: [],
       };
       setTree((current) => insertNode(current, parentId, newNode));
@@ -516,6 +521,38 @@ export default function CategoriesManager({ initialTree }: Props) {
     }
   };
 
+  const handleToggleActive = async (categoryId: number) => {
+    const node = findNode(tree, categoryId);
+    if (!node) {
+      return;
+    }
+    const next = !node.is_active;
+    toast.dismiss();
+    setPendingAction(true);
+    try {
+      const result = await toggleCategoryActive(categoryId, next);
+      if (!result.ok) {
+        toast.error(result.error, { duration: 5000 });
+        return;
+      }
+      setTree((current) => {
+        const update = (nodes: CategoryTreeNode[]): CategoryTreeNode[] =>
+          nodes.map((n) => ({
+            ...n,
+            is_active: n.id === categoryId ? next : n.is_active,
+            subcategories: update(n.subcategories),
+          }));
+        return update(current);
+      });
+      toast.success(
+        next ? "Categoria ativada." : "Categoria desativada.",
+        { duration: 3000 },
+      );
+    } finally {
+      setPendingAction(false);
+    }
+  };
+
   const toggleCollapsed = (categoryId: number) => {
     setCollapsedIds((current) => {
       const next = new Set(current);
@@ -559,6 +596,7 @@ export default function CategoriesManager({ initialTree }: Props) {
         onSaveCreateChild={handleSaveCreateChild}
         onCancelCreateChild={handleCancelCreateChild}
         onDelete={handleDeleteCategory}
+        onToggleActive={handleToggleActive}
         onToggleCollapsed={toggleCollapsed}
         onDndDragStart={handleDndDragStart}
         onDndDragOver={handleDndDragOver}

@@ -81,11 +81,15 @@ describe("CategoriesManager toasts", () => {
       id: 1,
       name: "Parent",
       parent_id: null,
+      is_active: true,
+      product_count: 0,
       subcategories: [
         {
           id: 2,
           name: "Child",
           parent_id: 1,
+          is_active: true,
+          product_count: 0,
           subcategories: [],
         },
       ],

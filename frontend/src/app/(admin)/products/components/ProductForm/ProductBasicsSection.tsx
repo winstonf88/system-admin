@@ -1,6 +1,7 @@
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import TextArea from "@/components/form/input/TextArea";
+import Switch from "@/components/form/switch/Switch";
 import { PlusIcon } from "@/icons";
 import type { ProductSuggestionField } from "@/lib/api-client/products";
 import {
@@ -49,6 +50,7 @@ type Props = {
   name: string;
   price: string;
   description: string;
+  isActive: boolean;
   nameError?: string;
   priceError?: string;
   categoryError?: string;
@@ -56,6 +58,7 @@ type Props = {
   onNameChange: (value: string) => void;
   onPriceChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
+  onIsActiveChange: (value: boolean) => void;
   onToggleCategory: (categoryId: number) => void;
   onOpenCategoryModal: () => void;
   onOpenAISuggestions: (field: ProductSuggestionField) => void;
@@ -68,6 +71,7 @@ export function ProductBasicsSection({
   name,
   price,
   description,
+  isActive,
   nameError,
   priceError,
   categoryError,
@@ -75,6 +79,7 @@ export function ProductBasicsSection({
   onNameChange,
   onPriceChange,
   onDescriptionChange,
+  onIsActiveChange,
   onToggleCategory,
   onOpenCategoryModal,
   onOpenAISuggestions,
@@ -134,6 +139,16 @@ export function ProductBasicsSection({
             className="pl-11"
             error={Boolean(priceError)}
             hint={priceError}
+          />
+        </div>
+      </div>
+      <div className="col-span-2 lg:col-span-1">
+        <Label>Status</Label>
+        <div className="mt-1">
+          <Switch
+            label={isActive ? "Ativo" : "Inativo"}
+            checked={isActive}
+            onChange={onIsActiveChange}
           />
         </div>
       </div>

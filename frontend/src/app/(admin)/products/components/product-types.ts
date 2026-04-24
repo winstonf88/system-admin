@@ -17,6 +17,7 @@ export type ProductRow = {
   name: string;
   price: number;
   description: string | null;
+  is_active: boolean;
   category_ids: number[];
   images: ProductImageRow[];
   variations: ProductVariationRow[];

@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { toast } from "sonner";
 
 import type {
   CategoryOption,
@@ -33,10 +34,19 @@ vi.mock("next/link", () => ({
   },
 }));
 
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
 const deleteProduct = vi.fn();
+const updateProduct = vi.fn();
 
 vi.mock("@/lib/api-client/products", () => ({
   deleteProduct: (...a: unknown[]) => deleteProduct(...a),
+  updateProduct: (...a: unknown[]) => updateProduct(...a),
 }));
 
 import ProductsList from "../ProductsList";
@@ -52,6 +62,7 @@ describe("ProductsList", () => {
     name: "Camisa básica",
     price: 79.9,
     description: null,
+    is_active: true,
     category_ids: [11],
     images: [],
     variations: [
@@ -63,6 +74,9 @@ describe("ProductsList", () => {
   beforeEach(() => {
     replace.mockReset();
     deleteProduct.mockReset();
+    updateProduct.mockReset();
+    vi.mocked(toast.success).mockReset();
+    vi.mocked(toast.error).mockReset();
   });
 
   it("shows empty state with link to create when there are no products", () => {
@@ -138,5 +152,30 @@ describe("ProductsList", () => {
       "href",
       "/products/new",
     );
+  });
+
+  it("toggles product active status and updates backend", async () => {
+    const user = userEvent.setup();
+    updateProduct.mockResolvedValue({ ok: true });
+
+    render(<ProductsList products={[product]} categories={categories} />);
+
+    await user.click(screen.getByText("Ativo"));
+
+    await waitFor(() => {
+      expect(updateProduct).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          is_active: false,
+          name: "Camisa básica",
+          price: 79.9,
+        }),
+      );
+    });
+    expect(vi.mocked(toast.success)).toHaveBeenCalledWith(
+      "Produto desativado com sucesso.",
+      { duration: 3000 },
+    );
+    expect(screen.getByText("Inativo")).toBeInTheDocument();
   });
 });

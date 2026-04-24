@@ -80,6 +80,7 @@ describe("ProductForm submit flow", () => {
     name: "Boné",
     price: 39.9,
     description: "Um boné",
+    is_active: true,
     category_ids: [1],
     images: [{ id: 1, url: "/uploads/bone.png" }],
     variations: [{ id: 10, size: null, color: "Azul", quantity: 4 }],
@@ -121,6 +122,7 @@ describe("ProductForm submit flow", () => {
         expect.objectContaining({
           name: "Novo item",
           price: 59.9,
+          is_active: true,
           category_ids: [1],
           description: null,
           variations: [
@@ -166,6 +168,7 @@ describe("ProductForm submit flow", () => {
         expect.objectContaining({
           name: "Boné atualizado",
           price: 39.9,
+          is_active: true,
           category_ids: [1],
         }),
       );

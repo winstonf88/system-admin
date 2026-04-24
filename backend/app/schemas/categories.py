@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class CategoryBase(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     parent_id: int | None = None
+    is_active: bool = True
 
 
 class CategoryCreate(CategoryBase):
@@ -13,6 +14,7 @@ class CategoryCreate(CategoryBase):
 class CategoryUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
     parent_id: int | None = None
+    is_active: bool | None = None
 
 
 class CategoryRead(BaseModel):
@@ -22,9 +24,11 @@ class CategoryRead(BaseModel):
     name: str
     parent_id: int | None
     sort_order: int
+    is_active: bool
 
 
 class CategoryTreeRead(CategoryRead):
+    product_count: int = 0
     subcategories: list["CategoryTreeRead"] = Field(default_factory=list)
 
 

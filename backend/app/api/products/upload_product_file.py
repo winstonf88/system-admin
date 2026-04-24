@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, File, UploadFile
 
-from app.routers.products.service import ProductsService, get_products_service
+from app.api.products.service import ProductsService, get_products_service
 from app.schemas import UploadResponse
 
 router = APIRouter()
