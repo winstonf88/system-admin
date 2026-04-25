@@ -14,6 +14,7 @@ _http_basic = HTTPBasic(auto_error=False)
 @dataclass(frozen=True)
 class TenantContext:
     tenant_id: int
+    slug: str
 
 
 async def get_tenant_context(
@@ -22,7 +23,7 @@ async def get_tenant_context(
 ) -> TenantContext:
     if api_key is not None:
         hashed = hash_api_key(api_key)
-        tenant = await Tenant.filter(api_key_hash=hashed).only("id", "is_active").first()
+        tenant = await Tenant.filter(api_key_hash=hashed).first()
         if tenant is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -33,11 +34,12 @@ async def get_tenant_context(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="A organização está desativada.",
             )
-        return TenantContext(tenant_id=tenant.id)
+        return TenantContext(tenant_id=tenant.id, slug=tenant.slug)
 
     if credentials is not None:
         user = await _authenticate_user(credentials)
-        return TenantContext(tenant_id=(await user.tenant).id)
+        tenant = await user.tenant
+        return TenantContext(tenant_id=tenant.id, slug=tenant.slug)
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

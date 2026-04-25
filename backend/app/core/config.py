@@ -2,7 +2,7 @@ import json
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import AliasChoices, Field, computed_field
+from pydantic import AliasChoices, Field, computed_field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     app_expose_docs: bool = Field(
         default=True, validation_alias=AliasChoices("APP_EXPOSE_DOCS")
     )
+    app_enable_admin: bool = Field(
+        default=False, validation_alias=AliasChoices("APP_ENABLE_ADMIN")
+    )
     database_url: str = Field(
         default="postgres://postgres:postgres@localhost:5432/system_admin",
         validation_alias=AliasChoices("DATABASE_URL", "APP_DATABASE_URL"),
@@ -50,6 +53,43 @@ class Settings(BaseSettings):
     openai_model: str = Field(
         default="gpt-4o", validation_alias=AliasChoices("OPENAI_MODEL")
     )
+
+    storage_backend: Literal["local", "spaces"] = Field(
+        default="local", validation_alias=AliasChoices("STORAGE_BACKEND")
+    )
+    spaces_key: str | None = Field(
+        default=None, validation_alias=AliasChoices("SPACES_KEY")
+    )
+    spaces_secret: str | None = Field(
+        default=None, validation_alias=AliasChoices("SPACES_SECRET")
+    )
+    spaces_region: str = Field(
+        default="nyc3", validation_alias=AliasChoices("SPACES_REGION")
+    )
+    spaces_bucket: str | None = Field(
+        default=None, validation_alias=AliasChoices("SPACES_BUCKET")
+    )
+    spaces_cdn_endpoint: str | None = Field(
+        default=None, validation_alias=AliasChoices("SPACES_CDN_ENDPOINT")
+    )
+
+    @model_validator(mode="after")
+    def _validate_spaces_config(self) -> "Settings":
+        if self.storage_backend == "spaces":
+            missing = [
+                name
+                for name, val in [
+                    ("SPACES_KEY", self.spaces_key),
+                    ("SPACES_SECRET", self.spaces_secret),
+                    ("SPACES_BUCKET", self.spaces_bucket),
+                ]
+                if not val
+            ]
+            if missing:
+                raise ValueError(
+                    f"STORAGE_BACKEND=spaces requires: {', '.join(missing)}"
+                )
+        return self
 
     @computed_field
     @property

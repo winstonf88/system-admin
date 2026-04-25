@@ -19,6 +19,7 @@ dependencies = [
     "openai>=2.32.0",
     "starlette-admin[tortoise]>=0.16.0",
     "itsdangerous>=2.2.0",
+    "aioboto3>=13.0.0",
 ]
 
 [project.scripts]

@@ -3,7 +3,12 @@ from pathlib import Path
 
 from fastapi import Depends, HTTPException, UploadFile, status
 
-from app.dependencies import TenantContext, get_tenant_context
+from app.dependencies import (
+    StorageBackend,
+    TenantContext,
+    get_storage,
+    get_tenant_context,
+)
 from app.models import (
     Category,
     Product,
@@ -23,22 +28,11 @@ from app.schemas import (
 
 MAX_IMAGES_PER_PRODUCT = 10
 
-UPLOAD_DIR = Path("uploads/products")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-
-def delete_upload_file_if_safe(url: str) -> None:
-    if not url.startswith("/uploads/products/"):
-        return
-    relative = url.removeprefix("/uploads/")
-    path = Path("uploads") / relative
-    if path.is_file():
-        path.unlink()
-
 
 class ProductsService:
-    def __init__(self, tenant_context: TenantContext) -> None:
+    def __init__(self, tenant_context: TenantContext, storage: StorageBackend) -> None:
         self.tenant_context = tenant_context
+        self.storage = storage
         self.queryset = Product.filter(tenant_id=tenant_context.tenant_id)
         self.category_qs = Category.filter(tenant_id=tenant_context.tenant_id)
         self.product_category_qs = ProductCategory.filter(
@@ -238,7 +232,9 @@ class ProductsService:
     async def delete_product(self, product_id: int) -> None:
         product = await self.get_product_or_404(product_id)
         for image in list(product.images):
-            delete_upload_file_if_safe(image.url)
+            key = self.storage.url_to_key(image.url)
+            if key is not None:
+                await self.storage.delete(key)
         await product.delete()
 
     def _image_qs(self, product_id: int):
@@ -283,11 +279,10 @@ class ProductsService:
 
         extension = Path(file.filename).suffix
         filename = f"{uuid.uuid4().hex}{extension}"
-        destination = UPLOAD_DIR / filename
+        key = f"products/{filename}"
         file_bytes = await file.read()
-        destination.write_bytes(file_bytes)
+        file_url = await self.storage.save(key, file_bytes)
 
-        file_url = f"/uploads/products/{filename}"
         await ProductImage.create(
             tenant_id=self.tenant_context.tenant_id,
             product_id=product.id,
@@ -306,7 +301,9 @@ class ProductsService:
             )
         url = row.url
         await row.delete()
-        delete_upload_file_if_safe(url)
+        key = self.storage.url_to_key(url)
+        if key is not None:
+            await self.storage.delete(key)
         await self.sync_product_primary_image_url(product_id)
 
     async def reorder_product_images(
@@ -344,5 +341,6 @@ class ProductsService:
 
 def get_products_service(
     tenant_context: TenantContext = Depends(get_tenant_context),
+    storage: StorageBackend = Depends(get_storage),
 ) -> ProductsService:
-    return ProductsService(tenant_context=tenant_context)
+    return ProductsService(tenant_context=tenant_context, storage=storage)

@@ -17,15 +17,16 @@ from app.api import (
 from app.core.config import get_settings
 from app.core.database import check_db_connection, close_db, init_db
 from app.core.logging import configure_logging
+from app.core.storage import get_storage_backend
 
 settings = get_settings()
 UPLOADS_DIR = Path("uploads")
-UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI):
+async def lifespan(app: FastAPI):
     configure_logging(settings.app_log_level)
+    app.state.storage = get_storage_backend(settings)
     await init_db()
     await check_db_connection()
     yield
@@ -55,9 +56,12 @@ def create_app() -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok", "environment": settings.app_env}
 
-    admin = create_admin(app)
+    if settings.app_enable_admin:
+        create_admin(app)
 
-    app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+    if settings.storage_backend == "local":
+        UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+        app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
     app.include_router(auth_router)
     app.include_router(categories_router)
     app.include_router(products_router)

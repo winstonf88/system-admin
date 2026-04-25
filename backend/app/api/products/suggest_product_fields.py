@@ -252,14 +252,14 @@ def get_product_suggestion_agent(model_id: str, api_key: str) -> Agent:
         pre_hooks=[ProductAISuggestionInputGuardrail()],
         role="You only answer in Brazilian Portuguese",
         instructions=[
-            "You suggest product metadata from product images.",
-            "Use the structured input payload to decide which fields to return.",
-            "Use only the category IDs present in available_categories.",
-            "Only output JSON that matches the schema.",
-            "If a field is not requested, return an empty list for that field.",
-            "For names, return exactly name_suggestion_count concise suggestions.",
-            "For descriptions, return exactly description_suggestion_count short ecommerce-ready suggestions.",
-            "For category, return only IDs from available_categories that make sense for the product.",
+            "You suggest product metadata by analyzing the provided product images carefully.",
+            "The input payload contains requested_fields, which lists the fields you MUST populate.",
+            "For every field listed in requested_fields, you MUST return a non-empty list — never return an empty list for a requested field.",
+            "For fields NOT listed in requested_fields, return an empty list.",
+            "For 'name': return exactly name_suggestion_count concise, marketable product name suggestions.",
+            "For 'description': return exactly description_suggestion_count short, ecommerce-ready product description suggestions.",
+            "For 'category': return only IDs from available_categories that are relevant to the product — pick the most specific match.",
+            "Only output JSON that matches the schema. Do not include any explanation or extra text.",
         ],
     )
 
