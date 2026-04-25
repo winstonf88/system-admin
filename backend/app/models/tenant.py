@@ -24,4 +24,5 @@ class Tenant(BaseModel):
         return TenantConfig.model_validate(raw)
 
     def set_config(self, value: TenantConfig) -> None:
-        self.config = value.model_dump(mode="json")
+        existing = self.config or {}
+        self.config = {**existing, **value.model_dump(mode="json", exclude_unset=True)}

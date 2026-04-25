@@ -34,7 +34,7 @@ class TenantView(TortoiseModelView):
         StringField("name"),
         BooleanField("is_active"),
         StringField("api_key_hash", read_only=True),
-        JSONField("config"),
+        JSONField("config", exclude_from_list=True),
     ]
     sortable_fields = ["id", "slug", "name", "is_active"]
     search_builder = True

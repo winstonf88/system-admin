@@ -49,4 +49,14 @@ async def category_tree(
         else:
             roots.append(node)
 
+    def accumulate_counts(n: CategoryTreeRead) -> int:
+        total = n.product_count
+        for child in n.subcategories:
+            total += accumulate_counts(child)
+        n.product_count = total
+        return total
+
+    for root in roots:
+        accumulate_counts(root)
+
     return roots
