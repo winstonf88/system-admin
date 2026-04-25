@@ -47,10 +47,19 @@ function asActionResult<T>(result: ApiResult<T>): ProductActionResult {
   return { ok: true };
 }
 
+export type ProductListResponse = {
+  items: ProductRow[];
+  total: number;
+  page: number;
+  count: number;
+};
+
 export async function getProducts(input: {
   name?: string;
   categoryId?: number | null;
-}): Promise<ApiResult<ProductRow[]>> {
+  page?: number;
+  count?: number;
+}): Promise<ApiResult<ProductListResponse>> {
   const params = new URLSearchParams();
   if (input.name?.trim()) {
     params.set("name", input.name.trim());
@@ -58,8 +67,16 @@ export async function getProducts(input: {
   if (input.categoryId != null) {
     params.set("category_id", String(input.categoryId));
   }
+  if (input.page != null && input.page > 1) {
+    params.set("page", String(input.page));
+  }
+  if (input.count != null) {
+    params.set("count", String(input.count));
+  }
   const query = params.toString();
-  return apiRequest<ProductRow[]>(`/api/products${query ? `?${query}` : ""}`);
+  return apiRequest<ProductListResponse>(
+    `/api/products${query ? `?${query}` : ""}`,
+  );
 }
 
 export async function getProduct(

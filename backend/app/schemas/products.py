@@ -96,6 +96,13 @@ class ProductRead(BaseModel):
     variations: list[ProductVariationRead] = Field(default_factory=list)
 
 
+class ProductListResponse(BaseModel):
+    items: list[ProductRead]
+    total: int
+    page: int
+    count: int
+
+
 class UploadResponse(BaseModel):
     file_url: str
 

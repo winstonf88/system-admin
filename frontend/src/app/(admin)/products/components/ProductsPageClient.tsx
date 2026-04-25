@@ -1,12 +1,16 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import ProductsList from "@/app/(admin)/products/components/ProductsList";
 import { getProductCategories, getProducts } from "@/lib/api-client/products";
 
+const PAGE_SIZE = 20;
+
 export default function ProductsPageClient() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const nameFilter = searchParams.get("name")?.trim() ?? "";
   const categoryParam = searchParams.get("category_id");
@@ -15,10 +19,13 @@ export default function ProductsPageClient() {
     Number.isInteger(parsedCategoryId) && parsedCategoryId > 0
       ? parsedCategoryId
       : null;
+  const pageParam = searchParams.get("page");
+  const page = pageParam && Number(pageParam) > 1 ? Number(pageParam) : 1;
 
   const productsQuery = useQuery({
-    queryKey: ["products", nameFilter, categoryId],
-    queryFn: () => getProducts({ name: nameFilter, categoryId }),
+    queryKey: ["products", nameFilter, categoryId, page],
+    queryFn: () =>
+      getProducts({ name: nameFilter, categoryId, page, count: PAGE_SIZE }),
     placeholderData: keepPreviousData,
   });
 
@@ -28,13 +35,26 @@ export default function ProductsPageClient() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const products = productsQuery.data?.ok ? productsQuery.data.data : [];
+  const listData = productsQuery.data?.ok ? productsQuery.data.data : null;
+  const products = listData?.items ?? [];
+  const total = listData?.total ?? 0;
   const categories = categoriesQuery.data?.ok ? categoriesQuery.data.data : [];
   const productsStatus =
     productsQuery.data && !productsQuery.data.ok
       ? productsQuery.data.status
       : null;
   const listKey = `${nameFilter}::${categoryId ?? "none"}`;
+
+  function navigateToPage(nextPage: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextPage <= 1) {
+      params.delete("page");
+    } else {
+      params.set("page", String(nextPage));
+    }
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname);
+  }
 
   if (productsStatus === 401) {
     return (
@@ -79,6 +99,10 @@ export default function ProductsPageClient() {
       initialNameFilter={nameFilter}
       initialCategoryFilterId={categoryId}
       isLoading={productsQuery.isFetching}
+      page={page}
+      pageSize={PAGE_SIZE}
+      total={total}
+      onPageChange={navigateToPage}
     />
   );
 }

@@ -34,6 +34,10 @@ type Props = {
   initialNameFilter?: string;
   initialCategoryFilterId?: number | null;
   isLoading?: boolean;
+  page?: number;
+  pageSize?: number;
+  total?: number;
+  onPageChange?: (page: number) => void;
 };
 
 const modalInner =
@@ -50,6 +54,10 @@ export default function ProductsList({
   initialNameFilter = "",
   initialCategoryFilterId = null,
   isLoading = false,
+  page = 1,
+  pageSize = 20,
+  total = 0,
+  onPageChange,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -58,7 +66,9 @@ export default function ProductsList({
   const [deleting, setDeleting] = useState<ProductRow | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [togglingProductId, setTogglingProductId] = useState<number | null>(null);
+  const [togglingProductId, setTogglingProductId] = useState<number | null>(
+    null,
+  );
   const [rows, setRows] = useState<ProductRow[]>(products);
   const [nameFilter, setNameFilter] = useState(initialNameFilter);
   const [categoryFilterId, setCategoryFilterId] = useState<number | "">(
@@ -90,6 +100,8 @@ export default function ProductsList({
     }
     router.replace(query.length > 0 ? `${pathname}?${query}` : pathname);
   }, [categoryFilterId, nameFilter, pathname, router, searchParams]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const openDelete = useCallback(
     (p: ProductRow) => {
@@ -144,18 +156,24 @@ export default function ProductsList({
       if (!response.ok) {
         setRows((prev) =>
           prev.map((row) =>
-            row.id === product.id ? { ...row, is_active: product.is_active } : row,
+            row.id === product.id
+              ? { ...row, is_active: product.is_active }
+              : row,
           ),
         );
         toast.error(response.error, { duration: 5000 });
         return;
       }
       toast.success(
-        nextIsActive ? "Produto ativado com sucesso." : "Produto desativado com sucesso.",
+        nextIsActive
+          ? "Produto ativado com sucesso."
+          : "Produto desativado com sucesso.",
         { duration: 3000 },
       );
     } finally {
-      setTogglingProductId((current) => (current === product.id ? null : current));
+      setTogglingProductId((current) =>
+        current === product.id ? null : current,
+      );
     }
   }, []);
 
@@ -221,7 +239,7 @@ export default function ProductsList({
             </button>
           </form>
           <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            {rows.length} produto{rows.length === 1 ? "" : "s"}
+            {total} produto{total === 1 ? "" : "s"}
             {hasActiveFilters ? " encontrado(s) para os filtros atuais" : ""}
           </p>
         </div>
@@ -401,6 +419,31 @@ export default function ProductsList({
             </div>
           ) : null}
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-gray-100 px-5 py-3 dark:border-white/[0.05]">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Página {page} de {totalPages}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={page <= 1 || isLoading}
+                onClick={() => onPageChange?.(page - 1)}
+                className="inline-flex h-8 items-center justify-center rounded-lg border border-gray-300 px-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.04]"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                disabled={page >= totalPages || isLoading}
+                onClick={() => onPageChange?.(page + 1)}
+                className="inline-flex h-8 items-center justify-center rounded-lg border border-gray-300 px-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.04]"
+              >
+                Próxima
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <Modal

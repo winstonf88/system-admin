@@ -14,6 +14,7 @@ from app.models import (
 from app.schemas import (
     ProductCreate,
     ProductImageRead,
+    ProductListResponse,
     ProductRead,
     ProductUpdate,
     ProductVariationCreate,
@@ -205,10 +206,10 @@ class ProductsService:
         name: str | None,
         category_id: int | None,
         is_active: bool | None,
-    ) -> list[ProductRead]:
-        qs = self.queryset.prefetch_related(
-            "variations", "category_links", "images"
-        ).order_by("name")
+        page: int,
+        count: int,
+    ) -> ProductListResponse:
+        qs = self.queryset.order_by("name")
         if name is not None and name.strip():
             qs = qs.filter(name__icontains=name.strip())
         if category_id is not None:
@@ -220,8 +221,19 @@ class ProductsService:
         if is_active is not None:
             qs = qs.filter(is_active=is_active)
 
-        products = await qs
-        return [self.product_to_read(product) for product in products]
+        total = await qs.count()
+        offset = (page - 1) * count
+        products = (
+            await qs.prefetch_related("variations", "category_links", "images")
+            .offset(offset)
+            .limit(count)
+        )
+        return ProductListResponse(
+            items=[self.product_to_read(p) for p in products],
+            total=total,
+            page=page,
+            count=count,
+        )
 
     async def delete_product(self, product_id: int) -> None:
         product = await self.get_product_or_404(product_id)
