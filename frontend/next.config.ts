@@ -30,7 +30,7 @@ function allowedDevOriginsFromEnv(): string[] {
 
 function isIpv4NonInternal(addr: os.NetworkInterfaceInfo): boolean {
   if (addr.internal) return false;
-  return addr.family === "IPv4" || addr.family === 4;
+  return addr.family === "IPv4";
 }
 
 /** Host entries the browser may send on `Origin` when opening dev over LAN. */
