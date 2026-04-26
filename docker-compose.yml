@@ -23,6 +23,7 @@ services:
   site-admin-web:
     image: registry.digitalocean.com/site-admin/frontend:${TAG:-latest}
     restart: unless-stopped
+    env_file: .env.site-admin-web
     expose:
       - "3000"
 

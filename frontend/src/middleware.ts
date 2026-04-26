@@ -11,7 +11,7 @@ function isPublicPath(pathname: string): boolean {
   return false;
 }
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const session = request.cookies.get(AUTH_SESSION_COOKIE)?.value;
