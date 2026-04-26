@@ -23,6 +23,22 @@ ingress:
         path:
           prefix: /api
 
+jobs:
+  - name: migrate
+    dockerfile_path: backend/Dockerfile
+    source_dir: backend
+    github:
+      repo: winstonf88/system-admin
+      branch: main
+      deploy_on_push: false
+    instance_size_slug: basic-xxs
+    kind: PRE_DEPLOY
+    run_command: uv run aerich upgrade
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        type: SECRET
+
 services:
   - name: api
     dockerfile_path: backend/Dockerfile
@@ -36,7 +52,7 @@ services:
     instance_count: 1
     health_check:
       http_path: /api/health
-    run_command: uv run aerich upgrade && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
+    run_command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
     envs:
       - key: APP_ENV
         value: production
