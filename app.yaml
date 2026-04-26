@@ -1,6 +1,19 @@
 name: site-admin
 region: nyc
 
+ingress:
+  rules:
+    - component:
+        name: web
+      match:
+        path:
+          prefix: /
+    - component:
+        name: api
+      match:
+        path:
+          prefix: /api
+
 services:
   - name: api
     dockerfile_path: backend/Dockerfile
@@ -13,9 +26,7 @@ services:
     instance_size_slug: basic-xxs
     instance_count: 1
     health_check:
-      http_path: /health
-    routes:
-      - path: /
+      http_path: /api/health
     run_command: uv run aerich upgrade && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
     envs:
       - key: APP_ENV
@@ -64,14 +75,11 @@ services:
     instance_count: 1
     health_check:
       http_path: /
-    routes:
-      - path: /
     envs:
       - key: NEXT_PUBLIC_API_URL
         value: /api
         scope: BUILD_TIME
       - key: API_URL
-        # Server-side: Next.js calls the API service internally by its App Platform service name
         value: ${api.PRIVATE_URL}
         scope: RUN_TIME
       - key: COOKIE_SECURE
