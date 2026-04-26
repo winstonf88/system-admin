@@ -1,0 +1,31 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - site-admin-api
+      - site-admin-web
+
+  site-admin-api:
+    image: registry.digitalocean.com/site-admin/backend:${TAG:-latest}
+    restart: unless-stopped
+    env_file: .env.site-admin-api
+    expose:
+      - "8000"
+
+  site-admin-web:
+    image: registry.digitalocean.com/site-admin/frontend:${TAG:-latest}
+    restart: unless-stopped
+    expose:
+      - "3000"
+
+volumes:
+  caddy_data:
+  caddy_config:

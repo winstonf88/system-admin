@@ -1,0 +1,8 @@
+:80 {
+  handle /admin/* {
+    reverse_proxy site-admin-api:8000
+  }
+  handle {
+    reverse_proxy site-admin-web:3000
+  }
+}
