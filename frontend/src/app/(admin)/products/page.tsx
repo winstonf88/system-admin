@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 
 import ProductsPageClient from "@/app/(admin)/products/components/ProductsPageClient";
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function ProductsPage() {
-  return <ProductsPageClient />;
+  return (
+    <Suspense>
+      <ProductsPageClient />
+    </Suspense>
+  );
 }
