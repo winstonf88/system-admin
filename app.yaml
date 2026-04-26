@@ -1,6 +1,15 @@
 name: site-admin
 region: nyc
 
+databases:
+  - cluster_name: dbaas-db-1181612
+    db_name: defaultdb
+    db_user: doadmin
+    engine: PG
+    name: dbaas-db-1181612
+    production: true
+    version: "18"
+
 ingress:
   rules:
     - component:
