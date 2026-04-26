@@ -57,11 +57,9 @@ services:
       - key: SPACES_REGION
         value: nyc3
       - key: SPACES_BUCKET
-        scope: RUN_TIME
-        type: SECRET
+        value: site-admin-assets
       - key: SPACES_CDN_ENDPOINT
-        scope: RUN_TIME
-        type: SECRET
+        value: https://site-admin-assets.nyc3.cdn.digitaloceanspaces.com
 
   - name: web
     dockerfile_path: frontend/Dockerfile
