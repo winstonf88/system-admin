@@ -2,7 +2,7 @@ import json
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import AliasChoices, Field, computed_field, model_validator
+from pydantic import AliasChoices, Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -40,9 +40,10 @@ class Settings(BaseSettings):
         default=False, validation_alias=AliasChoices("APP_ENABLE_ADMIN")
     )
     database_url: str = Field(
-        default="postgres://postgres:postgres@localhost:5432/system_admin",
+        default="asyncpg://postgres:postgres@localhost:5432/system_admin",
         validation_alias=AliasChoices("DATABASE_URL", "APP_DATABASE_URL"),
     )
+
     secret_key: str = Field(
         default="change-me-in-production",
         validation_alias=AliasChoices("SECRET_KEY"),
@@ -72,24 +73,6 @@ class Settings(BaseSettings):
     spaces_cdn_endpoint: str | None = Field(
         default=None, validation_alias=AliasChoices("SPACES_CDN_ENDPOINT")
     )
-
-    @model_validator(mode="after")
-    def _validate_spaces_config(self) -> "Settings":
-        if self.storage_backend == "spaces":
-            missing = [
-                name
-                for name, val in [
-                    ("SPACES_KEY", self.spaces_key),
-                    ("SPACES_SECRET", self.spaces_secret),
-                    ("SPACES_BUCKET", self.spaces_bucket),
-                ]
-                if not val
-            ]
-            if missing:
-                raise ValueError(
-                    f"STORAGE_BACKEND=spaces requires: {', '.join(missing)}"
-                )
-        return self
 
     @computed_field
     @property
